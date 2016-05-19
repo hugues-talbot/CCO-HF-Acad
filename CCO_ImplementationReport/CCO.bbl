@@ -1,0 +1,39 @@
+\begin{thebibliography}{1}
+
+\bibitem{karch1999three}
+Rudolf Karch, Friederike Neumann, Martin Neumann, and Wolfgang Schreiner.
+\newblock A three-dimensional model for arterial tree representation, generated
+  by constrained constructive optimization.
+\newblock {\em Computers in biology and medicine}, 29(1):19--38, 1999.
+
+\bibitem{kamiya1972optimal}
+Akira Kamiya and Tatsuo Togawa.
+\newblock Optimal branching structure of the vascular tree.
+\newblock {\em The Bulletin of mathematical biophysics}, 34(4):431--438, 1972.
+
+\bibitem{schreiner1993computer}
+Wolfgang Schreiner and Peter~Franz Buxbaum.
+\newblock Computer-optimization of vascular trees.
+\newblock {\em Biomedical Engineering, IEEE Transactions on}, 40(5):482--491,
+  1993.
+
+\bibitem{zamir1986branching}
+M~Zamir and H~Chee.
+\newblock Branching characteristics of human coronary arteries.
+\newblock {\em Canadian journal of physiology and pharmacology},
+  64(6):661--668, 1986.
+
+\bibitem{bernot2009optimal}
+Marc Bernot, Vicent Caselles, and Jean-Michel Morel.
+\newblock {\em Optimal transportation networks: models and theory}, volume
+  1955.
+\newblock Springer Science \& Business Media, 2009.
+
+\bibitem{murray1926physiological}
+Cecil~D Murray.
+\newblock The physiological principle of minimum work i. the vascular system
+  and the cost of blood volume.
+\newblock {\em Proceedings of the National Academy of Sciences},
+  12(3):207--214, 1926.
+
+\end{thebibliography}
