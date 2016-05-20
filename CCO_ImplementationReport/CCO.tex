@@ -97,23 +97,72 @@ In Karch's method the tree is constrained into a given convex perfusion volume, 
 
 \section{Global optimization}
 
-Initialization of the method requires physiological parameters inputs, location of the root, and random location of first segment end.
-Then Karch's protocol consists of a complete loop for each added segment. Picking a  random location under some constraints (geometry and physiology), used as a segment end candidate. Test its connection with neighbor segments, producing a bifurcation under topological, structural and functional constraints. In view of this new branch impact on the whole tree (induced by fluid mechanics laws), select the optimal one according to a target function (minimal volume of the tree). 
+Initialization of the method requires physiological parameters inputs, and a randomized starting point.
+
+Then Karch's protocol consists of a complete loop for each added segment. A  random location is picked under some constraints (geometry and physiology), to use it as a segment end candidate. Its connection is tested with neighbor segments, producing a bifurcation under topological, structural and functional constraints. In view of this new branch impact on the whole tree (induced by fluid mechanics laws), the optimal connection is selected according to a target function (minimal volume of the total tree). 
 
 
 \subsection{Assumptions and boundary conditions}
-The vascular tree is grown under assumptions and boundary conditions.
+The vascular tree is grown under specific assumptions and boundary conditions.
+
+The perfused volume is convexe and supposed homogeneously filled. The terminal segments correspond to pre-arteriole level, that feed a non modeled micro-vasculature.
+The blood is an incompressible, homgeneous Newtonian fluid, studied at steady state and in laminar flow conditions. 
+
+The resistance and the pressure drop of a segment $j$ are defined by:
+\begin{equation}
+R_j = \frac{8\nu}{\pi}\frac{l_j}{r_j^4}
+\end{equation}
+\begin{equation}
+\Delta P_j = R_j Q_j
+\end{equation}
+The total resistance of the tree is calculated recursively by tree decomposition, considering parallel and serial arrangements.
+
+The physiological parameters are defined such as in the following table:\\
+
+The pressure at distal end of terminal segment,$P_{term}$, are equal and inflow pressure to the micro-circulation.
+The terminal flows $Q_{term,j}$ are equals, and delivered into the micro-circulation agains $P_{term}$. Because of flow conservation their sum correspond to the perfusion flow at the root $Q_{perf}$. 
+The laminar flow resistance of the whole tree induces a given total $Q_{perf}$ accross $\Delta P$.$Q_{perf}$ is the same for each step of the tree generation.
+
+The tree grown is dichotomic, so that the total number of segments is calculated from:
+\begin{equation}
+N_{tot} = 2 N_{term} -1
+\end{equation}
+
+This tree follows Murray's law, with a coefficient equal to 3.
+
 \subsection{Initialization step}  
-Inputs: convex surface/volume, number of terminal segments,flow at root and conservation in the tree, pressure at root and terminal segments
+Inputs:
+\begin{itemize}
+\item convexe perfusion surface or volume definition: position and shape
+\item number of terminal segments, $N_{term}$
+\item location of the root (in our case at the border of the perfusion territory)
+\item a random location inside the perfusion territory for the first segment end 
+\end{itemize}
 
 \subsection{Loop to add new segment}
 
 \subsubsection{Constrained new location}
-pick random position
+A random position is picked, that has to fulfill two constraints: belong to the perfusion territory and respect a distance criteria. 
+This criteria is defined based on the final and current size of the tree:
+\begin{equation}
+d_{thresh} = (\pi r_{supp}^2 / k_{term})^\frac{1}{2}
+\end{equation}
+with $k_{term}$ the number of terminal segment at the current step, and $r_{supp}$ defined from  the estimated size of a micro-circulatory black-box area, knowing the total perfused area $A_{perf}$:
+\begin{equation}
+\pi r_{supp}^2 = A_{perf} / N_{term}
+\end{equation}
+In 3D this criteria is defined as:
+\begin{equation}
+d_{thresh} = (\frac{4}{3} \pi r_{supp}^3 / k_{term})^\frac{1}{3}
+\end{equation}
+with
+\begin{equation}
+\frac{4}{3}\pi r_{supp}^3 = V_{perf} / N_{term}
+\end{equation}
 
-constrain it to volume and distance criteria
 
 \subsubsection{Test connection}
+Looking for the N
 if single bifurcation can be optimized
 
 if no segment has degenerated to 0
@@ -219,10 +268,10 @@ The figure \ref{fig:generation} (d) shows influence of both destination and dema
 
 \begin{figure}[!h]
 \centering
-\subfigure[$Q_l = Q_r = \frac{1}{2} Q_p$]{\includegraphics[width=0.45\textwidth]{../../../SyntheticTreeGeneration/images/Test0/Superposition_FirstandLast.png}}
-\subfigure[Random child locations and $Q_l = Q_r = \frac{1}{2} Q_p$]{\includegraphics[width=0.45\textwidth]{../../../SyntheticTreeGeneration/images/Test1_randomlocation/Superposition_Firstandlast.png} }\\
-\subfigure[$Q_l = \frac{1}{4} Q_p$ and $Q_l = \frac{3}{4} Q_p$]{\includegraphics[width=0.45\textwidth]{../../../SyntheticTreeGeneration/images/Test2_randomflow/Superposition_first_and_last.png} }
-\subfigure[Random child locations and $Q_l = \frac{1}{4} Q_p$, $Q_l = \frac{3}{4} Q_p$]{\includegraphics[width=0.45\textwidth]{../../../SyntheticTreeGeneration/images/Test4_randomlocationandflow/Superposition_Firstandlast.png} }
+\subfigure[$Q_l = Q_r = \frac{1}{2} Q_p$]{\includegraphics[width=0.45\textwidth]{./Images/Kamiya/Superposition_Firstandlast_t0.png}}
+\subfigure[Random child locations and $Q_l = Q_r = \frac{1}{2} Q_p$]{\includegraphics[width=0.45\textwidth]{./Images/Kamiya/Superposition_Firstandlast_t1.png} }\\
+\subfigure[$Q_l = \frac{1}{4} Q_p$ and $Q_l = \frac{3}{4} Q_p$]{\includegraphics[width=0.45\textwidth]{./Images/Kamiya/Superposition_Firstandlast_t2.png} }
+\subfigure[Random child locations and $Q_l = \frac{1}{4} Q_p$, $Q_l = \frac{3}{4} Q_p$]{\includegraphics[width=0.45\textwidth]{./Images/Kamiya/Superposition_Firstandlast_t3.png} }
 
 \caption{In blue the starting bifurcation (convex average position), in red the final bifurcation after Kamiya's algorithm convergence reached (tolerance = 0.01). Convergence was reached at 15th, 24th, 31st and 21st iteration respectively in (a),(b),(c),(d). $Q_p$ is the flow in parent branch, $Q_l$ and $Q_r$ are flows in left and right children.}
 \label{fig:generation}
