@@ -124,25 +124,25 @@ def segment_distance(seg_pt_a, seg_pt_b, point):
 #return distance between line and point  
 def line_distance(seg_pt_a, seg_pt_b, point):
     vec_ab = seg_pt_b - seg_pt_a
-    squared_length_ab = np.sum(vec_ab**2, axis = 0)
+    squared_length_ab = np.sum(vec_ab**2)
     
     #a and b on top of each other
     if (squared_length_ab < sys.float_info.epsilon):
         return -1.
     
     vec_apoint = point - seg_pt_a
-    vec_ab_dot_vec_apoint = np.sum(vec_apoint * vec_ab, axis = 0)
+    vec_ab_dot_vec_apoint = np.sum(vec_apoint * vec_ab)
     relative_position = vec_ab_dot_vec_apoint / squared_length_ab
     
     projected_point = seg_pt_a + relative_position * vec_ab
     normal_vec = projected_point - point
-    return np.sqrt(np.sum(normal_vec**2, axis = 0))
+    return np.sqrt(np.sum(normal_vec**2))
 
 #test if any of the 3 segments has a length close to 0 (the bifurcation has degenerated into 2 segments)  
 def degenerating_test(c0, c1, c2, branching_location, radii):
-    seg_parent_length = np.sum((c0 - branching_location)**2, axis = 0)
-    seg_old_child_length = np.sum((c1 - branching_location)**2, axis = 0)
-    seg_new_child_length = np.sum((c2 - branching_location)**2, axis = 0)
+    seg_parent_length = np.sum((c0 - branching_location)**2)
+    seg_old_child_length = np.sum((c1 - branching_location)**2)
+    seg_new_child_length = np.sum((c2 - branching_location)**2)
     #print "branching location", branching_location
     #print "parent length", seg_parent_length, "2*radius", 2.*radii[0]
     if (seg_parent_length < 2.*radii[0]):
@@ -178,10 +178,10 @@ def no_overlap(point_a, point_b, point_c, point_d, width_ab, width_cd):
         
         # if any segment end is inside the cercle of radius = sum of width
         #   return False
-        dist_a_pos = np.sqrt(np.sum((pos - point_a)**2, axis=0)) 
-        dist_b_pos = np.sqrt(np.sum((pos - point_b)**2, axis=0)) 
-        dist_c_pos = np.sqrt(np.sum((pos - point_c)**2, axis=0)) 
-        dist_d_pos = np.sqrt(np.sum((pos - point_d)**2, axis=0)) 
+        dist_a_pos = np.sqrt(np.sum((pos - point_a)**2)) 
+        dist_b_pos = np.sqrt(np.sum((pos - point_b)**2)) 
+        dist_c_pos = np.sqrt(np.sum((pos - point_c)**2)) 
+        dist_d_pos = np.sqrt(np.sum((pos - point_d)**2)) 
         radii_sum = width_ab + width_cd 
 
         seg_ab_close_to_intersection = False
@@ -261,8 +261,6 @@ def determinant(pt_a, pt_b,pt_c,pt_d):
     x = ( (pt_a[0]*pt_b[1] - pt_a[1]*pt_b[0])*(pt_c[0]-pt_d[0]) - (pt_a[0] - pt_b[0])*(pt_c[0]*pt_d[1] - pt_c[1]*pt_d[0]) ) / denom 
     y = ( (pt_a[0]*pt_b[1] - pt_a[1]*pt_b[0])*(pt_c[1]-pt_d[1]) - (pt_a[1] - pt_b[1])*(pt_c[0]*pt_d[1] - pt_c[1]*pt_d[0]) ) / denom
     return True, np.array([x,y])
-
-
     
 
 

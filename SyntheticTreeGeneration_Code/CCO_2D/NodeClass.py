@@ -138,7 +138,7 @@ class Tree:
         if (parent_ind >= 0):
             p_coord = self.nodes[parent_ind].coord
             i_coord = self.nodes[i].coord
-            return np.sqrt((p_coord[0] - i_coord[0])**2 + (p_coord[1] - i_coord[1])**2)
+            return np.sqrt(np.sum((p_coord- i_coord)**2))
         else:
             print "no parent found, unable to calculate length"
             return 0.      

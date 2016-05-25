@@ -108,8 +108,7 @@ def calculate_squared_radii(f, l, dp1, dp2, r_ori):
 def single_bif_volume(r, l):
     return np.sum(np.pi*r**2*l, axis = 0)
     
-#input r : r[0] and r[1] are the radii before connection added (so r0 = r1 because same segment), 
-#          r[2] is estimated same as last added segment radius 
+#input r : r[0] and r[1] are the radii before connection added (r0 = r1 = r1 = radius of original segment before connection added) 
 #        this estimated r is used to calculate dp, then is updated in the calculate_radii function     
 def kamiya_loop_r2(x_ini,y_ini,c0,c1,c2,f, r):
     l = np.zeros(3)
