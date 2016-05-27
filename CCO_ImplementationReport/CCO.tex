@@ -109,10 +109,10 @@ The perfused volume is convexe and supposed homogeneously filled. The terminal s
 The blood is an incompressible, homgeneous Newtonian fluid, studied at steady state and in laminar flow conditions. 
 
 The resistance and the pressure drop of a segment $j$ are defined by:
-\begin{equation}
-R_j = \frac{8\nu}{\pi}\frac{l_j}{r_j^4}
+\begin{equation}\label{resistance}
+R_j = \frac{8\mu}{\pi}\frac{l_j}{r_j^4} \text{ with } \mu \text{ the viscosity }
 \end{equation}
-\begin{equation}
+\begin{equation}\label{Pdrop}
 \Delta P_j = R_j Q_j
 \end{equation}
 The total resistance of the tree is calculated recursively by tree decomposition, considering parallel and serial arrangements.
@@ -140,10 +140,11 @@ Inputs:
 \end{itemize}
 
 \subsection{Loop to add new segment}
+We are provided a new location, $n_loc$, and want to find its optimal connection to the existing tree. For this purpose we select the $N_con$ closest existing segments to this location, compute a local optimization for each of them, then evaluate the connection impact on the whole tree, and as a global optimization process, we determine the one minimizing best the total tree volume.
 
-\subsubsection{Constrained new location}
-A random position is picked, that has to fulfill two constraints: belong to the perfusion territory and respect a distance criteria. 
-This criteria is defined based on the final and current size of the tree:
+\subsubsection{Constrained new location $n_loc$}
+A random position is picked, that has to fulfill two constraints: belong to the perfusion territory and respect a distance criterion. 
+This criterion is defined based on the final and current size of the tree:
 \begin{equation}
 d_{thresh} = (\pi r_{supp}^2 / k_{term})^\frac{1}{2}
 \end{equation}
@@ -159,21 +160,51 @@ with
 \begin{equation}
 \frac{4}{3}\pi r_{supp}^3 = V_{perf} / N_{term}
 \end{equation}
+This distance criteron is updated after each new segment is added, so that it decreases during tree growth. If no location is found that respect this distance to existing segments within the perfusion territory, then the distance criteria is multiplied by 0.9 and the process repeated until a new position is found that fulfills both constraints. 
+In the following steps, we will call... the parent and children segments.
 
+\subsubsection{Test local connection}
 
-\subsubsection{Test connection}
-Looking for the N
-if single bifurcation can be optimized
+For each neighbor segment of $n_loc$ we calculate what would be the optimal connection to $n_loc$ based on single bifurcation optimization established by Kamyia \cite{kamiya1972optimal}, and is fully detailed in \ref{Kamiya}. If this local optimization process is successful, we apply two additional checks:
+\begin{itemize}
+\item We control that the resulting segments are not degenerated ones, which means all three segments of the new bifurcations respect relationship between length and radius: $2r_i \leq l_i$
 
-if no segment has degenerated to 0
+\item We control that none of the three resulting segments overlap any existing segment of the tree.
+\end{itemize}
 
-if result doesn't overlap any other segments 
+With this step we ensure the connection to be locally optimal and plausible for the tree.
 
 \subsubsection{Propagate impact on whole tree}
-Propagate resistance change (balancing ratio)
+By adding a new terminal segments, inducing a new generated bifurcation, we disturb the distribution of segmental flows. In order to reestablish the correct terminal flows, the hydrodynamic resistance of the tree must be adjusted. As the lengths of the segments as well as the terminal and perfusion pressures are fixed, this can only be accomplished by proper rescaling of the segment's radii.\\
+
+If we define the reduced hydrodynamic resistance $R^*$ as $R^*_i = R_i r_i^4$ we can calculate the reduced hydrodynamic resistance of a segment including its left and right subtrees by recursively traversing the subtrees:
+\begin{equation} \label{red resistance}
+R^*_{sub,i} = \frac{8\mu}{\pi}l_j + \left( \frac{(r_{left,j}/r_j)^4}{R_{left,j}^*} + \frac{(r_{right,j}/r_j)^4}{R_{right,j}^*}\right)^{-1}
+\end{equation}
+Considering the assumptions \ref{Pdrop} and \ref{resistance}, we can then calculate the radius ratio of two children segments from resistance and flow:
+\begin{equation} \label{children ratio}
+\frac{r_i}{r_j} = \left(\frac{Q_iR_{sub,i}^*}{Q_jR_{sub,j}^*}\right)^\frac{1}{4}
+\end{equation}
+with $R_j$ and $Q_j$ the segment resistance.
+
+Instead of storing the absolute radius for each segment, we consider the ratio between parent and its children: $\beta^i_k = r_i / r_k$ and $\beta^j_k = r_j / r_k$ with i and j the children, k the parent segment. Because of the tree respecting Murray's law, these ratios can actually be calculated directly from the ratio between children segments (see annexe for details):
+\begin{equation}
+\beta^i_k = \left( 1 + (\frac{r_i}{r_j})^{-\gamma}\right)^\frac{-1}{\gamma} \text{ and }
+\beta^j_k = \left( 1 + (\frac{r_i}{r_j})^{\gamma}\right)^\frac{-1}{\gamma}
+\end{equation}
+
+
+Calculating the reduced resistance for each children with \ref{red resistance}, and knowing the flow, we obtain the children radius ratio from \ref{children ratio}, which is used to calculate $\beta$ values, stored with the parent segment properties. 
+The subtrees distal to the new bifurcation remain constant and unaffected by the addition of the new branch, whereas upstream bifurcations are updated following this exact same process. By this methode, called "balancing of bifurcation ratios", the radius rescaling is propagated up the tree.
+ 
+
 
 \subsubsection{Measure target function}
-Mesure total tree volume
+Calculate root radius from
+\begin{equation}
+r_{root} = \left( R_{sub, root}^* \frac{Q_{perf}}{P_{perf}-Q_{term}}\right)^\frac{1}{4}
+\end{equation}
+Measure total tree volume
 
 \subsubsection{Select best connection between neighbors}
 store result in cet: volume, betas, position
@@ -194,7 +225,7 @@ decrease of radius, to maintain constant resistance
 
 %------------------------------------------------
 
-\section{Local optimization: single bifurcation scale}
+\section{Local optimization: single bifurcation scale}\label{Kamiya}
 Kamiya proposes a numerical solution to determine minimum volume bifurcation under restriction of physiological parameters, determinant pressure and flow, and locations at origin and terminals.
 
 This method built in 2D assumes the flow to be laminar and vessels are composed of straight ducts lying on a plane. 
