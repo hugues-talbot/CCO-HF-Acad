@@ -18,8 +18,8 @@ import cPickle as pickle
 import sys  # Need to have acces to sys.stdout
 import time
 
-
-np.random.seed(42)
+from multiprocessing import Pool, TimeoutError
+ 
 
 
 ############# Visualisation tools ####################
@@ -67,18 +67,26 @@ def plot_trees(trees, area_descptr):
 ############# Karch algo : CCO ####################
 
 timing = False
+store_data = False
+
 if timing:
     debut = time.time()
-#fd = open('./Results/CCO_4000output.txt','w') # open the result file in write mode
-#old_stdout = sys.stdout   # store the default system handler to be able to restore it    
-#sys.stdout = fd # Now your file is used by print as destination 
-#def cco_function(NTerm):
+if store_data:
+    fd = open('./Results/CCO_test.txt','w') # open the result file in write mode
+    old_stdout = sys.stdout   # store the default system handler to be able to restore it    
+    sys.stdout = fd # Now your file is used by print as destination 
+    
+
+#def cco_function(NTerm, filename):
 if True:
+    NTerm = 15       
+    np.random.seed(42)
+    
     #### Parameters to define: ##
     ## About tree
-    
+      
     Q_perf = 8.33e3
-    N_term = 2000
+    N_term = NTerm
     Q_term = Q_perf / N_term
     P_drop = 1.33e7 -7.98e6 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
     viscosity = 3.6 # 3.6cp = 3.6mPa = 3.6 kg mm-1 s-2 (check works with radius and length in mm)
@@ -96,7 +104,7 @@ if True:
     # tree
     #tree_stored= []
     
-    #store_cet = []
+    store_cet = []
     tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity)
      
     # source point : define the root position
@@ -160,7 +168,7 @@ if True:
                 added_location.append(cet_sorted[0])
         
         if (adding_location): # optimal connection found!
-            #store_cet.append(cet)
+            store_cet.append(cet)
             if (test_N_con_max):
                 print "N con max was tested"
             print "size of cet", len(cet)
@@ -187,17 +195,20 @@ if True:
             print "location doesn't provide an optimal connection, testing new location"
                 
         #keep going until reach Nterm!
-        #print "stored cet", store_cet
-       
-    plot_tree(last_tree, area_descptr, "./Results/tree_2000Nterm_CET2_nolabel_profiling", 5.)#tree_stored[-1]
-     
+        print "stored cet", store_cet
+        
+    plot_tree(last_tree, area_descptr, "./Results/tree_15Nterm_betaprop", 5.)#tree_stored[-1]
+    #return last_tree
 
 
 
-
-#sys.stdout=old_stdout # here we restore the default behavior
-#fd.close() # to not forget to close your file
+if store_data:
+    sys.stdout=old_stdout # here we restore the default behavior
+    fd.close() # to not forget to close your file
 
 if timing:
     fin =time.time()
     print "duration = ", fin-debut, "secondes"
+    
+#first_tree = cco_function(5, "NodeClass")
+#sec_tree = cco_function(5, "NodeClassBis")

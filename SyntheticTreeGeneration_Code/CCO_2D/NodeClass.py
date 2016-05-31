@@ -292,7 +292,6 @@ class Tree:
         return True
                    
     def calculate_betas_of_parent(self, index): 
-        print "new tree calculate_betas_of_parent"
         current_node = self.nodes[index]        
         parent = self.nodes[current_node.parent()]
         print "calculate betas of ", parent.index
@@ -361,18 +360,19 @@ class Tree:
         result = []
         if (convergence == True):
             #make connection                       
-            betas = cco_2df.calculate_betas(radii[1]/radii[2], 3.) #this involves old_child will be child_0, new_child is child_1
-            self.make_connection(old_child_index, new_child_location, branching_location, f, betas)
+            estimate_betas = cco_2df.calculate_betas(radii[1]/radii[2], 3.) #this involves old_child will be child_0, new_child is child_1
+            
+            self.make_connection(old_child_index, new_child_location, branching_location, f, estimate_betas)
             
             #update flows 
             self.update_flow()
-            
+                
             # balancing ratio up to the root
-            self.balancing_ratios(self.node_index - 2)
-            
+            self.balancing_ratios(old_child_index)#self.node_index - 2
+            correct_beta= self.nodes[self.node_index-2].betas
             #measure tree volume
             tree_volume = self.volume2()
-            result.append([tree_volume, betas, branching_location])              
+            result.append([tree_volume, correct_beta, branching_location])              
             return convergence, result
         else:
             print "connection test failed"
