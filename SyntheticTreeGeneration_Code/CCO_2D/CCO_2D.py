@@ -36,7 +36,7 @@ def plot_tree(tree, area_descptr, name, factor_radius):
             proximal = tree.get_node(sgmt.parent()).coord
             radius = tree.get_radius(sgmt.index) * factor_radius #*10
             #ax.plot([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'b')
-            ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'b'))#colors[sgmt.label]
+            ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'k'))#colors[sgmt.label]
             
     ax.set_xlim(area_descptr[0][0] - area_descptr[1]*1.5,area_descptr[0][0]+ area_descptr[1]*1.5)
     ax.set_ylim(area_descptr[0][1] - area_descptr[1]*1.5,area_descptr[0][1]+ area_descptr[1]*1.5)

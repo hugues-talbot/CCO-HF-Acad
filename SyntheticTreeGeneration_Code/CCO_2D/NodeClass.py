@@ -289,11 +289,12 @@ class Tree:
                 if (i.index != old_parent_index) and (i.index != old_child_sibling):
                     if (cco_2df.no_overlap(i.coord, parent_i.coord, branching_location, old_parent.coord, radius_i, new_branches_radii[0]) ==  False):
                         return False
-                 #didn't succeed to solve       
-#                old_child_children = old_child.children()
-#                if (i.index != old_child_children[0]) and (i.index != old_child_children[1]):
-#                    if (cco_2df.no_overlap(i.coord, parent_i.coord, old_child.coord, branching_location, radius_i, new_branches_radii[1]) ==  False):
-#                       return False
+
+                if (old_child.is_leaf() == False):
+                    old_child_children = old_child.children()
+                    if (i.index != old_child_children[0]) and (i.index != old_child_children[1]):
+                        if (cco_2df.no_overlap(i.coord, parent_i.coord, old_child.coord, branching_location, radius_i, new_branches_radii[1]) ==  False):
+                            return False
         return True
                    
     def calculate_betas_of_parent(self, index): 
