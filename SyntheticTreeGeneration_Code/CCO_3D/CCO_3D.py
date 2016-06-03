@@ -40,9 +40,18 @@ def plot_tree(tree, vol_descptr, name, factor_radius):
     #colors=['k', 'b', 'g', 'm', 'r']
     # labels for cet ['r','m','g','b']
     #ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[1], color = 'r', alpha = 0.5))
-    p = Circle((vol_descptr[0][0], vol_descptr[0][1]), vol_descptr[1], color = 'r', alpha = 0.5)
-    ax.add_patch(p)
-    art3d.pathpatch_2d_to_3d(p, z=vol_descptr[0][2], zdir="z")
+    #p = Circle((vol_descptr[0][0], vol_descptr[0][1]), vol_descptr[1], color = 'r', alpha = 0.5)
+    #ax.add_patch(p)
+    #art3d.pathpatch_2d_to_3d(p, z=vol_descptr[0][2], zdir="z")
+    
+    u = np.linspace(0, 2 * np.pi, 100)
+    v = np.linspace(0, np.pi, 100)
+
+    x = vol_descptr[0][0]+ vol_descptr[1] * np.outer(np.cos(u), np.sin(v))
+    y = vol_descptr[0][1]+ vol_descptr[1] * np.outer(np.sin(u), np.sin(v))
+    z = vol_descptr[0][2]+ vol_descptr[1] * np.outer(np.ones(np.size(u)), np.cos(v))
+    ax.plot_surface(x, y, z,rstride=10, cstride=10, color='r',alpha = 0.2) #,
+    
     for sgmt in tree.nodes:
         if (sgmt.parent() >= 0):
             distal = sgmt.coord
@@ -51,7 +60,7 @@ def plot_tree(tree, vol_descptr, name, factor_radius):
             #ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'b'))#colors[sgmt.label]
             verts = [zip([distal[0], proximal[0]],[distal[1], proximal[1]],[distal[2], proximal[2]])]
             tri = a3.art3d.Poly3DCollection(verts)
-            tri.set_color('b')
+            tri.set_color('k')
             tri.set_linewidth(radius*72*hei/(vol_descptr[1]*3.) )
             ax.add_collection3d(tri)
             
@@ -69,9 +78,9 @@ def plot_tree(tree, vol_descptr, name, factor_radius):
 
 np.random.seed(42)
 
-timing = False
+timing = True
 writing = False
-NTerm = 10
+NTerm = 250
 
 if timing:
     debut = time.time()
@@ -108,7 +117,7 @@ if True:
     tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity)
      
     # source point : define the root position
-    root_position = np.array([100,50,50])
+    root_position = np.array([50,50,100])
     root_node = nclass.Node(0,root_position, Q_perf, -1)
     root_node.set_child_0_index(1)
     root_node.set_label(0)
@@ -199,7 +208,7 @@ if True:
         #keep going until reach Nterm!
         #print "stored cet", store_cet
        
-    plot_tree(last_tree, vol_descptr, "./Results/tree_%iNterm" %NTerm, 5.)#tree_stored[-1]
+    plot_tree(last_tree, vol_descptr, "./Results/tree_%iNterm" %NTerm, 10.)#tree_stored[-1]
      
 
 

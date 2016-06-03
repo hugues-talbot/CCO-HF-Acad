@@ -68,7 +68,7 @@ def first_segmt_end(volume):
     inside_area = False
     while inside_area == False :    
         position = random_location()
-        position[2]=50
+        #position[2]=50
         if (belongs_to_volume(position, volume)):
             return position
             
@@ -82,7 +82,7 @@ def get_new_location(tree, volume_descpt, n_term):
     ind = 0
     while (meet_criteria == False and ind < 1000):
         point = random_location()
-        point[2]=50
+        #point[2]=50
         if (test_dist_criteria(tree, point, d_tresh, volume_descpt)):
             print "location found"
             return True, point, d_tresh

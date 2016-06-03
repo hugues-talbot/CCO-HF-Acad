@@ -284,21 +284,27 @@ class Tree:
     
          
     def check_intersection(self, old_child_index, new_child_location, branching_location, new_branches_radii):        
+        old_child = self.nodes[old_child_index]        
         for i in self.nodes:
             if (i.index != old_child_index):
                 parent_i = self.nodes[i.parent()]
                 radius_i = self.get_radius(i.index)
                 print "testing connection with segment", "parent", parent_i.coord, "child", i.coord
-                if (cco_3df.no_overlap(i.coord, parent_i.coord, new_child_location, branching_location, radius_i, new_branches_radii[1]) == False):
+                if (cco_3df.no_overlap(i.coord, parent_i.coord, new_child_location, branching_location, radius_i, new_branches_radii[2]) == False):
                     return False
                     
-                old_parent_index = (self.nodes[old_child_index]).parent()
+                old_parent_index = old_child.parent()
                 old_parent = self.nodes[old_parent_index]
                 siblings = old_parent.children()
                 old_child_sibling = siblings[0] if (old_child_index == siblings[1]) else siblings[1]
                 if (i.index != old_parent_index) and (i.index != old_child_sibling):
                     if (cco_3df.no_overlap(i.coord, parent_i.coord, branching_location, old_parent.coord, radius_i, new_branches_radii[0]) ==  False):
                         return False
+                if (old_child.is_leaf() == False):
+                    old_child_children = old_child.children()
+                    if (i.index != old_child_children[0]) and (i.index != old_child_children[1]):
+                        if (cco_3df.no_overlap(i.coord, parent_i.coord, old_child.coord, branching_location, radius_i, new_branches_radii[1]) ==  False):
+                            return False
         return True
     
     def calculate_betas_of_parent(self, index): 
@@ -364,7 +370,7 @@ class Tree:
             convergence = cco_3df.degenerating_test(c0,c1,c2, branching_location, radii)
             #check intersection
             if (convergence == True):
-                convergence = self.check_intersection(old_child_index, c2, branching_location, np.array([radii[0],radii[2]]))
+                convergence = self.check_intersection(old_child_index, c2, branching_location, radii)
                 
         result = []
         if (convergence == True):
@@ -376,11 +382,13 @@ class Tree:
             self.update_flow()
             
             # balancing ratio up to the root
-            self.balancing_ratios(self.node_index - 2)
+            #self.balancing_ratios(self.node_index - 2)
+            self.balancing_ratios(old_child_index)#self.node_index - 2
+            correct_beta = self.nodes[self.node_index-2].betas
             
             #measure tree volume
             tree_volume = self.volume2()
-            result.append([tree_volume, betas, branching_location])              
+            result.append([tree_volume, correct_beta, branching_location])              
             return convergence, result
         else:
             print "connection test failed"
