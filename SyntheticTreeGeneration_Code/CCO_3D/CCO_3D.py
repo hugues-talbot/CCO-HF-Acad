@@ -50,7 +50,7 @@ def plot_tree(tree, vol_descptr, name, factor_radius):
     x = vol_descptr[0][0]+ vol_descptr[1] * np.outer(np.cos(u), np.sin(v))
     y = vol_descptr[0][1]+ vol_descptr[1] * np.outer(np.sin(u), np.sin(v))
     z = vol_descptr[0][2]+ vol_descptr[1] * np.outer(np.ones(np.size(u)), np.cos(v))
-    ax.plot_surface(x, y, z,rstride=10, cstride=10, color='r',alpha = 0.2) #,
+    ax.plot_surface(x, y, z,rstride=2, cstride=2, linewidth=0,color='r',alpha = 0.1) #,
     
     for sgmt in tree.nodes:
         if (sgmt.parent() >= 0):
@@ -68,6 +68,7 @@ def plot_tree(tree, vol_descptr, name, factor_radius):
     ax.set_xlim(vol_descptr[0][0] - bound,vol_descptr[0][0]+ bound)
     ax.set_ylim(vol_descptr[0][1] - bound,vol_descptr[0][1]+ bound)
     ax.set_zlim(vol_descptr[0][2] - bound,vol_descptr[0][2]+ bound)
+    ax.grid(False)
     plt.savefig(name+".png")
     plt.savefig(name+".pdf")
     plt.show()
@@ -80,7 +81,7 @@ np.random.seed(42)
 
 timing = True
 writing = False
-NTerm = 250
+NTerm = 10
 
 if timing:
     debut = time.time()
@@ -208,7 +209,7 @@ if True:
         #keep going until reach Nterm!
         #print "stored cet", store_cet
        
-    plot_tree(last_tree, vol_descptr, "./Results/tree_%iNterm" %NTerm, 10.)#tree_stored[-1]
+    plot_tree(last_tree, vol_descptr, "./Results/tree_%iNterm" %NTerm, 20.)#tree_stored[-1]
      
 
 
