@@ -7,6 +7,7 @@
 \usepackage{graphicx}
 
 \title{Distance and curvature}
+\author{Hugues Talbot}
 
 \begin{document}
 \maketitle
@@ -26,21 +27,21 @@
 		\begin{figure}
 			\centering
 			\includegraphics[width=0.5\textwidth]{Drawings/Osculating.pdf}
-			\caption{The notion of osculating (best local approximation) defines the curvature as the inverse of the radius of the circle.\label{fig:oscul}}
+			\caption{The notion of an osculating circle (best local approximation) defines the curvature as the inverse of the radius of the circle.\label{fig:oscul}}
 		\end{figure}
 	
-	More precisely, for any curve, we can locally approximate a sufficiently regular curve (${\cal C}^2$ is enough) at a point by a tangent circle that best approximates it locally (see Fig.~\ref{fig:oscul}). This circle is called an {\em osculating circle}. The radius of its radius defines the curvature.
+	More precisely, for any curve, we can locally approximate a sufficiently regular curve (${\cal C}^2$ is enough) at a point by a circle that best approximates it locally (see Fig.~\ref{fig:oscul}. This circle is tangent to $C$ and is called an {\em osculating circle}. The radius of this circle defines the curvature.
 	
 
 	
-	Another way to define the curvature is to consider a point along the curve $C$. The variation of the tangent vector along the curve defines the curvature
+	Another way to define the curvature is to consider a point moving at a constant speed along the curve $C$. The variation of the tangent vector along the curve defines the curvature. This is equivalent to specifying the acceleration of the point.
 	
 	\begin{equation}
 	\kappa = \frac{d \mathbf{T}}{ds},
 	\end{equation}
 	
 	where $s$ is a parametrisation of the curve. Both definition of the curvature
-	are equivalent (see Fig.~\ref{fig:theta}). 
+	are in fact equivalent (see Fig.~\ref{fig:theta}). 
 	
 	\begin{figure}
 		\centering
