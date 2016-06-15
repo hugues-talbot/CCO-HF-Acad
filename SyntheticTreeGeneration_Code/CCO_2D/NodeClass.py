@@ -4,6 +4,18 @@ import Kamiya as kami
 
 import CCO_2DFunctions as cco_2df
 
+##HT You need to explain your graph structure, because some of the choices you've made are not obvious
+##HT for instance, you focus on the node structure with no explicit vertices, but for the simulation the key element is the
+##HT segment (a vertex). You associate a radius to a node, which makes little sense physically. In fact you
+##HT associate a node to a segment made of the node itself and its unique parent. This works because
+##HT a tree is always like that (no loops) but would fail if we wanted to simulate a vascular
+##HT network which is not a tree. This exists in Nature, e.g. the circle of Willis.
+##HT From the CompSci point of view, this means you have an edge-weighted graph but instead
+##HT you chose to weight the nodes. This makes sense if you want to save some space, but this
+##HT is not critical.
+
+##HT in general not enough comments. 
+
 class Node:
     "Class defining attributes of each segment during synthetic tree generation"
     def __init__(self, index, coord, flow, parent_index):
@@ -66,8 +78,11 @@ class Node:
         print "index", self.index, "parent", self.parent_index, "children", self.children_index, "label", self.label
         print "coord", self.coord, "flow", self.flow, "betas", self.betas, "resistance", self.resistance
         
-        
-		
+
+##HT Style of structure.
+##HT You could have used an actual binary tree implementation
+##HT E.g: http://stackoverflow.com/questions/2598437/how-to-implement-a-binary-tree-in-python
+##
 class Tree:
     "Class defining attributes of the tree during growth"
     def __init__(self, nodes, n_term, q_perf, p_drop, visc):
@@ -77,7 +92,8 @@ class Tree:
         self.p_drop = p_drop
         self.node_index = 0
         self.nu = visc
-        
+    
+    ##HT when do you need this ?
     def __deepcopy__(self, tree):
         return Tree(copy.deepcopy(self.nodes), copy.deepcopy(self.n_term), copy.deepcopy(self.q_perf), copy.deepcopy(self.p_drop), copy.deepcopy(self.nu))    		
             
@@ -143,7 +159,8 @@ class Tree:
             print "no parent found, unable to calculate length"
             return 0.      
               
-        
+    
+    ##HT avoid a**-1. It is not very clear, write 1./a
     def resistance(self, i):
         res = 8*self.nu / np.pi * self.length(i) 
         node = self.get_node(i)
