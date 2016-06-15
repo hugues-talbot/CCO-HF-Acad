@@ -226,7 +226,7 @@ The subtrees distal to the new bifurcation remain constant and unaffected by the
 \subsubsection{Measure target function}
 Calculate the root radius from
 \begin{equation}
-r_{root} = \left( R_{sub, root}^* \frac{Q_{perf}}{P_{perf}-Q_{term}}\right)^\frac{1}{4}
+r_{root} = \left( R_{sub, root}^* \frac{Q_{perf}}{P_{perf}-P_{term}}\right)^\frac{1}{4}
 \end{equation}
 Then for each segment we obtain the radius from:
 \begin{equation}
@@ -248,14 +248,24 @@ By plausible connection we mean the local optimization converges, with no degene
 
 
 \subsection{Example of results}
+This section shows some of the output results. For better visualization the radius size has been increased by a factor $factor_r$ adapted to each situation.
 \subsubsection{2D}
 \begin{figure}[!h]
 \centering
-\subfigure{\includegraphics[width=0.6\textwidth]{./Images/CCOResults/tree_250Nterm_betaprop.png}}
-\caption{CCO in 2D: 250 Nterm tree generated in \unit{9}{min}. Note:The terminal pressure is adapted to the number of terminal segments, $P_{term}$=\unit{63}{\milli\meter}Hg}
+\subfigure{\includegraphics[width=0.45\textwidth]{./Images/CCOResults/tree_250Nterm_betaprop.png}}
+\subfigure{\includegraphics[width=0.45\textwidth]{./Images/CCOResults/tree_4000Nterm_factor5.png}}
+\caption{Output of CCO in 2D with different $N_{Term}$, visualization with $ factor_r = 5 $. (left) A 250 Nterm tree generated in \unit{9}{min}. Note:The terminal pressure is adapted to the number of terminal segments, $P_{term}$=\unit{63}{\milli\meter}Hg. (right) A 4000 Nterm tree generated in 44 hours.}
+
 \label{fig:CCO 2D}
 \end{figure}
+
 \subsubsection{3D}
+\begin{figure}[!h]
+\centering
+\subfigure{\includegraphics[width=0.6\textwidth]{./Images/CCOResults/3Dtree_250Ntermfactor20.png}}
+\caption{CCO in 3D: 250 Nterm tree generated in \unit{9.5}{min}. Visualization with $ factor_r = 20 $}
+\label{fig:CCO 2D}
+\end{figure}
 %Output: images
 %Can observe decrease of radius, to maintain constant resistance
 
