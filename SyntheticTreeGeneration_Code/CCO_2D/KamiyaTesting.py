@@ -4,6 +4,9 @@ Created on Mon Apr 25 13:48:17 2016
 
 @author: cjaquet
 """
+
+##HT It seems this code is only for testing, please confirm
+
 import numpy as np
 import matplotlib.pyplot as plt
 import Kamiya as kami
