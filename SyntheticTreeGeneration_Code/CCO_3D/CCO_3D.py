@@ -34,8 +34,8 @@ import pylab as pl
 
 ##########################################
 def plot_tree(tree, vol_descptr, name, factor_radius):
-    wid=8
-    hei=8
+    wid=16
+    hei=16
     ax = a3.Axes3D(pl.figure(figsize=(wid, hei)))
     #colors=['k', 'b', 'g', 'm', 'r']
     # labels for cet ['r','m','g','b']
@@ -81,7 +81,7 @@ np.random.seed(42)
 
 timing = True
 writing = False
-NTerm = 10
+NTerm = 250
 
 if timing:
     debut = time.time()
@@ -208,8 +208,8 @@ if True:
                 
         #keep going until reach Nterm!
         #print "stored cet", store_cet
-       
-    plot_tree(last_tree, vol_descptr, "./Results/tree_%iNterm" %NTerm, 20.)#tree_stored[-1]
+    fac= 25.
+    plot_tree(last_tree, vol_descptr, "./Results/tree_%iNterm%ifac" %(NTerm,fac), fac)#tree_stored[-1]
      
 
 
