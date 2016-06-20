@@ -130,6 +130,39 @@
 			\caption{The faster the normal evolves along a curve, the higher the curvature.}
 		\end{figure}
 		
+	\section{Application to our problem}
+	
+We want to calculate $n$, the number of tests along the segment necessary to compute with a reasonable tolerance to verify the segment doesn't cross a concavity of the perfusion territory:
+\begin{equation}
+n \propto \frac{|p_1 - p_0|}{R}
+\end{equation}
+$R$ is an approximation of the local curvature along the segment by estimating the divergence at each point $p_1$ and $p_2$, called $R_1$ and $R_2$ respectively :
+\begin{equation}
+R = max(|R_1|, |R_2|)
+\end{equation} 
+The figure \ref{example} illustrates the relationship between $D = |p_1 - p_0|$, $R_1$, $R_2$ and $n$. 
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.5\textwidth]{Drawings/CurvatureTestExample.png}
+\caption{When $D$ gets bigger relatively to $max(|R_1, R_2|)$, the value of $n$ is also higher to detect if the segment crosses the perfusion territory.}
+\label{example}
+\end{figure}
+
+The divergence of a a continuously differentiable vector field $\omega$ is equal to the scalar value function:
+\begin{equation}
+div (\omega) = (\frac{\partial}{\partial x}, \frac{\partial}{\partial y}) \cdot (\omega_x, \omega_y) 
+\end{equation}
+\begin{equation}
+div (\omega) = \left( \omega_x(x, y) - \omega_x(x-1, y) \right) + \left( \omega_y(x, y) - \omega_y(x, y - 1) \right)
+\end{equation}
+with
+\begin{equation}
+\omega_x = \nabla_x \omega = \omega (x + 1, y) - \omega (x, y)
+\end{equation}
+and
+\begin{equation}
+\omega_y = \nabla_y \omega = \omega (x, y + 1) - \omega (x, y)
+\end{equation}	
 	\bibliography{notes_ht.bib}
 	\bibliographystyle{plain}
 	
