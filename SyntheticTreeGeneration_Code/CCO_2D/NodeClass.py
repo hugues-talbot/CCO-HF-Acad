@@ -4,17 +4,21 @@ import Kamiya as kami
 
 import CCO_2DFunctions as cco_2df
 
-##HT You need to explain your graph structure, because some of the choices you've made are not obvious
-##HT for instance, you focus on the node structure with no explicit vertices, but for the simulation the key element is the
-##HT segment (a vertex). You associate a radius to a node, which makes little sense physically. In fact you
-##HT associate a node to a segment made of the node itself and its unique parent. This works because
-##HT a tree is always like that (no loops) but would fail if we wanted to simulate a vascular
-##HT network which is not a tree. This exists in Nature, e.g. the circle of Willis.
-##HT From the CompSci point of view, this means you have an edge-weighted graph but instead
-##HT you chose to weight the nodes. This makes sense if you want to save some space, but this
-##HT is not critical.
+# We define here the classes for our dichotomic tree structure:
 
-##HT in general not enough comments. 
+# a tree is a list of nodes 
+# each node represents a segment extremity, 
+# each node has its proper location and index, and contains its parent and two children indexes
+# each node also contains information relative to the segment defined with its parent node : flow, resistance, label,beta values
+# a tree can be added node one at a time, and has functions to update nodes informations
+
+
+# this structure is defined this way in order to 
+# - avoid information duplicates (that would happen for a tree segment-based)
+# - keep manipulations simple: during tree growth we add nodes and modify several nodes information (resistance, beta values, flow),
+#   so to run several tests from the same starting tree we decided to produce several copies of it instead of deleting the changes (less risky)
+#   also we didn't change the index of the nodes, which helps us keeping track of the growth step  
+
 
 class Node:
     "Class defining attributes of each segment during synthetic tree generation"
@@ -79,10 +83,9 @@ class Node:
         print "coord", self.coord, "flow", self.flow, "betas", self.betas, "resistance", self.resistance
         
 
-##HT Style of structure.
-##HT You could have used an actual binary tree implementation
-##HT E.g: http://stackoverflow.com/questions/2598437/how-to-implement-a-binary-tree-in-python
-##
+
+
+
 class Tree:
     "Class defining attributes of the tree during growth"
     def __init__(self, nodes, n_term, q_perf, p_drop, visc):
@@ -93,7 +96,6 @@ class Tree:
         self.node_index = 0
         self.nu = visc
     
-    ##HT when do you need this ?
     def __deepcopy__(self, tree):
         return Tree(copy.deepcopy(self.nodes), copy.deepcopy(self.n_term), copy.deepcopy(self.q_perf), copy.deepcopy(self.p_drop), copy.deepcopy(self.nu))    		
             
@@ -111,7 +113,8 @@ class Tree:
             else:
                 terms = self.get_terms(i.index)
                 i.set_flow(terms * q_term)
-                
+    
+    # get the number of terminal segments in the current tree            
     def get_k_term(self):
         self.k_term = len(self.nodes)/2
         return self.k_term
@@ -148,7 +151,8 @@ class Tree:
     
     def get_root_radius(self):
         return np.power(self.resistance(1) * self.q_perf / self.p_drop, 1./4)
-        
+    
+    # get the length of the segment connecting the node of index i and its parent
     def length(self, i):
         parent_ind = self.nodes[i].parent()
         if (parent_ind >= 0):
@@ -159,15 +163,13 @@ class Tree:
             print "no parent found, unable to calculate length"
             return 0.      
               
-    
-    ##HT avoid a**-1. It is not very clear, write 1./a
     def resistance(self, i):
         res = 8*self.nu / np.pi * self.length(i) 
         node = self.get_node(i)
         if i > 0 and (node.is_leaf() == False):
             children_index = node.children()
-            res = res + ( ( (node.betas[0])**4 / (self.nodes[children_index[0]]).resistance) + 
-                          ( (node.betas[1])**4 / (self.nodes[children_index[1]]).resistance) )**-1
+            res = res + 1./( ( (node.betas[0])**4 / (self.nodes[children_index[0]]).resistance) + 
+                          ( (node.betas[1])**4 / (self.nodes[children_index[1]]).resistance) )
         print "total resistance of index ", i, "is ", res
         return res
         
@@ -234,18 +236,15 @@ class Tree:
         if (self.add_node(new_child_node) == False):
             return False
                     
-        #updating the already existing ones:
-       
+        #updating the already existing ones:     
         #old child
         old_child_node = self.get_node(old_child_index)
         old_child_node.set_parent_index(branching_node.index)
         old_child_node.set_flow(f[1])
-        old_child_node.set_resistance(self.resistance(old_child_index))
-        
-        # update resistance of branching node here
+        old_child_node.set_resistance(self.resistance(old_child_index))       
+        #branching node 
         branching_node_in_tree = self.nodes[self.node_index-2]
-        branching_node_in_tree.set_resistance(self.resistance(self.node_index - 2))
-        
+        branching_node_in_tree.set_resistance(self.resistance(self.node_index - 2))       
         #parent
         parent_node = self.get_node(parent_index)
         children_index = parent_node.children()  
@@ -266,6 +265,7 @@ class Tree:
                 nb = self.get_terms_recurs(children_index[1], nb)
         return nb
         
+    # get the number of terminal segments downstream the one of provided index
     def get_terms(self, index):
         nber_of_terms = 0
         nber_of_terms = self.get_terms_recurs(index, nber_of_terms)
@@ -287,7 +287,7 @@ class Tree:
         print "neighbor segments found: distance and index", d_sorted
         return [i[1] for i in d_sorted[0 : threshold]]  
         
-    
+    # test that none of the 3 segments composing the new bifurcation intersect with the other tree segments
     def check_intersection(self, old_child_index, new_child_location, branching_location, new_branches_radii):
         old_child = self.nodes[old_child_index]
         for i in self.nodes:
@@ -349,7 +349,7 @@ class Tree:
             print "root reached"
                 
 
-        
+    # testing the connection between the new_child_location and the segment made of "old_child_index" and its parent   
     def test_connection(self, old_child_index, new_child_location):
         # update flow values in tree
         q_term = self.q_perf / (self.get_k_term() + 1) 
@@ -362,7 +362,7 @@ class Tree:
         radius_ori = self.get_radius(old_child_index)
         r = np.ones(3) * radius_ori
         
-        #call kamiya
+        #call kamiya: local optimization of the single bifurcation
         iter_max = 100
         tolerance = 0.01
         c0 = (self.nodes[self.nodes[old_child_index].parent()]).coord
@@ -370,13 +370,14 @@ class Tree:
         c2 = new_child_location
         convergence, res = kami.kamiya_single_bif_opt(r, f, c0, c1, c2, iter_max, tolerance, False)
         
-        #check boundaries
+        # constraints of the local optimization
+        #check boundaries: segments are not degenerated
         if (convergence == True):                     
             branching_location = np.array([res[0][0], res[0][1]]) 
             radii = res[0][2] 
             print "radii", radii
             convergence = cco_2df.degenerating_test(c0,c1,c2, branching_location, radii)
-            #check intersection
+            #check intersection: no segment intersects with other existing tree segments
             if (convergence == True):
                 convergence = self.check_intersection(old_child_index, c2, branching_location, radii)
                 
@@ -390,9 +391,10 @@ class Tree:
             #update flows 
             self.update_flow()
                 
-            # balancing ratio up to the root
-            self.balancing_ratios(old_child_index)#self.node_index - 2
+            # balancing ratio up to the root: update whole tree resistance by tuning radii
+            self.balancing_ratios(old_child_index)
             correct_beta= self.nodes[self.node_index-2].betas
+            
             #measure tree volume
             tree_volume = self.volume2()
             result=[correct_beta, branching_location]              
@@ -401,7 +403,7 @@ class Tree:
             print "connection test failed"
             return False, 0., result, old_child_index
     
-    
+    # add the two nodes and update tree
     def add_connection(self, old_child_index, new_child_location, branching_location, betas):
         f= np.zeros(3)
         if (self.make_connection(old_child_index, new_child_location, branching_location, f, betas)):

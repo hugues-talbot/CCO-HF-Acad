@@ -57,14 +57,15 @@ def belongs_to_area(coords, area):
     else:
         return False
 
-
+# the location of the first segment end is not constrained by the distance criterion, only by the perfusion territory
 def first_segmt_end(area, area_descptr):
     inside_area = False
     while inside_area == False :    
         position = random_location()
         if (belongs_to_area(position, area_descptr)):
             return position
-            
+
+# a new location is a random location constrained by perfusion territory and distance criterion            
 def get_new_location(tree, area_descrpt, n_term):   
     area_surface = np.pi * area_descrpt[1]**2
     k_term = tree.get_k_term()
