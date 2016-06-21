@@ -79,9 +79,9 @@ if store_data:
 
 #def cco_function(NTerm, filename):
 if True:
-    NTerm = 3
-       
-    np.random.seed(42)
+    NTerm = 250
+    seed = 42
+    np.random.seed(seed)
     
     #### Parameters to define: ##
     ## About tree
@@ -206,8 +206,9 @@ if True:
                 
         #keep going until reach Nterm!
         print "stored cet", store_cet
+    fac = 5
         
-    plot_tree(last_tree, area_descptr, "./Results/tree_15Nterm_betaprop", 5.)#tree_stored[-1]
+    plot_tree(last_tree, area_descptr, "./Results/tree_Nt%i_f%i_s%i" %(NTerm,fac,seed), fac)#tree_stored[-1]
     #return last_tree
 
 

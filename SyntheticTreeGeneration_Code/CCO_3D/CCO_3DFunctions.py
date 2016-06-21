@@ -158,9 +158,9 @@ def line_distance(seg_pt_a, seg_pt_b, point):
 
 #test if any of the 3 segments has a length close to 0 (the bifurcation has degenerated into 2 segments)  
 def degenerating_test(c0, c1, c2, branching_location, radii):
-    seg_parent_length = np.sum((c0 - branching_location)**2)
-    seg_old_child_length = np.sum((c1 - branching_location)**2)
-    seg_new_child_length = np.sum((c2 - branching_location)**2)
+    seg_parent_length = np.sqrt(np.sum((c0 - branching_location)**2))
+    seg_old_child_length = np.sqrt(np.sum((c1 - branching_location)**2))
+    seg_new_child_length = np.sqrt(np.sum((c2 - branching_location)**2))
     #print "branching location", branching_location
     #print "parent length", seg_parent_length, "2*radius", 2.*radii[0]
     if (seg_parent_length < 2.*radii[0]):
