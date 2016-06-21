@@ -5,6 +5,9 @@ Created on Fri May 06 14:28:15 2016
 @author: cjaquet
 """
 
+##HT not sure what this is for
+##HT 
+
 import numpy as np
 import matplotlib.pyplot as plt
 import Kamiya as kami

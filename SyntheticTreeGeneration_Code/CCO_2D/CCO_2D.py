@@ -79,6 +79,7 @@ if store_data:
 
 #def cco_function(NTerm, filename):
 if True:
+
     NTerm = 250
     seed = 42
     np.random.seed(seed)
@@ -127,7 +128,9 @@ if True:
         success, new_child_location, d_tresh = cco_2df.get_new_location(tree, area_descptr, N_term)
         if (success == False):
             print "impossible to satisfy distance criteria", "d_tresh", d_tresh
+            ##HT then try again
             break
+        
         print "new location found"
         cet = [[] for i in range (N_con_max)]
         adding_location = False
@@ -156,7 +159,7 @@ if True:
             adding_location = True
             added_location.append(cet_final.tolist()[1:])
 
-        # test extra neighbors if no connection candidate has fullfilled constrains
+        # test extra neighbors if no connection candidate has fullfilled constraints
         else: 
             test_N_con_max = False
             neighbors = tree.find_neighbors(new_child_location, N_con_max)
