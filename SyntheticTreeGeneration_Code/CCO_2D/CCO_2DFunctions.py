@@ -107,7 +107,7 @@ def segment_distance(seg_pt_a, seg_pt_b, point):
     vect_ab = seg_pt_b - seg_pt_a
     vect_ap = point - seg_pt_a
     vect_bp = point - seg_pt_b
-    squared_length_ab = np.sum(vect_ab**2)
+    squared_length_ab = float(np.sum(vect_ab**2))
     if (squared_length_ab == 0.): 
         print 1
         return np.sqrt(vect_ap[0]**2 + vect_ap[1]**2)

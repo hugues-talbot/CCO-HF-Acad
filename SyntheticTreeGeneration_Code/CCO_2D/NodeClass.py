@@ -276,15 +276,11 @@ class Tree:
         dist_type = [("distance", float), ("index", int)]
         for i in self.nodes:
             if (i.index > 0):
-                #print i.coord
-                #print (self.nodes[i.parent()]).coord
-                #print location
                 dist = cco_2df.segment_distance(i.coord, (self.nodes[i.parent()]).coord, location)
                 distances.append((dist, i.index))
-        threshold = list_size if (len(distances) > list_size) else len(distances)
+        threshold = list_size if (len(self.nodes) > list_size) else len(distances)
         d_array = np.array(distances, dtype = dist_type)
         d_sorted = np.sort(d_array, order = "distance")
-        print "neighbor segments found: distance and index", d_sorted
         return [i[1] for i in d_sorted[0 : threshold]]  
         
     # test that none of the 3 segments composing the new bifurcation intersect with the other tree segments
@@ -292,7 +288,6 @@ class Tree:
         old_child = self.nodes[old_child_index]
         for i in self.nodes:
             if (i.index != old_child_index):
-                #if (i.parent()>=0):
                 parent_i = self.nodes[i.parent()]
                 radius_i = self.get_radius(i.index)
                 print "testing connection with segment", "parent", parent_i.coord, "child", i.coord

@@ -11,25 +11,50 @@ Created on Fri May 06 14:28:15 2016
 import numpy as np
 import matplotlib.pyplot as plt
 import Kamiya as kami
-#import NodeClass as nclass
+import NodeClass as nclass
 import copy
 from pylab import figure, gca, Line2D
 import CCO_2D as cco
+import CCO_2DFunctions as cco_2df
 
-fd = open('./Results/CCO_beta2_output.txt','w') # open the result file in write mode
-old_stdout = sys.stdout   # store the default system handler to be able to restore it    
-sys.stdout = fd # Now your file is used by print as destination 
+#testing neighbourg research
 
-first_tree = cco.cco_function(5, "NodeClass")
-sec_tree = cco.cco_function(5, "NodeClassBis")
-
-first_tree.printing_full()
-sec_tree.printing_full()
-
-sys.stdout=old_stdout # here we restore the default behavior
-fd.close() # to not forget to close your file
+##testing function
 
 if False:
+    ##testing segment distance
+    a= np.array([80,40])
+    b=np.array([100,60])
+    for i in range (0,1000):
+        test = np.random.rand(2)*200
+        dist = cco_2df.segment_distance(a,b,test)    
+        dist_a = np.sqrt(np.sum((a-test)**2))
+        dist_b = np.sqrt(np.sum((b-test)**2))
+        if (dist> max(dist_a,dist_b)):
+            print "error"
+            print "test", test
+            break
+    print "test validated"
+
+    
+if False:
+    fd = open('./Results/CCO_beta2_output.txt','w') # open the result file in write mode
+    old_stdout = sys.stdout   # store the default system handler to be able to restore it    
+    sys.stdout = fd # Now your file is used by print as destination 
+    
+    ## profiling
+    #first_tree = cco.cco_function(5, "NodeClass")
+    #sec_tree = cco.cco_function(5, "NodeClassBis")
+    #first_tree.printing_full()
+    #sec_tree.printing_full()
+    
+    
+    sys.stdout=old_stdout # here we restore the default behavior
+    fd.close() # to not forget to close your file
+
+
+
+if True:
     Q_perf = 8.33e3
     N_term = 30.		
     Q_term = Q_perf / N_term
@@ -80,13 +105,13 @@ if False:
     
     tree.update_flow()
         
-    cco.plot_tree(tree, area_descptr)
+    cco.plot_tree(tree, area_descptr, "testing", 1.)
     
     #tree.balancing_ratios(5)
     
     
     #cco.plot_tree(tree, area_descptr)
-    
+if False:    
     #####testing intersections###################
     store_locations = []
     store_good_locations = []

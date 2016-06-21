@@ -211,7 +211,7 @@ if True:
         print "stored cet", store_cet
     fac = 5
         
-    plot_tree(last_tree, area_descptr, "./Results/tree_Nt%i_f%i_s%i" %(NTerm,fac,seed), fac)#tree_stored[-1]
+    plot_tree(last_tree, area_descptr, "./Results/tree_Nt%i_f%i_s%i_dbg" %(NTerm,fac,seed), fac)#tree_stored[-1]
     #return last_tree
 
 
