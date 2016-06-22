@@ -96,8 +96,9 @@ if store_data:
 #def cco_function(NTerm, filename):
 if True:
 
-    NTerm = 250
-    seed = 42 
+    NTerm = 4000
+    seed = 42
+
     np.random.seed(seed)
     
     #### Parameters to define: ##
@@ -233,7 +234,9 @@ if True:
 
 
         
+
     plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
+
     #return last_tree
 
 
