@@ -9,7 +9,6 @@ import numpy as np
 import sys
 
 
-
 #########################################################
 
 ## distance criteria

@@ -345,6 +345,8 @@ class Tree:
                 
 
     # testing the connection between the new_child_location and the segment made of "old_child_index" and its parent   
+
+    
     def test_connection(self, old_child_index, new_child_location):
         # update flow values in tree
         q_term = self.q_perf / (self.get_k_term() + 1) 
