@@ -232,10 +232,8 @@ if True:
 
         #keep going until reach Nterm!
 
-
-        
-
     plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
+
 
     #return last_tree
 
