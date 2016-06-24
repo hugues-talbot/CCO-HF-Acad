@@ -3,6 +3,10 @@ import copy
 import Kamiya as kami
 
 import CCO_2DFunctions as cco_2df
+import logging
+import sys
+
+logging.basicConfig(stream=sys.stderr, level = logging.CRITICAL)
 
 
 # We define here the classes for our dichotomic tree structure:
@@ -262,6 +266,7 @@ class Tree:
             
         new_child_node = Node(self.node_index, new_child_location, f[2], branching_node.index)
         
+
         length_new_child = np.sqrt(np.sum((branching_location - new_child_location)**2)) *self.length_factor
         new_child_resistance = 8.* self.nu * length_new_child / np.pi
         new_child_node.set_resistance(new_child_resistance)
