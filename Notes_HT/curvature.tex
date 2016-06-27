@@ -131,7 +131,7 @@
 		\end{figure}
 		
 	\section{Application to our problem}
-	
+	\subsection{First approach}
 We want to calculate $n$, the number of tests along the segment necessary to compute with a reasonable tolerance to verify the segment doesn't cross a concavity of the perfusion territory:
 \begin{equation}
 n \propto \frac{|p_1 - p_0|}{R}
@@ -163,7 +163,28 @@ and
 \begin{equation}
 \omega_y = \nabla_y \omega = \omega (x, y + 1) - \omega (x, y)
 \end{equation}	
-	\bibliography{notes_ht.bib}
-	\bibliographystyle{plain}
+
+\subsection{Second approach}
+We are in the case of measuring the curvature along a segment, so we could use the segment information with an iterative process.
+Method: the gradient vector $\Delta w(p1)$ is projected on the segment $p_1p_2$ to obtain the point $p_{proj}$. 
+
+If $w(p_{proj}) < 0$ or  $w(p_{proj}) > 1$ then $p_{proj}$ is out of the perfusion territory, and the segment $p_1p_2$ is non valid. 
+
+If $0 \leq w(p_{proj}) \leq 1$ then check at the half way point: $p_{semi-proj} = 0.5 * (p_1 + p_{proj}$, if $w(p_{s}) /geq \epsilon$, then we use the distance $||p_1p_{s}||$ to sample the segment $p_1p_2$, so that we define the points where to apply secant test during Kamya's procedure.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.35\textwidth]{Drawings/ProjectionTest.png}
+\caption{The gradient of potential at $P_1$ is projected along the segment $p_1p_2$. The sampling distance is calculated as half way.}
+\label{projectiontest}
+\end{figure}
+
+Note: need to make this calculation starting from $p_1$ and $p_2$, and take the sample distance out of the two. Also, the distance $p_1p_s$ might not be contained exactly k times in the segment $p_1p_2$ : how shall we adapt? 
+
+This method is expected to be more accurate than the previous one (using divergence) because it considers the potential along the segment.
+
+
+\bibliography{notes_ht.bib}
+\bibliographystyle{plain}
 	
 \end{document}
