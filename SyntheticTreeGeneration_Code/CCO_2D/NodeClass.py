@@ -1,12 +1,9 @@
 import numpy as np
 import copy
 import Kamiya as kami
-
 import CCO_2DFunctions as cco_2df
-import logging
 import sys
 
-logging.basicConfig(stream=sys.stderr, level = logging.CRITICAL)
 
 
 # We define here the classes for our dichotomic tree structure:
@@ -266,8 +263,8 @@ class Tree:
             
         new_child_node = Node(self.node_index, new_child_location, f[2], branching_node.index)
         
-
         length_new_child = np.sqrt(np.sum((branching_location - new_child_location)**2)) *self.length_factor
+
         new_child_resistance = 8.* self.nu * length_new_child / np.pi
         new_child_node.set_resistance(new_child_resistance)
         
@@ -363,7 +360,7 @@ class Tree:
             betas = cco_2df.calculate_betas(sibling_ratio, 3.)        
             return betas
         else:
-            print "beta of root point, no need to calculate"
+            #print "beta of root point, no need to calculate"
             return np.array([1., 1.])            
 
     # the new bifurcation added has impacted on the whole tree resistance:
@@ -464,9 +461,6 @@ class Tree:
         print "connection test failed : iter max reached"
         return False, 0., result, old_child_index 
         
-            
-            
-
     
     # add the two nodes and update tree
     def add_connection(self, old_child_index, new_child_location, branching_location, betas):
@@ -476,10 +470,10 @@ class Tree:
         if (self.make_connection(old_child_index, new_child_location, branching_location, f, betas)):
             self.update_flow()
             self.balancing_ratios(self.node_index - 2)
-            print "connection added"
+            #print "connection added"
             return True
         else:
-            print "no connection added"
+            #print "no connection added"
             return False
             
 

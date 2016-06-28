@@ -7,7 +7,7 @@ Created on Thu May 19 16:18:32 2016
 
 import numpy as np
 import sys
-
+import copy
 
 #########################################################
 
@@ -45,7 +45,7 @@ def test_dist_criteria(tree, location, d_tresh, area):
         #print "point out of area"
         #print "location", location
         return False
-    print "point inside area and over distance threshold"
+    #print "point inside area and over distance threshold"
     return True  
     
     
@@ -69,9 +69,11 @@ def first_segmt_end(area, area_descptr):
 def get_new_location(tree, area_descrpt, n_term):   
     area_surface = np.pi * area_descrpt[1]**2
     k_term = tree.get_k_term()
+
     d_tresh, r_pk = get_d_tresh(area_surface, n_term, k_term) 
     length_factor = r_pk / area_descrpt[1]
     d_tresh_factorised = d_tresh / length_factor
+
     meet_criteria = False
     ind = 0
     while (meet_criteria == False and ind < 1000):
@@ -88,9 +90,11 @@ def get_new_location(tree, area_descrpt, n_term):
     return False, np.array([0.,0.]), d_tresh_factorised
 
 
+#######################################################
 
-
-
+def test_connection_list(list_input):
+    copy_tree = copy.deepcopy(list_input[0])
+    return copy_tree.test_connection(list_input[1], list_input[2])
 
 
 #########################################################
@@ -109,7 +113,7 @@ def segment_distance(seg_pt_a, seg_pt_b, point):
     vect_bp = point - seg_pt_b
     squared_length_ab = float(np.sum(vect_ab**2))
     if (squared_length_ab == 0.): 
-        print 1
+        #print 1
         return np.sqrt(vect_ap[0]**2 + vect_ap[1]**2)
     
     relative_position = (vect_ap[0]*vect_ab[0] + vect_ap[1]*vect_ab[1]) / squared_length_ab
@@ -147,17 +151,17 @@ def degenerating_test(c0, c1, c2, branching_location, radii, length_factor):
     #print "branching location", branching_location
     #print "parent length", seg_parent_length, "2*radius", 2.*radii[0]
     if (seg_parent_length < 2.*radii[0]):
-        print "parent seg degenerate"            
+        #print "parent seg degenerate"            
         return False
 
     #print "old child length", seg_old_child_length, "2*radius", 2.*radii[1]    
     if (seg_old_child_length < 2.*radii[1]):
-        print "old child seg degenerate"
+        #print "old child seg degenerate"
         return False
     
     #print "new child length", seg_new_child_length, "2*radius", 2.*radii[2]   
     if (seg_new_child_length < 2.*radii[2]):
-        print "new child seg degenerate"
+        #print "new child seg degenerate"
         return False
     
     return True
@@ -171,7 +175,7 @@ def no_overlap(point_a, point_b, point_c, point_d, width_ab, width_cd):
         #   return False
 
         if point_is_inside_rectangle(point_a, point_b, width_ab, pos) and point_is_inside_rectangle(point_c, point_d, width_cd, pos):
-            print "intersection is inside segments"
+            #print "intersection is inside segments"
             return False
         #else:
             #print "intersection out of seg"
@@ -194,20 +198,20 @@ def no_overlap(point_a, point_b, point_c, point_d, width_ab, width_cd):
             seg_cd_close_to_intersection = True
             
         if seg_ab_close_to_intersection and seg_cd_close_to_intersection:
-            print "both segment close to intersection"
+            #print "both segment close to intersection"
             return False
             
         # combinaison:
         if point_is_inside_rectangle(point_a, point_b, width_ab, pos) and seg_cd_close_to_intersection:
-            print "intersection inside rectangle and other seg close to intersection"
+            #print "intersection inside rectangle and other seg close to intersection"
             return False
         
         if point_is_inside_rectangle(point_c, point_d, width_cd, pos) and seg_ab_close_to_intersection:
-            print "intersection inside rectangle and seg close to intersection"
+            #print "intersection inside rectangle and seg close to intersection"
             return False
 
     else:
-        print "no intersection between lines"
+        #print "no intersection between lines"
         #parallel vectors --> no intersection (#vec_ab[0]/vec_cd[0] == vec_ab[1]/vec_cd[1])
         #get distance between segments
         if (segment_distance(point_a, point_b, point_c) < (width_ab + width_cd)):

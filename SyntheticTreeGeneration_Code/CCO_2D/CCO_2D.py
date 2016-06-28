@@ -17,16 +17,8 @@ import os
 import cPickle as pickle
 import sys  # Need to have acces to sys.stdout
 import time
-import logging
 from multiprocessing import Pool, TimeoutError
 
-logging.basicConfig(stream=sys.stderr, level = logging.CRITICAL)
-
-
-def test_connection_listb(list_input):
-    copy_tree = copy.deepcopy(list_input[0])
-    logging.debug(list_input[1])
-    return copy_tree.test_connection(list_input[1], list_input[2])
 
 
 
@@ -79,8 +71,8 @@ def plot_trees(trees, area_descptr):
                 distal = sgmt.coord
                 proximal = tree.get_node(sgmt.parent()).coord
                 radius = tree.get_radius(sgmt.index) *10
-                #logging.debug(radius)
-                ax.plot([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = colors[ind], alpha = 0.4)
+                
+                ax.plot([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = colors[ind], alpha= 0.4)
         ind = ind +1   
     ax.set_xlim(0,200)#area_descptr[0][0] - area_descptr[1]*1.5,area_descptr[0][0]+ area_descptr[1]*1.5
     ax.set_ylim(0,200)#area_descptr[0][1] - area_descptr[1]*1.5,area_descptr[0][1]+ area_descptr[1]*1.5
@@ -101,24 +93,23 @@ if store_data:
     sys.stdout = fd # Now your file is used by print as destination 
     
 
-#def cco_function(NTerm, filename):
 if True:
-
 
     NTerm = 4000
     seed = 42
 
     np.random.seed(seed)
-    
+    process_nb = 8 
+ 
     #### Parameters to define: ##
     ## About tree
       
     Q_perf = 8.33e3
     N_term = NTerm
     Q_term = Q_perf / N_term
-
     P_drop = 1.33e7 - 7.98e6 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
     viscosity = 3.6 # 3.6cp = 3.6mPa = 3.6 kg mm-1 s-2 (check works with radius and length in mm) #3.6 cp =3.6e-3 Pa.s = 3.6e-9 MPa.s 
+
 
     N_con = 20
     N_con_max = 40
@@ -155,17 +146,15 @@ if True:
 
             
     process_nb = 4            
-
     while tree.get_k_term() < N_term: 
 
         success, new_child_location, d_tresh = cco_2df.get_new_location(tree, area_descptr, N_term)
         if (success == False):
-            logging.debug("impossible to satisfy distance criteria", "d_tresh", d_tresh)
-            ##HT then try again
+            #print "impossible to satisfy distance criteria", "d_tresh", d_tresh
+            ## then try again with
             break
 
-        print "new location found"
-        cet = [[] for i in range (N_con_max)]
+        cet = []#[] for i in range (N_con_max)c=
 
         adding_location = False
         added_location = []
@@ -178,20 +167,18 @@ if True:
         neighbors = tree.find_neighbors(new_child_location, N_con)
 
         args = [[tree, neighbors[i],new_child_location] for i in range (len(neighbors))]
-        
-        while (len(cet) < N_con) and (len(cet) < len(neighbors)):
-            
+        #process all neighbors connection test batch by batch
+        while (len(cet) < N_con) and (len(cet) < len(neighbors)):           
             end_lim = len(cet) + process_nb if (len(cet) + process_nb < len(neighbors)) else len(neighbors)            
             pool = Pool(processes =  process_nb)               
-            res = pool.map(test_connection_listb,args[len(cet): end_lim]) 
+            res = pool.map(cco_2df.test_connection_list,args[len(cet): end_lim]) 
             cet = cet + res
-            #pool.close()
-        print "len cettttttttttt", len(cet)
-
+            pool.close()
         cet_filtered = filter(None,cet)
-        cet_values = np.array(cet_filtered, dtype_r)   
-        if (np.sum(cet_values['convgce']) >= 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
-            
+        cet_values = np.array(cet_filtered, dtype_r)
+        
+        #if there is a candidate that converges
+        if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):        
             cet_sel = cet_values[cet_values['convgce']>0]
             cet_sorted = np.sort(cet_sel, order = "volume")
             cet_final=cet_sorted[0]
@@ -200,43 +187,35 @@ if True:
 
         # test extra neighbors if no connection candidate has fullfilled constraints
         else: 
+	    if len(neighbors) == N_con:  # if there are at least N_con neighbors there might be extra neighbors to test with
+	      #print "testing extra"
+	      test_N_con_max = False
+	      neighbors = tree.find_neighbors(new_child_location, N_con_max)
+	      extra_neighbs = neighbors[N_con:N_con_max]
+	      argsb = [[tree, extra_neighbs[i],new_child_location] for i in range (len(extra_neighbs))]
+	      #process all neighbors connection test batch by batch
+	      while (len(cet) < N_con_max) and (len(cet) < N_con + len(extra_neighbs)):
+               end_lim = (len(cet) + process_nb - N_con) if (len(cet) + process_nb - N_con < len(extra_neighbs)) else len(extra_neighbs)  
+               poolb = Pool(processes =  process_nb)               
+               res = poolb.map(cco_2df.test_connection_list,argsb[len(cet) - N_con: end_lim]) 
+               cet = cet + res 
+               poolb.close()
 
-            test_N_con_max = False
-            neighbors = tree.find_neighbors(new_child_location, N_con_max)
-            extra_neighbs = neighbors[N_con:N_con_max]
-            print "len of cet before ,ax test", len(cet)
-            print "len of extra neighbors", len(extra_neighbs)
-#            argsb = [[tree, extra_neighbs[i],new_child_location] for i in range (len(extra_neighbs))]
-#            while (len(cet) < N_con_max) and (len(cet) < N_con + len(extra_neighbs)):
-#                end_lim = (len(cet) + process_nb - N_con) if (len(cet) + process_nb < N_con_max) else len(extra_neighbs)  
-#                print "endlim max", end_lim   
-#                print "len_cet - Ncon"
-#                poolb = Pool(processes =  process_nb)               
-#                res = poolb.map(test_connection_listb,argsb[len(cet) - N_con: end_lim]) 
-#                cet = cet + res 
-#                print "cet max",cet
-#                #poolb.close()
-#
-#            cet_filtered = filter(None,cet)
-#            cet_values = np.array(cet_filtered, dtype_r)   
-#            if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
-#                cet_values = np.array(cet_filtered, dtype_r)
-#                cet_sel = cet_values[cet_values['convgce']>0]
-#                cet_sorted = np.sort(cet_sel, order = "volume")
-#                cet_final=cet_sorted[0]
-#                adding_location = True
-#                added_location.append(cet_final.tolist()[1:])
-            
+	      cet_filtered = filter(None,cet)
+	      cet_values = np.array(cet_filtered, dtype_r)   
+	      if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
+               cet_values = np.array(cet_filtered, dtype_r)
+               cet_sel = cet_values[cet_values['convgce']>0]
+               cet_sorted = np.sort(cet_sel, order = "volume")
+               cet_final=cet_sorted[0]
+               adding_location = True
+               added_location.append(cet_final.tolist()[1:])
+
         
 
         if (adding_location): # optimal connection found!
 
             store_cet.append(filter(None,cet))
-            if (test_N_con_max):
-                print "N con max was tested"
-            print "size of cet", len(cet)
-
-            print "optimal connection from cet ", added_location[-1]
 
             opt = added_location[-1]
             ante_tree = copy.deepcopy(tree)
@@ -249,6 +228,7 @@ if True:
                     label = 4
                 added_node.set_label(label)
                 branching_added_node.set_label(label)
+
                 print "connection added on tree up node", opt[2]
                 print "k term is now ", tree.get_k_term()
 
@@ -265,7 +245,6 @@ if True:
     plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
 
 
-    #return last_tree
 
 
 
@@ -277,5 +256,4 @@ if timing:
     fin =time.time()
     print "duration = ", fin-debut, "secondes"
     
-#first_tree = cco_function(5, "NodeClass")
-#sec_tree = cco_function(5, "NodeClassBis")
+
