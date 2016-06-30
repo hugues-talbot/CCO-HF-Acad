@@ -131,8 +131,12 @@
 		\end{figure}
 		
 	\section{Application to our problem}
-	\subsection{First approach}
-We want to calculate $n$, the number of tests along the segment necessary to compute with a reasonable tolerance to verify the segment doesn't cross a concavity of the perfusion territory:
+	
+We want to define how to sample a segment $p_1p_2$ so that checking at each sampling point if it is located outside the perfusion territory, we can conclude the segment belongs inside the territory or not. The number of checking ($n + 1$), shall be optimized in order to avoid too many tests (minimize computation time) but also to guarantee the result with a tolerance reasonable enough (maximize test accuracy).
+
+	\subsection{First approach} \label{firstaproach}
+
+We can estimate $n$, the number of tests along the segment, from:
 \begin{equation}
 n \propto \frac{|p_1 - p_0|}{R}
 \end{equation}
@@ -165,23 +169,67 @@ and
 \end{equation}	
 
 \subsection{Second approach}
-We are in the case of measuring the curvature along a segment, so we could use the segment information with an iterative process.
-Method: the gradient vector $\Delta w(p1)$ is projected on the segment $p_1p_2$ to obtain the point $p_{proj}$. 
 
-If $w(p_{proj}) < 0$ or  $w(p_{proj}) > 1$ then $p_{proj}$ is out of the perfusion territory, and the segment $p_1p_2$ is non valid. 
+We are in the case of measuring the curvature along a segment, so we could use the segment information within an iterative process.
 
-If $0 \leq w(p_{proj}) \leq 1$ then check at the half way point: $p_{semi-proj} = 0.5 * (p_1 + p_{proj}$, if $w(p_{s}) /geq \epsilon$, then we use the distance $||p_1p_{s}||$ to sample the segment $p_1p_2$, so that we define the points where to apply secant test during Kamya's procedure.
+We calculate the distances $\lambda_i$ that solves:
+\begin{equation}
+\omega (p_1) + \lambda_1 <\nabla \omega(p_1), p_1p_2> = 0 
+\end{equation}
+\begin{equation}
+\omega (p_2) + \lambda_2 <\nabla \omega(p_2), p_2p_1> = 0
+\end{equation}
 
-\begin{figure}[h!]
-\centering
-\includegraphics[width=0.35\textwidth]{Drawings/ProjectionTest.png}
-\caption{The gradient of potential at $P_1$ is projected along the segment $p_1p_2$. The sampling distance is calculated as half way.}
-\label{projectiontest}
-\end{figure}
+and then select:
+\begin{equation}
+\lambda = min(\lambda_1, \lambda_2)
+\end{equation}
+to obtain :
+\begin{equation}
+n = ceiling(\frac{1}{\lambda})
+\end{equation}
+We keep in mind that this method would fail for any case where the dot product $<\nabla \omega(p_1), p_1p_2> simeq 0$, and in some specific situations such as the figure x, so we define a global boundary:
+\begin{equation}
+n \geq \frac{||p_1p_2||}{2R_{max}}
+\end{equation}
+with $R_{max}$ the maximal curvature radius of both inner and outer surfaces.\\
 
-Note: need to make this calculation starting from $p_1$ and $p_2$, and take the sample distance out of the two. Also, the distance $p_1p_s$ might not be contained exactly k times in the segment $p_1p_2$ : how shall we adapt? 
+This equation does not look correct to me: you are adding a potential value to a scalar which has nothing to do with a potential.
+You actually don't test if the line defined by the segment $p_1p_2$ crosses a concavity, which actually might not happen!
 
-This method is expected to be more accurate than the previous one (using divergence) because it considers the potential along the segment.
+If we want to find the first point along the gradient direction, starting from $p_1$, that reaches the border of the perfusion territory we look for $lambda$ that solves:
+\begin{equation}
+\omega( p_1 + \lambda \nabla w(p_1)) = 0
+\end{equation}
+This can also be written as:
+\begin{equation}
+\omega(p_1) + \lambda ||\nabla w(p_1)|| = 0
+\end{equation}
+
+If $\lambda$ is small, $p_1$ is close to a concavity. 
+Then we can use its projection on the segment $p_1p_2$ to determine if the segment is how fast the segment is going toward the concavity.
+\begin{equation}
+ d_{proj} = \frac{< \lambda \nabla \omega(p_1), p_1p_2>}{||p_1p_2||}
+\end{equation}
+This distance $d_{proj}$ is efficient to sample the segment, so $n$ is defined as:
+\begin{equation}
+n = ceiling(\frac{||p_1p_2||}{d_{proj}})
+\end{equation}
+\begin{equation}
+n = ceiling(\frac{1}{< \lambda \nabla \omega(p_1), p_1p_2>})
+\end{equation}
+
+
+
+%\begin{figure}[h!]
+%\centering
+%\includegraphics[width=0.35\textwidth]{Drawings/ProjectionTest.png}
+%\caption{The gradient of potential at $P_1$ is projected along the segment $p_1p_2$. The sampling distance is calculated as half way.}
+%\label{projectiontest}
+%\end{figure}
+
+
+This method is expected to be more accurate than the previous one \ref{firstaproach}, because it considers the potential along the segment (not only at the tips), but also both local and global curvature.
 
 
 \bibliography{notes_ht.bib}
