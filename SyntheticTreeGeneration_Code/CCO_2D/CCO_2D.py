@@ -167,6 +167,7 @@ if True:
         neighbors = tree.find_neighbors(new_child_location, N_con)
 
         args = [[tree, neighbors[i],new_child_location] for i in range (len(neighbors))]
+
         #process all neighbors connection test batch by batch
         while (len(cet) < N_con) and (len(cet) < len(neighbors)):           
             end_lim = len(cet) + process_nb if (len(cet) + process_nb < len(neighbors)) else len(neighbors)            
@@ -174,6 +175,7 @@ if True:
             res = pool.map(cco_2df.test_connection_list,args[len(cet): end_lim]) 
             cet = cet + res
             pool.close()
+
         cet_filtered = filter(None,cet)
         cet_values = np.array(cet_filtered, dtype_r)
         
