@@ -6,6 +6,8 @@ Created on Fri Apr  1 15:35:19 2016
 """
 
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import Kamiya as kami
 import NodeClass as nclass
@@ -99,7 +101,7 @@ if True:
     seed = 42
 
     np.random.seed(seed)
-    process_nb = 8 
+    process_nb = 16
  
     #### Parameters to define: ##
     ## About tree
@@ -235,6 +237,7 @@ if True:
                 print "k term is now ", tree.get_k_term()
 
                 last_tree = copy.deepcopy(tree)
+
                 if tree.get_k_term() % 50  == 0:
                     plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
             else:
