@@ -38,7 +38,7 @@ def potential_image(center, ext_radius, int_radius):
     return result[1]
 
 
-def get_potential_value
+
 
 #########################################################
 
@@ -270,7 +270,7 @@ def point_is_inside_rectangle(seg_pt_a, seg_pt_b, width, point):
     if ab_am > 0 and ab_am < ab_ab:
             if ad_am > 0 and ad_am < ad_ad:
                 return True
-    return False
+    return False 
         
     
 def normalize(vector):
