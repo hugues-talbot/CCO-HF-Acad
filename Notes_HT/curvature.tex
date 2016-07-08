@@ -174,10 +174,10 @@ We are in the case of measuring the curvature along a segment, so we could use t
 \subsubsection{Interpolating the point along the segment line that crosses the concavity} \label{subsec}
 We calculate the distances $\lambda_i$ that solves:
 \begin{equation}
-\omega (p_1) + \lambda_1 \frac{<\nabla \omega(p_1), p_1p_2>}{||p_1p_2||} = 0 
+\omega (p_1) + \lambda_1 <\nabla \omega(p_1), p_1p_2> = 0 
 \end{equation}
 \begin{equation}
-\omega (p_2) + \lambda_2\frac{<\nabla \omega(p_2), p_2p_1>}{||p_1p_2||} = 0
+\omega (p_2) + \lambda_2<\nabla \omega(p_2), p_2p_1> = 0
 \end{equation}
 
 Then we select:
@@ -238,7 +238,7 @@ We take the biggest $n$ between maximal curvature and gradient method. This prov
 
 %You actually don't test if the line defined by the segment $p_1p_2$ crosses a concavity, which actually might not happen!
 
-If we want to find the first point along the gradient direction, starting from $p_1$, that reaches the border of the perfusion territory we look for $gamma_1$ that solves:
+If we want to find the first point along the gradient direction, starting from $p_1$, that reaches the border of the perfusion territory we look for $\gamma_1$ that solves:
 
 
 %\begin{equation}
@@ -262,6 +262,8 @@ The gap of potential $\Delta \omega$ is calculated along the gradient:
 \end{equation}
 The process is similar to calculate $\gamma_2$ from $P_2$.
 
+We can either consider this estimation of $\gamma$ accurate enough or looking for a precise solution by iterating with Newton-Raphson principle. However, because we will use the projection of this point on the segment $p_1p_2$ to obtain a final value of type integer ($n$), a high accuracy might not be necessary.
+
 
 If $|\gamma_1|$ is small, $p_1$ is close to a concavity. 
 Then we can use its projection on the segment $p_1p_2$ to determine if the segment is how fast the segment is going toward the concavity.
@@ -280,7 +282,7 @@ If any of the $d_{proj_i}$ is negative we know that the segment is locally going
 
 We select the smallest of the two sampling distance:
 \begin{equation}
-d_{proj} = min(d_{proj_1}, d_{proj_2})
+d_{proj} = min(abs(d_{proj_1}), abs(d_{proj_2}))
 \end{equation}
 
 The distance $|d_{proj}|$ is efficient to sample the segment, so $n$ is defined as:
