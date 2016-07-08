@@ -180,7 +180,7 @@ We calculate the distances $\lambda_i$ that solves:
 \omega (p_2) + \lambda_2\frac{<\nabla \omega(p_2), p_2p_1>}{||p_1p_2||} = 0
 \end{equation}
 
-and then select:
+Then we select:
 \begin{equation}
 \lambda = min(\lambda_1, \lambda_2)
 \end{equation}
@@ -239,30 +239,42 @@ We take the biggest $n$ between maximal curvature and gradient method. This prov
 %You actually don't test if the line defined by the segment $p_1p_2$ crosses a concavity, which actually might not happen!
 
 If we want to find the first point along the gradient direction, starting from $p_1$, that reaches the border of the perfusion territory we look for $gamma_1$ that solves:
+
+
+%\begin{equation}
+%\omega( p_1 + \gamma_1 \nabla w(p_1)) = 0
+%\end{equation}
+%This can also be written as:
+%\begin{equation}
+%\omega(p_1) + \gamma_1 ||\nabla w(p_1)|| = 0
+%\end{equation}
+%so that :
+%\begin{equation}
+%\gamma_1 = - \frac{\omega(p_1)}{||\nabla w(p_1)||} 
+%\end{equation}
+
 \begin{equation}
-\omega( p_1 + \gamma_1 \nabla w(p_1)) = 0
+\omega (p_1) + \gamma_1 \Delta \omega = 0
 \end{equation}
-This can also be written as:
+The gap of potential $\Delta \omega$ is calculated along the gradient:
 \begin{equation}
-\omega(p_1) + \gamma_1 ||\nabla w(p_1)|| = 0
+\Delta \omega  = \omega (p_1 + \nabla \omega (p_1)) - \omega (p_1)
 \end{equation}
-so that :
-\begin{equation}
-\gamma_1 = - \frac{\omega(p_1)}{||\nabla w(p_1)||} 
-\end{equation}
+The process is similar to calculate $\gamma_2$ from $P_2$.
+
 
 If $|\gamma_1|$ is small, $p_1$ is close to a concavity. 
 Then we can use its projection on the segment $p_1p_2$ to determine if the segment is how fast the segment is going toward the concavity.
 \begin{equation}
- d_{proj_1} = \gamma_1<\nabla \omega(p_1), p_1p_2>
+ d_{proj_1} = \gamma_1 \frac{<\nabla \omega(p_1), p_1p_2>}{||p_1p_2||} 
 \end{equation}
 Similarly for the $p_2$ segment end, it would be calculated  as:
 \begin{equation}
-\gamma_2 = - \frac{\omega(p_2)}{||\nabla w(p_2)||} 
+\gamma_2 = - \frac{\omega(p_2)}{\omega( p_2 + \nabla \omega(p_2)) -\omega(p_2)} 
 \end{equation}
 and then
 \begin{equation}
- d_{proj_2} = \gamma_2<\nabla \omega(p_2), p_2p_1>
+ d_{proj_2} = \gamma_2 \frac{<\nabla \omega(p_2), p_2p_1>}{||p_1p_2||}
 \end{equation}
 If any of the $d_{proj_i}$ is negative we know that the segment is locally going away from the concavity.
 
