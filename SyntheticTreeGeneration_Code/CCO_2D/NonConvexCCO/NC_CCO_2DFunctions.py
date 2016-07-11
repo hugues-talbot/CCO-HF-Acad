@@ -11,7 +11,9 @@ from skimage.segmentation import random_walker
 
 
 
-
+## creating a potential grid using random walker
+#inner surface and concavity potential value is 1
+#outer surface potential value is 0
 def potential_image(center, ext_radius, int_radius):
     cx,cy = center[0], center[1]
     im = np.zeros((cx+ext_radius*2, cy+ext_radius*2)).astype('uint8')
@@ -37,7 +39,37 @@ def potential_image(center, ext_radius, int_radius):
     #plt.imshow(result[1])
     return result[1]
 
+### Newton Raphson algorithm : 
+#looking for the location reaching the potential target_w along a line (defined by target line vector)
+#considering the local gradient at point
+#iterating until find a potential respecting epsilon tolerance
 
+def length(vect):
+    return np.sqrt(np.sum(vect**2))
+    
+def interpol(interp_func, location):
+    return float(interp_func(location[::-1])) # use reverse location because axis are reversed in the image
+    
+def newton_step(interp_w, interp_gx, interp_gy, point, target_line_vect, target_w):
+    p_gdt = np.array([interpol(interp_gx, point), interpol(interp_gy, point)])
+    norm_line_vect = target_line_vect * 1./ length(target_line_vect)  
+    vect_proj_length = np.sum(p_gdt*target_line_vect) * 1./length(target_line_vect)   
+    vect_proj = norm_line_vect * vect_proj_length
+    scal_gap = - interpol(interp_w, point) + interpol(interp_w,(point + vect_proj))
+    scal_gap_2 = target_w - interpol(interp_w,point)
+    k = (scal_gap_2 / scal_gap )   
+    scaling = vect_proj_length 
+    proj_pt = point + k*scaling * norm_line_vect
+    return proj_pt
+
+def newton_algo(interp_w, interp_gx, interp_gy, point, target_line_vect, target_w, eps):
+    proj_pt = newton_step(interp_w, interp_gx, interp_gy, point, target_line_vect, target_w)
+    w_proj = interpol(interp_w, proj_pt)
+    print "w_proj", w_proj
+    if w_proj < target_w + eps and w_proj > target_w - eps:
+        return proj_pt, w_proj
+    else:
+        newton_algo(interp_w, interp_gx, interp_gy, proj_pt, target_line_vect, target_w, eps)
 
 
 #########################################################

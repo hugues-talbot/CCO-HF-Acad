@@ -111,8 +111,19 @@ class Tree:
         if pot_val>=0. and pot_val <= 1.:
             return True
         return False
+        
+    def starting_point(self, seg_pt1, seg_pt2, new_location, eps):
+        #mid point of seg
+        midp = (seg_pt1 + seg_pt2)*0.5
+        #find gdt of w at mid point
+        gdt_vec = np.array([self.interp_gx(midp[::-1]), self.interp_gy(midp[::-1])])
+        #find on this line the point p where w(p) = 0.5 * (w(seg_pt1) + w(seg_pt2))
+        target_w = 0.5 * (self.interp_w(seg_pt1[::-1]) + self.interp_w(seg_pt2[::-1]))
+        start_point, w_start = cco_2df.newton_algo(self.interp_w, self.interp_gx, self.interp_gy, new_location, gdt_vec, target_w, eps)
+        return start_point
     
-
+    def find_sampling_n(self, seg_pt1, seg_pt2, ):
+        
         
     def get_q_term(self):
         return float(self.q_perf) / self.get_k_term()   
