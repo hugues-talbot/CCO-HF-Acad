@@ -247,6 +247,6 @@ def calculate_sampling(tolerance, max_curv_radius, w, interp_w, interp_gx, inter
         return global_n
 
 seg_1 = np.array([100,15])
-seg_2 = np.array([120,20])    
+seg_2 = np.array([105,20])    
 #find_sampling(w, interp_w, interp_gx, interp_gy, seg_1, seg_2)
-calculate_sampling(20,int_radius, w, interp_w, interp_gx, interp_gy, seg_1, seg_2)    
+calculate_sampling(1,int_radius, w, interp_w, interp_gx, interp_gy, seg_1, seg_2)    

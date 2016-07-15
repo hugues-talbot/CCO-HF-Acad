@@ -80,6 +80,7 @@ class Tree:
         self.interp_w = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),w)
         self.interp_gx = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),np.gradient(w)[0])
         self.interp_gy = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),np.gradient(w)[1])
+
     def __deepcopy__(self, tree):
         return Tree(copy.deepcopy(self.nodes), copy.deepcopy(self.n_term), copy.deepcopy(self.q_perf), copy.deepcopy(self.p_drop), copy.deepcopy(self.nu))    		
             
@@ -104,7 +105,13 @@ class Tree:
         
     def get_w(self, location):
         # interpolate value from potential function
-        return self.interp_w(location[::-1])
+        return float(self.interp_w(location[::-1]))
+        
+    def get_gx(self, location):
+        return float(self.interp_gx(location[::-1]))
+    
+    def get_gy(self, location):
+        return float(self.interp_gy(location[::-1]))
         
     def inside_perf_territory(self, location):
         pot_val = self.get_w(location)
@@ -112,17 +119,46 @@ class Tree:
             return True
         return False
         
+    def interp(self, interp_func, location):
+        return float(interp_func(location[::-1]))
+    
     def starting_point(self, seg_pt1, seg_pt2, new_location, eps):
         #mid point of seg
         midp = (seg_pt1 + seg_pt2)*0.5
         #find gdt of w at mid point
-        gdt_vec = np.array([self.interp_gx(midp[::-1]), self.interp_gy(midp[::-1])])
+        gdt_vec = np.array([self.get_gx(midp), self.get_gy(midp)])
         #find on this line the point p where w(p) = 0.5 * (w(seg_pt1) + w(seg_pt2))
-        target_w = 0.5 * (self.interp_w(seg_pt1[::-1]) + self.interp_w(seg_pt2[::-1]))
+        target_w = 0.5 * (self.get_w(seg_pt1) + self.get_w(seg_pt2))
         start_point, w_start = cco_2df.newton_algo(self.interp_w, self.interp_gx, self.interp_gy, new_location, gdt_vec, target_w, eps)
         return start_point
+        
+    def local_n(self, seg_1, seg_2):
+        wp1 = self.get_w(seg_1)
+        wp2 = self.get_w(seg_2)
+        gdt_p1 = np.array([self.get_gx(seg_1), self.get_gy(seg_1)])
+        gdt_p2 = np.array([self.get_gx(seg_1), self.get_gy(seg_2)])
+        p1p2_vec = seg_2 - seg_1
+        # wp / dot product
+        l1 = - wp1 * (1. / np.sum(gdt_p1* p1p2_vec))
+        l2 = - wp2 * (1. / np.sum(gdt_p2* -p1p2_vec))
+        print "l1", l1, "l2", l2
+        lbda = min(l1,l2)    
+        splg_n = np.ceil(np.abs(1./lbda))
+        print "local n", splg_n
+        return splg_n
     
-    def find_sampling_n(self, seg_pt1, seg_pt2, ):
+    def calculate_sampling(self, tolerance, max_curv_radius, seg_1, seg_2):
+        loc_n = self.local_n(seg_1, seg_2)
+        #r_star = max_curv_radius - tolerance
+        c= np.sqrt(max_curv_radius**2 - (max_curv_radius-tolerance)**2)
+        global_n = np.ceil(cco_2df.length(seg_2-seg_1) / c)
+        print "global n", global_n
+        if (loc_n >= global_n):
+            print "n is local one", loc_n
+            return loc_n
+        else:
+            print "final n is global", global_n
+            return global_n
         
         
     def get_q_term(self):
