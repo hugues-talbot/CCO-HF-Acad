@@ -157,3 +157,15 @@ if False:
     
     plot_tree_and_list(tree, area_descptr, store_good_locations, store_locations)    
     #cco.plot_tree(tree, area_descptr)
+
+#depth first tree traversal in post order
+def DepthFirstTraversal(index, tree):
+    node = tree.nodes[index]
+    children = node.children()
+    if children[0] > 0:
+        DepthFirstTraversal(children[0], tree)
+    if children[1] > 0:
+        DepthFirstTraversal(children[1], tree)
+    if index > 0:
+        print index
+    

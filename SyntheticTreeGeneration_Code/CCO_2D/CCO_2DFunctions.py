@@ -17,10 +17,11 @@ import sys
 
 # a_perf is the total perfused area
 def calculate_r_supp_2D(a_perf,n_term):
-    return np.sqrt(a_perf*np.pi/n_term)  
+    print "r_supp", np.sqrt(a_perf/(n_term*np.pi)) 
+    return np.sqrt(a_perf/(n_term*np.pi))  
     
 def calculate_d_tresh_2D(r_supp, k_term):
-    return np.power(np.pi*r_supp*r_supp/(k_term + 1), 1./2.)
+    return np.power(np.pi*r_supp*r_supp/(k_term), 1./2.)
     
 def get_d_tresh(a_perf, n_term, k_term):
     return calculate_d_tresh_2D(calculate_r_supp_2D(a_perf, n_term), k_term)

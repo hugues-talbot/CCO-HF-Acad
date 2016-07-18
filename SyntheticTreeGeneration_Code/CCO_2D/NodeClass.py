@@ -88,16 +88,22 @@ class Node:
 
 class Tree:
     "Class defining attributes of the tree during growth"
-    def __init__(self, nodes, n_term, q_perf, p_drop, visc):
+    "a_perf: total perfusion area of the final tree"
+    "r_f: real radius (mm) of the total perfusion area"
+    def __init__(self, nodes, n_term, q_perf, p_drop, visc, a_perf, r_f):
         self.nodes = nodes
         self.n_term = n_term
         self.q_perf = q_perf
         self.p_drop = p_drop
         self.node_index = 0
         self.nu = visc
+        self.r_supp = np.sqrt(a_perf / (n_term * np.pi))
+        self.final_perf_radius = r_f
+        self.length_factor = 1
+        
     
     def __deepcopy__(self, tree):
-        return Tree(copy.deepcopy(self.nodes), copy.deepcopy(self.n_term), copy.deepcopy(self.q_perf), copy.deepcopy(self.p_drop), copy.deepcopy(self.nu))    		
+        return Tree(copy.deepcopy(self.nodes), copy.deepcopy(self.n_term), copy.deepcopy(self.q_perf), copy.deepcopy(self.p_drop), copy.deepcopy(self.nu), copy.deepcopy(self.r_supp), copy.deepcopy(self.final_perf_radius))    		
             
     def nodes(self):
         return self.nodes
@@ -150,7 +156,13 @@ class Tree:
         pass
     
     def get_root_radius(self):
+        print self.resistance(1), self.q_perf, self.p_drop
         return np.power(self.resistance(1) * self.q_perf / self.p_drop, 1./4)
+    
+    def update_length_factor(self):
+        r_pk = np.sqrt((self.get_k_term() + 1)* self.r_supp)
+        print "radius of current_perf area", r_pk
+        self.length_factor =  r_pk / self.final_perf_radius
     
     # get the length of the segment connecting the node of index i and its parent
     def length(self, i):
@@ -158,13 +170,13 @@ class Tree:
         if (parent_ind >= 0):
             p_coord = self.nodes[parent_ind].coord
             i_coord = self.nodes[i].coord
-            return np.sqrt(np.sum((p_coord- i_coord)**2))
+            return np.sqrt(np.sum((p_coord- i_coord)**2)) * self.length_factor
         else:
             print "no parent found, unable to calculate length"
             return 0.      
               
     def resistance(self, i):
-        res = 8*self.nu / np.pi * self.length(i) 
+        res = 8.*self.nu / np.pi * self.length(i) 
         node = self.get_node(i)
         if i > 0 and (node.is_leaf() == False):
             children_index = node.children()
@@ -179,6 +191,16 @@ class Tree:
         node = self.nodes[index]
         node.set_resistance(res)
         
+    def DepthFirst_resistances(self,index):
+        children = (self.nodes[index]).children()
+        if children[0] > 0:
+            self.DepthFirst_resistances(children[0])
+        if children[1] > 0:
+            self.DepthFirst_resistances(children[1])
+        if index > 0:
+            self.update_resistance(index)
+            
+        
     def get_radius(self, index):
         root_radius = self.get_root_radius()
         beta_prod = 1
@@ -190,7 +212,6 @@ class Tree:
             else:
                 beta_prod = beta_prod * parent.betas[1]
             index =  parent.index
-                    
         return root_radius * beta_prod
           
     
@@ -228,7 +249,7 @@ class Tree:
             
         new_child_node = Node(self.node_index, new_child_location, f[2], branching_node.index)
         
-        length_new_child = np.sqrt(np.sum((branching_location - new_child_location)**2))
+        length_new_child = np.sqrt(np.sum((branching_location - new_child_location)**2)) *self.length_factor
         print "length new child", length_new_child
         new_child_resistance = 8.* self.nu * length_new_child / np.pi
         new_child_node.set_resistance(new_child_resistance)
@@ -348,12 +369,18 @@ class Tree:
 
     
     def test_connection(self, old_child_index, new_child_location):
+        ##update perfusion territory: add a microcirculatory black box
+        # by updating the length factor 
+        self.update_length_factor()  
+        # and updating the resistance on whole tree so all radii are rescaled
+        self.DepthFirst_resistances(0)         
+        
         # update flow values in tree
         q_term = self.q_perf / (self.get_k_term() + 1) 
         f= np.zeros(3)
         f[1] = self.get_terms(old_child_index) * q_term
         f[2] = q_term
-        f[0] = f[1] + f[2]
+        f[0] = f[1] + f[2]      
         
         #set original radii: use the original old child radius for all      
         radius_ori = self.get_radius(old_child_index)
@@ -402,6 +429,8 @@ class Tree:
     
     # add the two nodes and update tree
     def add_connection(self, old_child_index, new_child_location, branching_location, betas):
+        self.update_length_factor()
+        self.DepthFirst_resistances(0)
         f= np.zeros(3)
         if (self.make_connection(old_child_index, new_child_location, branching_location, f, betas)):
             self.update_flow()

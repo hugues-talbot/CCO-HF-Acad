@@ -30,16 +30,31 @@ def plot_tree(tree, area_descptr, name, factor_radius):
     #colors=['k', 'b', 'g', 'm', 'r']
     # labels for cet ['r','m','g','b']
     ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[1], color = 'r', alpha = 0.5))
+    all_radii = []
+    leaves_radii = []
     for sgmt in tree.nodes:
         if (sgmt.parent() >= 0):
             distal = sgmt.coord
             proximal = tree.get_node(sgmt.parent()).coord
-            radius = tree.get_radius(sgmt.index) * factor_radius #*10
+            radius = tree.get_radius(sgmt.index)  #*10
+            all_radii.append(radius)
+            if sgmt.is_leaf():
+                leaves_radii.append(radius)
             #ax.plot([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'b')
-            ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'k'))#colors[sgmt.label]
+            ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius* factor_radius, color = 'k'))#colors[sgmt.label]
             
     ax.set_xlim(area_descptr[0][0] - area_descptr[1]*1.5,area_descptr[0][0]+ area_descptr[1]*1.5)
     ax.set_ylim(area_descptr[0][1] - area_descptr[1]*1.5,area_descptr[0][1]+ area_descptr[1]*1.5)
+    outfile_path1 = "./"+name+"all.txt"
+    outfile1 = open(outfile_path1,"w")
+    for i in all_radii:
+        outfile1.write(str(i) + "\n")
+        
+    outfile_path2 = "./"+name+"leaves.txt"
+    outfile2 = open(outfile_path2,"w")
+    for i in leaves_radii:
+        outfile2.write(str(i) + "\n")
+    
     fig.savefig(name+".png")
     fig.savefig(name+".pdf")
     fig.show()
@@ -90,7 +105,7 @@ if True:
     Q_perf = 8.33e3
     N_term = NTerm
     Q_term = Q_perf / N_term
-    P_drop = 1.33e7 -7.98e6 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
+    P_drop = 1.33e7 - 8.38e6# 1.33e7 -7.98e6 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
     viscosity = 3.6 # 3.6cp = 3.6mPa = 3.6 kg mm-1 s-2 (check works with radius and length in mm) #3.6 cp =3.6e-3 Pa.s = 3.6e-9 MPa.s 
     N_con = 20
     N_con_max = 40
@@ -107,7 +122,7 @@ if True:
     #tree_stored= []
     
     store_cet = []
-    tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity)
+    tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, area, area_radius)
      
     # source point : define the root position
     root_position = np.array([100,100])
@@ -117,14 +132,15 @@ if True:
     tree.add_node(root_node)    
     
     #first segment end: randomly picked inside perfusion surface
+    tree.update_length_factor()
     first_node_position = cco_2df.first_segmt_end(area, area_descptr)
     first_node = nclass.Node(1, first_node_position, Q_perf,0)
     first_node.set_label(0)
     tree.add_node(first_node)
-            
+    tree.update_length_factor()
+    tree.DepthFirst_resistances(0)
                  
     while tree.get_k_term() < N_term: 
-        
         success, new_child_location, d_tresh = cco_2df.get_new_location(tree, area_descptr, N_term)
         if (success == False):
             print "impossible to satisfy distance criteria", "d_tresh", d_tresh
@@ -199,6 +215,7 @@ if True:
                 print "connection added on tree up node", opt[2]
                 print "d_tresh value", d_tresh
                 print "k term is now ", tree.get_k_term()
+                print "root radius", tree.get_root_radius()
                 tree.printing_full()
                 #tree_stored.append(copy.deepcopy(tree))
                 last_tree = copy.deepcopy(tree)
@@ -209,9 +226,9 @@ if True:
                 
         #keep going until reach Nterm!
         print "stored cet", store_cet
-    fac = 5
+    fac = 1
         
-    plot_tree(last_tree, area_descptr, "./Results/tree_Nt%i_f%i_s%i_dbg" %(NTerm,fac,seed), fac)#tree_stored[-1]
+    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_f%i_s%i_dbg" %(NTerm,fac,seed), fac)#tree_stored[-1]
     #return last_tree
 
 
