@@ -31,6 +31,7 @@ def plot_tree(tree, area_descptr, name):
     ax = fig.add_subplot(111)
     #colors=['k', 'b', 'g', 'm', 'r']
     # labels for cet ['r','m','g','b']
+
     ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[1], color = 'r', alpha = 0.5))
     all_radii = []
     leaves_radii = []
@@ -59,7 +60,21 @@ def plot_tree(tree, area_descptr, name):
         outfile2.write(str(i) + "\n")
     
     fig.savefig(name+".png")
-    fig.savefig(name+".pdf")
+    fig.savefig(name+".pdf")	
+
+    outfile_path1 = "./"+name+"1.txt"
+    outfile1 = open(outfile_path1, "w")
+    for i in all_radii:
+	outfile1.write(str(i) + "\n") 
+    #np.save(outfile1, np.array(all_radii))outfile1.close()c
+    outfile1.close()
+    outfile_path2 = "./"+name+"2.txt"
+    outfile2 = open(outfile_path2, "w")
+    for i in leaves_radii:
+        outfile2.write(str(i) + "\n")
+    #np.save(outfile2, np.array(leaves_radii))
+    outfile2.close()
+    
     fig.show()
 
 def plot_trees(trees, area_descptr):
@@ -98,6 +113,7 @@ if store_data:
 if True:
 
     NTerm = 4000
+
     seed = 42
 
     np.random.seed(seed)
@@ -109,9 +125,9 @@ if True:
     Q_perf = 8.33e3
     N_term = NTerm
     Q_term = Q_perf / N_term
+
     P_drop = 1.33e7 - 7.98e6 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
     viscosity = 3.6 # 3.6cp = 3.6mPa = 3.6 kg mm-1 s-2 (check works with radius and length in mm) #3.6 cp =3.6e-3 Pa.s = 3.6e-9 MPa.s 
-
 
     N_con = 20
     N_con_max = 40
@@ -233,6 +249,7 @@ if True:
                 added_node.set_label(label)
                 branching_added_node.set_label(label)
 
+
                 print "connection added on tree up node", opt[2]
                 print "k term is now ", tree.get_k_term()
 
@@ -240,12 +257,16 @@ if True:
 
                 if tree.get_k_term() % 50  == 0:
                     plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
+
+                print "k term is now ", tree.get_k_term()
+
             else:
                 print "failed to add connection on tree"
         else:
             print "location doesn't provide an optimal connection, testing newwwwwwwww location"
 
         #keep going until reach Nterm!
+
 
     plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
 
