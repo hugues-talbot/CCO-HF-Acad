@@ -97,13 +97,14 @@ class Tree:
         self.p_drop = p_drop
         self.node_index = 0
         self.nu = visc
-        self.r_supp = np.sqrt(a_perf / (n_term * np.pi))
+        self.a_perf = a_perf
+        self.r_supp = (np.sqrt(a_perf / (n_term * np.pi)))
         self.final_perf_radius = r_f
         self.length_factor = 1
         
     
     def __deepcopy__(self, tree):
-        return Tree(copy.deepcopy(self.nodes), copy.deepcopy(self.n_term), copy.deepcopy(self.q_perf), copy.deepcopy(self.p_drop), copy.deepcopy(self.nu), copy.deepcopy(self.r_supp), copy.deepcopy(self.final_perf_radius))    		
+        return Tree(copy.deepcopy(self.nodes), self.n_term, self.q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius)    		
             
     def nodes(self):
         return self.nodes
@@ -162,8 +163,7 @@ class Tree:
         return np.power(self.resistance(root_index) * self.q_perf / self.p_drop, 1./4)
     
     def update_length_factor(self):
-        r_pk = np.sqrt((self.get_k_term() + 1)* self.r_supp)
-        print "radius of current_perf area", r_pk
+        r_pk = np.sqrt((self.get_k_term() + 1)* self.r_supp**2)
         self.length_factor =  r_pk / self.final_perf_radius
     
     # get the length of the segment connecting the node of index i and its parent
@@ -252,7 +252,6 @@ class Tree:
         new_child_node = Node(self.node_index, new_child_location, f[2], branching_node.index)
         
         length_new_child = np.sqrt(np.sum((branching_location - new_child_location)**2)) *self.length_factor
-        print "length new child", length_new_child
         new_child_resistance = 8.* self.nu * length_new_child / np.pi
         new_child_node.set_resistance(new_child_resistance)
         
@@ -310,27 +309,25 @@ class Tree:
     def check_intersection(self, old_child_index, new_child_location, branching_location, new_branches_radii):
         old_child = self.nodes[old_child_index]
         for i in self.nodes:
-            if (i.index != old_child_index):
+            if (i.index != old_child_index) and (i.index > 0):
                 parent_i = self.nodes[i.parent()]
-                print "radius i", self.get_radius(i.index)
-                print "radius i rescaled", self.get_radius(i.index) * 1./self.length_factor
-                radius_i = self.get_radius(i.index) 
+                inv_length_factor = 1./self.length_factor
+                radius_i_rescaled = self.get_radius(i.index) * inv_length_factor
+                new_branches_radii_rescaled = new_branches_radii * inv_length_factor
                 print "testing connection with segment", "parent", parent_i.coord, "child", i.coord
-                if (cco_2df.no_overlap(i.coord, parent_i.coord, new_child_location, branching_location, radius_i, new_branches_radii[2]) == False):
+                if (cco_2df.no_overlap(i.coord, parent_i.coord, new_child_location, branching_location, radius_i_rescaled, new_branches_radii_rescaled[2]) == False):
                     return False
-                    
                 old_parent_index = old_child.parent()
                 old_parent = self.nodes[old_parent_index]
                 siblings = old_parent.children()
                 old_child_sibling = siblings[0] if (old_child_index == siblings[1]) else siblings[1]
                 if (i.index != old_parent_index) and (i.index != old_child_sibling):
-                    if (cco_2df.no_overlap(i.coord, parent_i.coord, branching_location, old_parent.coord, radius_i, new_branches_radii[0]) ==  False):
+                    if (cco_2df.no_overlap(i.coord, parent_i.coord, branching_location, old_parent.coord, radius_i_rescaled, new_branches_radii_rescaled[0]) ==  False):
                         return False
-
                 if (old_child.is_leaf() == False):
                     old_child_children = old_child.children()
                     if (i.index != old_child_children[0]) and (i.index != old_child_children[1]):
-                        if (cco_2df.no_overlap(i.coord, parent_i.coord, old_child.coord, branching_location, radius_i, new_branches_radii[1]) ==  False):
+                        if (cco_2df.no_overlap(i.coord, parent_i.coord, old_child.coord, branching_location, radius_i_rescaled, new_branches_radii_rescaled[1]) ==  False):
                             return False
         return True
                    

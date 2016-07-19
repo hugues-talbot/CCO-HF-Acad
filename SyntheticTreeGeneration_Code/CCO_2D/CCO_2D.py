@@ -40,8 +40,9 @@ def plot_tree(tree, area_descptr, name, factor_radius):
             all_radii.append(radius)
             if sgmt.is_leaf():
                 leaves_radii.append(radius)
+                
             #ax.plot([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'b')
-            ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius* factor_radius, color = 'k'))#colors[sgmt.label]
+            ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius*factor_radius , color = 'k'))#colors[sgmt.label]
             
     ax.set_xlim(area_descptr[0][0] - area_descptr[1]*1.5,area_descptr[0][0]+ area_descptr[1]*1.5)
     ax.set_ylim(area_descptr[0][1] - area_descptr[1]*1.5,area_descptr[0][1]+ area_descptr[1]*1.5)
@@ -139,7 +140,7 @@ if True:
     tree.add_node(first_node)
     tree.update_length_factor()
     tree.DepthFirst_resistances(0)
-                 
+    
     while tree.get_k_term() < N_term: 
         success, new_child_location, d_tresh = cco_2df.get_new_location(tree, area_descptr, N_term)
         if (success == False):
@@ -228,7 +229,7 @@ if True:
         print "stored cet", store_cet
     fac = 1
         
-    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_f%i_s%i_dbg" %(NTerm,fac,seed), fac)#tree_stored[-1]
+    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_f%i_s%i_dbgcpcheck" %(NTerm,fac,seed), fac)#tree_stored[-1]
     #return last_tree
 
 
