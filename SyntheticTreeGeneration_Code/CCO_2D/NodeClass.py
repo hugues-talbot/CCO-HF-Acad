@@ -92,6 +92,7 @@ class Tree:
     "Class defining attributes of the tree during growth"
     "a_perf: total perfusion area of the final tree"
     "r_f: real radius (mm) of the total perfusion area"
+
     def __init__(self, nodes, n_term, q_perf, p_drop, visc, a_perf, r_f):
         self.nodes = nodes
         self.n_term = n_term
@@ -175,6 +176,11 @@ class Tree:
     def update_length_factor(self):
         r_pk = np.sqrt((self.get_k_term() + 1)* self.r_supp**2)
         self.length_factor =  r_pk / self.final_perf_radius
+
+    def update_length_factor(self):
+	r_pk = np.sqrt((self.get_k_term() + 1) * self.r_supp)
+	self.length_factor = r_pk / self.final_perf_radius
+
     
     # get the length of the segment connecting the node of index i and its parent
     def length(self, i):
@@ -202,7 +208,7 @@ class Tree:
         res = self.resistance(index)
         node = self.nodes[index]
         node.set_resistance(res)
-    
+
     #update resistances on the tree along a post order depth first traversal
     def depthfirst_resistances(self,index):
         children = (self.nodes[index]).children()
@@ -212,7 +218,7 @@ class Tree:
             self.depthfirst_resistances(children[1])
         if index > 0:
             self.update_resistance(index)
-            
+
         
     def get_radius(self, index):
         root_radius = self.get_root_radius()
@@ -385,6 +391,7 @@ class Tree:
         # and updating the resistance on whole tree so all radii are rescaled
         self.depthfirst_resistances(0)         
         
+
         # update flow values in tree
         q_term = self.get_q_term()#self.q_perf / (self.get_k_term()) # + 1
         print "qterm", q_term

@@ -157,11 +157,9 @@ if True:
     first_node = nclass.Node(1, first_node_position, Q_perf,0)
     first_node.set_label(0)
     tree.add_node(first_node)
-
     tree.update_flow()
     tree.update_length_factor()
     tree.depthfirst_resistances(0)
-
             
     process_nb = 4            
     while tree.get_k_term() < N_term: 
@@ -267,8 +265,8 @@ if True:
 
         #keep going until reach Nterm!
 
-
     plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
+
 
 
 
