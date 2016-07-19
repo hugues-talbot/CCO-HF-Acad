@@ -148,14 +148,14 @@ def kamiya_single_bif_opt(r, f, c0, c1, c2, iter_max, tolerance, store_whole_res
                 #print "volume gdt ", volume - vol_c
                 #print "optimal volume ", vol_c
                 print  "optimal position ", x_c, y_c
-                print "optimal radii ", np.sqrt(r)
-                storage.append([x_c, y_c, r])                
+                print "optimal radii ", np.sqrt(r_c)
+                storage.append([x_c, y_c, r_c])                
                 return True, storage #x_c, y_c, r
             else:
                 it = it + 1
                 x , y , volume, r = x_c, y_c, vol_c, r_c
                 if store_whole_results:
-                    storage.append([x_c, y_c, r]) #### need it if used in Kamyia testing 
+                    storage.append([x, y, r]) #### need it if used in Kamyia testing 
                 
                 #print " position gdt ", gdt
                 #print "volume gdt ", volume - vol_c
