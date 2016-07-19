@@ -156,8 +156,10 @@ class Tree:
         pass
     
     def get_root_radius(self):
-        print self.resistance(1), self.q_perf, self.p_drop
-        return np.power(self.resistance(1) * self.q_perf / self.p_drop, 1./4)
+        #find the index of the root (not obviously 1)
+        children = self.nodes[0].children()
+        root_index = children[0] if children[0]>0 else children[2]
+        return np.power(self.resistance(root_index) * self.q_perf / self.p_drop, 1./4)
     
     def update_length_factor(self):
         r_pk = np.sqrt((self.get_k_term() + 1)* self.r_supp)
@@ -310,7 +312,9 @@ class Tree:
         for i in self.nodes:
             if (i.index != old_child_index):
                 parent_i = self.nodes[i.parent()]
-                radius_i = self.get_radius(i.index)
+                print "radius i", self.get_radius(i.index)
+                print "radius i rescaled", self.get_radius(i.index) * 1./self.length_factor
+                radius_i = self.get_radius(i.index) 
                 print "testing connection with segment", "parent", parent_i.coord, "child", i.coord
                 if (cco_2df.no_overlap(i.coord, parent_i.coord, new_child_location, branching_location, radius_i, new_branches_radii[2]) == False):
                     return False
