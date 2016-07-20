@@ -8,6 +8,7 @@
 
 \newcommand{\mydiv}{\ensuremath{\operatorname{div}}}
 \newcommand{\myvec}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\gvec}[1]{\ensuremath{\overset{\rightarrow}{#1}}}
 \newcommand{\scal}[2]{\ensuremath{\langle #1 , #2 \rangle}}
 
 \title{Distance and curvature}
@@ -250,8 +251,15 @@ We take the largest $n$ between maximal curvature and gradient method. This prov
 \subsubsection{Finding the border of the territory}
 
 %You actually don't test if the line defined by the segment $p_1p_2$ crosses a concavity, which actually might not happen!
+During the Kamyia process constrained to the non-convex territory, we often need to estimate the location of the border of the territory from the local information. Here we propose an iterative method, 
 
-If we want to find the first point along the gradient direction, starting from $p_1$, that reaches the border of the perfusion territory we look for $\gamma_1$ that solves:
+For instance, if we want to find  the location $p_0$ of the point along the gradient direction, starting from $p_1$, that reaches the border of the perfusion territory, we can write:
+\begin{equation}
+\nabla \omega(p_1) \approx \frac{\omega(p_1) - \omega(p_0)}{|p_1p_0|},
+\end{equation}
+with $|p_1p_0|$ is the length between $p_1$ and $p_0$, and $\omega(p_0) = 0$. If we project this onto the line passing by $p_1$ and in the direction of $\nabla\omega(p_1)$, we write $l_1=|p_1p_0|$, and we solve for $l_1$ so that:
+
+
 
 
 %\begin{equation}
@@ -267,46 +275,53 @@ If we want to find the first point along the gradient direction, starting from $
 %\end{equation}
 
 \begin{equation}
-\omega (p_1) + \gamma_1 \Delta \omega = 0
+\omega (p_1) + l_1 \nabla\omega(p_1) = 0
 \end{equation}
-The gap of potential $\Delta \omega$ is calculated along the gradient:
+
+%%HT pas besoin de ça
+%The gap of potential $\Delta \omega$ is calculated along the gradient:
+%\begin{equation}
+%\Delta \omega  = \omega (p_1 + \nabla \omega (p_1)) - \omega (p_1)
+%\end{equation}
+
+The process is the same to calculate $l_2$ from $p_2$.
+
+We can either consider this estimation of $l_i$ accurate enough or we can refine it by iterating using the Newton-Raphson principle. However, because we will use the projection of this point on the segment $[p_1p_2]$ to obtain a final value of type integer ($n$), a high accuracy might not be necessary.
+
+
+If $|l_1|$ is small, $p_1$ is close to a concavity. 
+Then we can use its projection on the segment $p_1p_2$ to determine how fast the segment is going toward the concavity.
 \begin{equation}
-\Delta \omega  = \omega (p_1 + \nabla \omega (p_1)) - \omega (p_1)
+ d_{\text{proj}_1} = l_1 \frac{\scal{\nabla \omega(p_1)}{ \gvec{p_1p_2}}}{||\gvec{p_1p_2}||} 
 \end{equation}
-The process is similar to calculate $\gamma_2$ from $P_2$.
-
-We can either consider this estimation of $\gamma$ accurate enough or looking for a precise solution by iterating with Newton-Raphson principle. However, because we will use the projection of this point on the segment $p_1p_2$ to obtain a final value of type integer ($n$), a high accuracy might not be necessary.
-
-
-If $|\gamma_1|$ is small, $p_1$ is close to a concavity. 
-Then we can use its projection on the segment $p_1p_2$ to determine if the segment is how fast the segment is going toward the concavity.
+Similarly for the segment starting from the $p_2$ end, it would be calculated  as:
+%HT pas d'accord, dimensionalite
+%\begin{equation}
+%l_2 = - \frac{\omega(p_2)}{\omega( p_2 + \nabla \omega(p_2)) -\omega(p_2)} 
+%\end{equation}
 \begin{equation}
- d_{proj_1} = \gamma_1 \frac{<\nabla \omega(p_1), p_1p_2>}{||p_1p_2||} 
-\end{equation}
-Similarly for the $p_2$ segment end, it would be calculated  as:
-\begin{equation}
-\gamma_2 = - \frac{\omega(p_2)}{\omega( p_2 + \nabla \omega(p_2)) -\omega(p_2)} 
+l_2 = -\frac{\omega(p_2)}{\nabla\omega(p_2)}
 \end{equation}
 and then
 \begin{equation}
- d_{proj_2} = \gamma_2 \frac{<\nabla \omega(p_2), p_2p_1>}{||p_1p_2||}
+ d_{\text{proj}_2} = l_2 \frac{\scal{\nabla \omega(p_2)}{\gvec{p_2p_1}}}{||\gvec{p_1p_2}||}
 \end{equation}
-If any of the $d_{proj_i}$ is negative we know that the segment is locally going away from the concavity.
+If any of the $d_{\text{proj}_i}$ is negative we know that the segment not coming closer to a concavity.
 
 We select the smallest of the two sampling distance:
 \begin{equation}
-d_{proj} = min(abs(d_{proj_1}), abs(d_{proj_2}))
+d_{\text{proj}} = \min(|d_{\text{proj}_1}|,|d_{\text{proj}_2}|)
 \end{equation}
 
-The distance $|d_{proj}|$ is efficient to sample the segment, so $n$ is defined as:
+The distance $|d_{\text{proj}}|$ is a geometrically meaningful way to sample the segment, so $n$ is defined as:
 \begin{equation}
-n = \Bigl\lceil\frac{||p_1p_2||}{|d_{proj|}}\Bigr\rceil
+n = \Bigl\lceil\frac{||\gvec{p_1p_2}||}{|d_{proj|}}\Bigr\rceil
 \end{equation}
 %\begin{equation}
 %n = \Bigl\lceil\frac{||p_1p_2||}{|\gamma < \nabla \omega(p_1), p_1p_2>|}\Bigl\rceil 
 %\end{equation}
 
-We need to use the same boundaries than defined in \ref{subsec}.\\
+We need to consider the same boundaries as defined in \ref{subsec}.\\
 
 
 %\begin{figure}[h!]
@@ -317,8 +332,7 @@ We need to use the same boundaries than defined in \ref{subsec}.\\
 %\end{figure}
 
 
-These two methods are expected to be more accurate than the previous one \ref{firstaproach}, because they consider the potential along the segment (not only at the tips), but also both local and global curvatures.
-It will be interesting to compare these two last method.
+These two methods are expected to be more accurate than the one defined in section~\ref{firstaproach}, because we consider the potential along the segment and solely at the tips, as well as local and global curvatures. It will be interesting to compare these methods.
 
 
 \bibliography{notes_ht.bib}
