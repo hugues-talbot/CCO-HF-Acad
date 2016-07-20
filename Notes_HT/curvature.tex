@@ -6,6 +6,10 @@
 \usepackage{amssymb}
 \usepackage{graphicx}
 
+\newcommand{\mydiv}{\ensuremath{\operatorname{div}}}
+\newcommand{\myvec}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\scal}[2]{\ensuremath{\langle #1 , #2 \rangle}}
+
 \title{Distance and curvature}
 \author{Hugues Talbot}
 
@@ -15,7 +19,7 @@
 	
 	\section{Normals and curvature}
 	
-	There is a deep link between the evolution of the normal along a curve and the curvature.
+	There is a deep link between the evolution of the normal vector along a curve and its curvature .
 	
 	Let $C$ be a planar curve. To define the curvature at a point, we can consider
 	the case of a straight line. We can admit that in this case the curvature is zero along the line. For a portion of a circle, the curvature is defined to be inversely proportional to the radius of the circle:
@@ -116,7 +120,7 @@
 	\mathbf{n}(x,y) = \frac{\nabla \phi}{|\nabla \phi|}(x,y)
 	\end{equation}
 	
-	The curvature is given by the derivative of this expression. However this is a multidimensional derivative. Since $\nabla \phi$ is a vector, we must use the divergence operator:
+	The curvature is given by the derivative of this expression. However this is a multidimensional derivative. Since $\nabla \phi$ is a vector, we must use the divergence operator $\nabla . \mathbf{F} \equiv \sum_i^d \frac{\partial \mathbf{F}}{\partial x_i}$:
 	
 	\begin{equation}
 	\kappa = \nabla . \frac{\nabla \phi}{|\nabla \phi|}
@@ -132,57 +136,60 @@
 		
 	\section{Application to our problem}
 	
-We want to define how to sample a segment $p_1p_2$ so that checking at each sampling point if it is located outside the perfusion territory, we can conclude the segment belongs inside the territory or not. The number of checking ($n + 1$), shall be optimized in order to avoid too many tests (minimize computation time) but also to guarantee the result with a tolerance reasonable enough (maximize test accuracy).
+Here we assume a non-convex territory with two nested surfaces as borders. Every point $p$ of the territory is associated with a value $\omega(p)$ so that $\omega(p) = 0$ if $p$ belongs to the inner surface, and $\omega(p) = 1$ on the outer surface. Numerically, $\omega$ can for example be computed from solving the electrostatic Poisson equation, i.e. a random walker. Our formulations and illustrations are in 2D but carry over to 3D without significant changes.
+
+
+Let $[p_1p_2]$ be the segment defined by the points $\{p_1, p_2\}$. We want to define how to sample this segment, so that we can conclude we high confidence whether or not the whole segment is located inside a non-convex territory. The number of samples ($n + 1$), shall be optimized in order to avoid too many tests (minimize computation time) but also to guarantee the result within a reasonable tolerance (maximize test accuracy).
 
 	\subsection{First approach} \label{firstaproach}
 
-We can estimate $n$, the number of tests along the segment, from:
+We can estimate $n$, the number of samples along the segment, from:
 \begin{equation}
-n \propto \frac{|p_1 - p_0|}{R}
+n \propto \frac{|p_2 - p_1|}{R}
 \end{equation}
-$R$ is an approximation of the local curvature along the segment by estimating the divergence at each point $p_1$ and $p_2$, called $R_1$ and $R_2$ respectively :
+$R$ is an approximation of the local radius of curvature along the segment by estimating the divergence at each point $p_1$ and $p_2$, called $\kappa_1$ and $\kappa_2$ respectively :
 \begin{equation}
-R = max(|R_1|, |R_2|)
+R = max(|\frac{1}{\kappa_1}|, \frac{1}{|\kappa_2|})
 \end{equation} 
-The figure \ref{example} illustrates the relationship between $D = |p_1 - p_0|$, $R_1$, $R_2$ and $n$. 
+The figure \ref{example} illustrates the relationship between $D = |p_2 - p_1|$, $R_1= \frac{1}{|\kappa_1|}$, $R_2=\frac{1}{|\kappa_2|}$ and $n$. 
 \begin{figure}[h!]
 \centering
 \includegraphics[width=0.5\textwidth]{Drawings/CurvatureTestExample.png}
-\caption{When $D$ gets bigger relatively to $max(|R_1, R_2|)$, the value of $n$ is also higher to detect if the segment crosses the perfusion territory.}
+\caption{When $D$ becomes larger relatively to $max(|R_1, R_2|)$, the value of $n$ is also higher to detect if the segment crosses the perfusion territory.}
 \label{example}
 \end{figure}
 
-The divergence of a a continuously differentiable vector field $\omega$ is equal to the scalar value function:
+The divergence of a a continuously differentiable vector field $\myvec{w}=(w_x,w_y)$ is equal to the scalar value function:
 \begin{equation}
-div (\omega) = (\frac{\partial}{\partial x}, \frac{\partial}{\partial y}) \cdot (\omega_x, \omega_y) 
+\mydiv (\myvec{w}) = (\frac{\partial}{\partial x}, \frac{\partial}{\partial y}) \cdot (w_x, w_y) 
 \end{equation}
 \begin{equation}
-div (\omega) = \left( \omega_x(x, y) - \omega_x(x-1, y) \right) + \left( \omega_y(x, y) - \omega_y(x, y - 1) \right)
+\mydiv (\myvec{w}) = \left( w_x(x, y) - w_x(x-1, y) \right) + \left( w_y(x, y) - w_y(x, y - 1) \right).
 \end{equation}
-with
+
+Since we are interested in estimating a curvature, the field $\myvec{w}$ is the normalized gradient of $\omega$.
 \begin{equation}
-\omega_x = \nabla_x \omega = \omega (x + 1, y) - \omega (x, y)
+w_x = \frac{\nabla_x \omega}{\|\nabla \omega\|} = \frac{\omega (x + 1, y) - \omega (x, y)}{\sqrt{(\nabla_x\omega)^2 + (\nabla_y\omega)^2}}
 \end{equation}
 and
 \begin{equation}
-\omega_y = \nabla_y \omega = \omega (x, y + 1) - \omega (x, y)
+w_y = \frac{\nabla_y \omega}{\|\nabla \omega\|} = \frac{\omega (x, y + 1) - \omega (x, y)}{\sqrt{(\nabla_x\omega)^2 + (\nabla_y\omega)^2}}
 \end{equation}	
+
+This approach does not take into account the position of $p_1$ and $p_2$ within the territory, and so it is easy to find counter-examples where this approach fails.
 
 \subsection{Second approach}
 
-We are in the case of measuring the curvature along a segment, so we could use the segment information within an iterative process.
+%We are in the case of measuring the curvature along a segment, so we could use the segment information within an iterative %process.
+Here we consider an iterative process to take into account the curvature along a segment.
+
 \subsubsection{Interpolating the point along the segment line that crosses the concavity} \label{subsec}
-We calculate the distances $\lambda_i$ that solves:
+We calculate the distances $\lambda_1,\lambda_2$ that solves:
 \begin{equation}
-\omega (p_1) + \lambda_1 <\nabla \omega(p_1), \overset{\rightarrow}{p_1p_2}> = 0 
+\omega (p_1) + \lambda_1 \scal{\nabla\omega(p_1)}{\overset{\rightarrow}{p_1p_2}} =  0,
 \end{equation}
-\begin{equation}
-<<<<<<< HEAD
-\omega (p_2) + \lambda_2 <\nabla \omega(p_2), \overset{\rightarrow}{p_1p_2}> = 0
-=======
-\omega (p_2) + \lambda_2<\nabla \omega(p_2), p_2p_1> = 0
->>>>>>> 1d8e1f08f8bf331b199523a7638cc24de3cb3e10
-\end{equation}
+and symmetrically for $\lambda_2$.
+
 
 Then we select:
 \begin{equation}
@@ -190,31 +197,25 @@ Then we select:
 \end{equation}
 to obtain :
 \begin{equation}
-<<<<<<< HEAD
-n = \operatorname{ceiling}(\frac{1}{\lambda})
-=======
-n = \Bigl\lceil \frac{1}{\lambda} \Bigr\rceil
->>>>>>> 1d8e1f08f8bf331b199523a7638cc24de3cb3e10
+n = \Bigl\lceil \frac{1}{\lambda} \Bigr\rceil,
 \end{equation}
-If $lambda > 1$ it means the line $p_1p_2$ crosses the concavity outside of the segment $p_1p_2$. We would approximate that there is actually no need of computing test along the segment. But we have to keep in mind that this interpretation comes only from a local approximation.
+where $\lceil.\rceil$ denotes the ceiling operator, i.e. the function that maps a real number to the smallest integer that larger or equal to it.
+
+If  $\lambda < 0$ or $\lambda > 1$, it means the line $(p_1p_2)$ crosses the concavity outside of the segment $[p_1p_2]$. We could consider that there is actually no need of refining the test along the segment. But we have to keep in mind that this interpretation comes only from a linear local approximation. In Fig.~\ref{fig:cec}, we show a counter-example, where this approach fails.
 
 \begin{figure}[h!]
 			\label{spe issue}
 			\centering
 			\includegraphics[width=0.25\textwidth]{Drawings/CurvatureTestExample1.png}
-			\caption{Specific situation where the local gradient doesn't help detecting the concavity.}
+			\caption{Specific situation where the local gradient doesn't help detecting the concavity.\label{fig:cec}}
 \end{figure}
-Also, this method would fail for any case where the dot product $<\nabla \omega(p_1), p_1p_2> \simeq 0$, and in some specific situations such as the figure \ref{spe issue}. Hence we need to define a global boundary:
+Also, this method would fail for any case where the dot product $\scal{\nabla \omega(p_1)}{\overset{\rightarrow}{p_1p_2}} \simeq 0$, and in some specific situations such as the figure \ref{spe issue}. Hence we need to define a global boundary:
 \begin{equation}
-<<<<<<< HEAD
-n \geq \frac{||p_1p_2||}{2R_{\text{max}}}
-=======
-n \geq \frac{||p_1p_2||}{R_{max}} 
->>>>>>> 1d8e1f08f8bf331b199523a7638cc24de3cb3e10
+n \geq \frac{||\overset{\rightarrow}{p_1p_2}||}{2R_{\text{max}}}
 \end{equation}
 with $R_{max}$ the maximal curvature radius of both inner and outer surfaces.
 
-Note: because of the segmentation, we might actually obtain $R_{max}$ close to zero, hence it is necessary to consider a tolerance $s$ so that 
+Note: if the segmentation is noisy, we might actually measure non-physical very high curvatures, i.e. $R_{max}$ close to zero, hence it is necessary to consider a tolerance $s$ so that 
 \begin{equation}
 R_{max}^* = R_{max} + s
 \end{equation}
@@ -235,18 +236,18 @@ c = \sqrt{R_{max}^2 - (R_{max} + s)^2}
 \end{equation}
 The global boundary follows this tolerance:
 \begin{equation}
-n \geq \frac{||p_1p_2||}{c}
+n \geq \frac{||\overset{\rightarrow}{p_1p_2}||}{c}
 \end{equation}
 
-We take the biggest $n$ between maximal curvature and gradient method. This provides a robust sampling definition considering both local and global informations, see figure \ref{test sampling}.
+We take the largest $n$ between maximal curvature and gradient method. This provides a robust sampling definition considering both local and global informations, see figure \ref{test sampling}.
 \begin{figure}[h!]
 			\label{test sampling}
 			\centering
 			\includegraphics[width=0.35\textwidth]{Drawings/CurvatureTestExample2.png}
-			\caption{Specific situation where the local gradient doesn't help detecting the concavity.}
+			\caption{In this situation, considering the global maximum curvature will allow us to detect the concavity between $p_1$ and $p_2$.}
 \end{figure}
 
-\subsubsection{Projecting Newton's method gradient result on the segment}
+\subsubsection{Finding the border of the territory}
 
 %You actually don't test if the line defined by the segment $p_1p_2$ crosses a concavity, which actually might not happen!
 
