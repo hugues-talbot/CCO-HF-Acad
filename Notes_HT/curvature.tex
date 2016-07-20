@@ -171,54 +171,141 @@ and
 \subsection{Second approach}
 
 We are in the case of measuring the curvature along a segment, so we could use the segment information within an iterative process.
-
+\subsubsection{Interpolating the point along the segment line that crosses the concavity} \label{subsec}
 We calculate the distances $\lambda_i$ that solves:
 \begin{equation}
 \omega (p_1) + \lambda_1 <\nabla \omega(p_1), \overset{\rightarrow}{p_1p_2}> = 0 
 \end{equation}
 \begin{equation}
+<<<<<<< HEAD
 \omega (p_2) + \lambda_2 <\nabla \omega(p_2), \overset{\rightarrow}{p_1p_2}> = 0
+=======
+\omega (p_2) + \lambda_2<\nabla \omega(p_2), p_2p_1> = 0
+>>>>>>> 1d8e1f08f8bf331b199523a7638cc24de3cb3e10
 \end{equation}
 
-and then select:
+Then we select:
 \begin{equation}
 \lambda = \min(\lambda_1, \lambda_2)
 \end{equation}
 to obtain :
 \begin{equation}
+<<<<<<< HEAD
 n = \operatorname{ceiling}(\frac{1}{\lambda})
+=======
+n = \Bigl\lceil \frac{1}{\lambda} \Bigr\rceil
+>>>>>>> 1d8e1f08f8bf331b199523a7638cc24de3cb3e10
 \end{equation}
-We keep in mind that this method would fail for any case where the dot product $<\nabla \omega(p_1), p_1p_2> simeq 0$, and in some specific situations such as the figure x, so we define a global boundary:
+If $lambda > 1$ it means the line $p_1p_2$ crosses the concavity outside of the segment $p_1p_2$. We would approximate that there is actually no need of computing test along the segment. But we have to keep in mind that this interpretation comes only from a local approximation.
+
+\begin{figure}[h!]
+			\label{spe issue}
+			\centering
+			\includegraphics[width=0.25\textwidth]{Drawings/CurvatureTestExample1.png}
+			\caption{Specific situation where the local gradient doesn't help detecting the concavity.}
+\end{figure}
+Also, this method would fail for any case where the dot product $<\nabla \omega(p_1), p_1p_2> \simeq 0$, and in some specific situations such as the figure \ref{spe issue}. Hence we need to define a global boundary:
 \begin{equation}
+<<<<<<< HEAD
 n \geq \frac{||p_1p_2||}{2R_{\text{max}}}
+=======
+n \geq \frac{||p_1p_2||}{R_{max}} 
+>>>>>>> 1d8e1f08f8bf331b199523a7638cc24de3cb3e10
 \end{equation}
-with $R_{max}$ the maximal curvature radius of both inner and outer surfaces.\\
+with $R_{max}$ the maximal curvature radius of both inner and outer surfaces.
 
-This equation does not look correct to me: you are adding a potential value to a scalar which has nothing to do with a potential.
-You actually don't test if the line defined by the segment $p_1p_2$ crosses a concavity, which actually might not happen!
-
-If we want to find the first point along the gradient direction, starting from $p_1$, that reaches the border of the perfusion territory we look for $lambda$ that solves:
+Note: because of the segmentation, we might actually obtain $R_{max}$ close to zero, hence it is necessary to consider a tolerance $s$ so that 
 \begin{equation}
-\omega( p_1 + \lambda \nabla w(p_1)) = 0
-\end{equation}
-This can also be written as:
-\begin{equation}
-\omega(p_1) + \lambda ||\nabla w(p_1)|| = 0
+R_{max}^* = R_{max} + s
 \end{equation}
 
-If $\lambda$ is small, $p_1$ is close to a concavity. 
+\begin{figure}[h!]
+			\centering
+			\includegraphics[width=0.25\textwidth]{Drawings/CurvatureTolerance.png}
+			\caption{The maximally inscribed radius and tolerance s define a semi-cord $c$.}
+\end{figure}
+
+The semi-cord $c$ defined by $R_{max}^*$ and $s$ is calculated as:
+\begin{equation}
+c = \sqrt{(R_{max}^*-s)^2 - R_{max}^{*2}}
+\end{equation} 
+That can be simplified as:
+\begin{equation}
+c = \sqrt{R_{max}^2 - (R_{max} + s)^2}
+\end{equation}
+The global boundary follows this tolerance:
+\begin{equation}
+n \geq \frac{||p_1p_2||}{c}
+\end{equation}
+
+We take the biggest $n$ between maximal curvature and gradient method. This provides a robust sampling definition considering both local and global informations, see figure \ref{test sampling}.
+\begin{figure}[h!]
+			\label{test sampling}
+			\centering
+			\includegraphics[width=0.35\textwidth]{Drawings/CurvatureTestExample2.png}
+			\caption{Specific situation where the local gradient doesn't help detecting the concavity.}
+\end{figure}
+
+\subsubsection{Projecting Newton's method gradient result on the segment}
+
+%You actually don't test if the line defined by the segment $p_1p_2$ crosses a concavity, which actually might not happen!
+
+If we want to find the first point along the gradient direction, starting from $p_1$, that reaches the border of the perfusion territory we look for $\gamma_1$ that solves:
+
+
+%\begin{equation}
+%\omega( p_1 + \gamma_1 \nabla w(p_1)) = 0
+%\end{equation}
+%This can also be written as:
+%\begin{equation}
+%\omega(p_1) + \gamma_1 ||\nabla w(p_1)|| = 0
+%\end{equation}
+%so that :
+%\begin{equation}
+%\gamma_1 = - \frac{\omega(p_1)}{||\nabla w(p_1)||} 
+%\end{equation}
+
+\begin{equation}
+\omega (p_1) + \gamma_1 \Delta \omega = 0
+\end{equation}
+The gap of potential $\Delta \omega$ is calculated along the gradient:
+\begin{equation}
+\Delta \omega  = \omega (p_1 + \nabla \omega (p_1)) - \omega (p_1)
+\end{equation}
+The process is similar to calculate $\gamma_2$ from $P_2$.
+
+We can either consider this estimation of $\gamma$ accurate enough or looking for a precise solution by iterating with Newton-Raphson principle. However, because we will use the projection of this point on the segment $p_1p_2$ to obtain a final value of type integer ($n$), a high accuracy might not be necessary.
+
+
+If $|\gamma_1|$ is small, $p_1$ is close to a concavity. 
 Then we can use its projection on the segment $p_1p_2$ to determine if the segment is how fast the segment is going toward the concavity.
 \begin{equation}
- d_{proj} = \frac{< \lambda \nabla \omega(p_1), p_1p_2>}{||p_1p_2||}
+ d_{proj_1} = \gamma_1 \frac{<\nabla \omega(p_1), p_1p_2>}{||p_1p_2||} 
 \end{equation}
-This distance $d_{proj}$ is efficient to sample the segment, so $n$ is defined as:
+Similarly for the $p_2$ segment end, it would be calculated  as:
 \begin{equation}
-n = ceiling(\frac{||p_1p_2||}{d_{proj}})
+\gamma_2 = - \frac{\omega(p_2)}{\omega( p_2 + \nabla \omega(p_2)) -\omega(p_2)} 
 \end{equation}
+and then
 \begin{equation}
-n = ceiling(\frac{1}{< \lambda \nabla \omega(p_1), p_1p_2>})
+ d_{proj_2} = \gamma_2 \frac{<\nabla \omega(p_2), p_2p_1>}{||p_1p_2||}
+\end{equation}
+If any of the $d_{proj_i}$ is negative we know that the segment is locally going away from the concavity.
+
+We select the smallest of the two sampling distance:
+\begin{equation}
+d_{proj} = min(abs(d_{proj_1}), abs(d_{proj_2}))
 \end{equation}
 
+The distance $|d_{proj}|$ is efficient to sample the segment, so $n$ is defined as:
+\begin{equation}
+n = \Bigl\lceil\frac{||p_1p_2||}{|d_{proj|}}\Bigr\rceil
+\end{equation}
+%\begin{equation}
+%n = \Bigl\lceil\frac{||p_1p_2||}{|\gamma < \nabla \omega(p_1), p_1p_2>|}\Bigl\rceil 
+%\end{equation}
+
+We need to use the same boundaries than defined in \ref{subsec}.\\
 
 
 %\begin{figure}[h!]
@@ -229,7 +316,8 @@ n = ceiling(\frac{1}{< \lambda \nabla \omega(p_1), p_1p_2>})
 %\end{figure}
 
 
-This method is expected to be more accurate than the previous one \ref{firstaproach}, because it considers the potential along the segment (not only at the tips), but also both local and global curvature.
+These two methods are expected to be more accurate than the previous one \ref{firstaproach}, because they consider the potential along the segment (not only at the tips), but also both local and global curvatures.
+It will be interesting to compare these two last method.
 
 
 \bibliography{notes_ht.bib}

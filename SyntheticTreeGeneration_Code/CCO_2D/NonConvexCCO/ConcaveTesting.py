@@ -74,10 +74,105 @@ def get_potential(potential, location):
     #find interpolation solution
     x,y = np.arange(0,result.shape[0],1), np.arange(0,result.shape[1],1)
     my_interpolating_function = RegularGridInterpolator((x,y),potential)   
-    return my_interpolating_function(np.array([location[1],location[0]]))
+    return my_interpolating_function(location[::-1])
     
+def get_interpolating_function(grid):
+    x,y = np.arange(0,grid.shape[0],1), np.arange(0,grid.shape[1],1)
+    return RegularGridInterpolator((x,y),grid)
     
 ext_radius = 50
 int_radius = 15
 center=np.array([100, 50])
-result = potential_image(center, ext_radius, int_radius)
+w = potential_image(center, ext_radius, int_radius)
+gy,gx = np.gradient(result)
+
+#testing gradient and interpolations
+interp_w = get_interpolating_function(w)
+interp_gx = get_interpolating_function(gx)
+interp_gy = get_interpolating_function(gy)
+loc = np.array([100,30])
+print "w(loc)", w[loc[1], loc[0]]
+print "interpw(loc)", interp_w(loc[::-1])
+print "gx(loc)", gx[loc[1], loc[0]]
+print "interpgx", interp_gx(loc[::-1])
+print "gy", gy[loc[1], loc[0]]
+print "interpgy", interp_gy(loc[::-1])
+
+#gdt_vec = np.array([interp_gx(midp[::-1]), interp_gy(midp[::-1])])
+def starting_point(interp_w,interp_gx, interp_gy, seg_pt1, seg_pt2, new_location, eps):
+    #mid point of seg
+    midp = (seg_pt1 + seg_pt2)*0.5
+    #find gdt of w at mid point
+    gdt_vec = np.array([interp_gx(midp[::-1]), interp_gy(midp[::-1])])
+    #find on this line the point p where w(p) = 0.5 * (w(seg_pt1) + w(seg_pt2))
+    target_w = 0.5 * (interp_w(seg_pt1[::-1]) + interp_w(seg_pt2[::-1]))
+    start_point, w_start = newton_algo(interp_w, interp_gx, interp_gy, new_location, gdt_vec, target_w, eps)
+    return start_point
+
+def length(vect):
+    return np.sqrt(np.sum(vect**2))
+
+target_line_vect = np.array([0.5,0.5])
+target_w = 0.2
+point = loc
+def newton(w,interp_w, interp_gx, interp_gy, point, target_line_vect, target_w):
+    p_gdt = np.array([[interp_gx(point[::-1])], [interp_gy(point[::-1])]])
+    #print "p_gdt", p_gdt
+    #print p_gdt.shape
+    #print "length p_gdt", length(p_gdt)
+    #print "interp at point", interp_w(point[::-1])
+    norm_line_vect = target_line_vect * 1./ length(target_line_vect)
+    
+    vect_proj_length = np.sum(p_gdt*target_line_vect) * 1./length(target_line_vect)
+    #print "vect_proj length", vect_proj_length
+    vect_proj = norm_line_vect * vect_proj_length
+    #print "vect_proj", vect_proj
+    scal_gap = - interp_w(point[::-1]) + interp_w((point + vect_proj)[::-1])
+    #print "scal_gap", scal_gap
+    scal_gap_2 = target_w - interp_w(point[::-1])
+    #print "scal_gap_2", scal_gap_2
+    k = (scal_gap_2 / scal_gap )
+    
+    scaling = vect_proj_length 
+    proj_pt = point + k*scaling * norm_line_vect
+    #print "k", k
+    #print "norm line vect", norm_line_vect
+    print "proj pt",  proj_pt
+    #print "w at proj point", interp_w(proj_pt[::-1])
+    fac = 10.
+    plt.subplot(1,1,1)
+    plt.imshow(w)
+    plt.plot(point[0],point[1], "o", color = "k", markersize=1)
+    plt.plot([point[0], point[0] + p_gdt[0]*fac], [point[1], point[1] + p_gdt[1]*fac], color = "k")   
+    plt.plot(proj_pt[0], proj_pt[1], "o", color = "r", markersize = 2)
+    plt.plot([point[0], point[0] + target_line_vect[0]*fac], [point[1], point[1] + target_line_vect[1]*fac], color = "b")
+    plt.plot([point[0], point[0] + vect_proj[0]*fac], [point[1], point[1] + vect_proj[1]*fac], color = "y")
+    plt.show()
+    return proj_pt
+    
+a = newton(w,interp_w, interp_gx, interp_gy, loc, target_line_vect, target_w)
+
+def newton_step(interp_w, interp_gx, interp_gy, point, target_line_vect, target_w):
+    p_gdt = np.array([[interp_gx(point[::-1])], [interp_gy(point[::-1])]])
+    norm_line_vect = target_line_vect * 1./ length(target_line_vect)  
+    vect_proj_length = np.sum(p_gdt*target_line_vect) * 1./length(target_line_vect)   
+    vect_proj = norm_line_vect * vect_proj_length
+    scal_gap = - interp_w(point[::-1]) + interp_w((point + vect_proj)[::-1])
+    scal_gap_2 = target_w - interp_w(point[::-1])
+    k = (scal_gap_2 / scal_gap )   
+    scaling = vect_proj_length 
+    proj_pt = point + k*scaling * norm_line_vect
+    return proj_pt
+    
+def newton_algo(interp_w, interp_gx, interp_gy, point, target_line_vect, target_w, eps):
+    proj_pt = newton_step(interp_w, interp_gx, interp_gy, point, target_line_vect, target_w)
+    w_proj = interp_w(proj_pt[::-1])
+    print "w_proj", w_proj
+    if w_proj < target_w + eps and w_proj > target_w - eps:
+        return proj_pt, w_proj
+    else:
+        newton_algo(interp_w, interp_gx, interp_gy, proj_pt, target_line_vect, target_w, eps)
+
+eps = 0.001  
+newton_algo(interp_w, interp_gx, interp_gy, loc, target_line_vect, target_w, eps)
+#newton(w, interp_w, interp_gx, interp_gy, loc, target_line_vect,target_w)

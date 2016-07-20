@@ -78,7 +78,8 @@ class Tree:
         self.node_index = 0
         self.nu = visc
         self.interp_w = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),w)
-        
+        self.interp_gx = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),np.gradient(w)[0])
+        self.interp_gy = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),np.gradient(w)[1])
     def __deepcopy__(self, tree):
         return Tree(copy.deepcopy(self.nodes), copy.deepcopy(self.n_term), copy.deepcopy(self.q_perf), copy.deepcopy(self.p_drop), copy.deepcopy(self.nu))    		
             
@@ -103,7 +104,7 @@ class Tree:
         
     def get_w(self, location):
         # interpolate value from potential function
-        return self.interp_w(np.array([location[1],location[0]]))
+        return self.interp_w(location[::-1])
         
     def inside_perf_territory(self, location):
         pot_val = self.get_w(location)

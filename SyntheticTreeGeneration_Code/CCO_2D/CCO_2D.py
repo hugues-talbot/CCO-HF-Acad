@@ -18,12 +18,8 @@ import cPickle as pickle
 import sys  # Need to have acces to sys.stdout
 import time
 
-from multiprocessing import Pool, TimeoutError
+
  
-def test_connection_listb(list_input):
-    copy_tree = copy.deepcopy(list_input[0])
-    print list_input[1]
-    return copy_tree.test_connection(list_input[1], list_input[2])
 
 
 ############# Visualisation tools ####################
@@ -84,7 +80,7 @@ if store_data:
 #def cco_function(NTerm, filename):
 if True:
 
-    NTerm = 2
+    NTerm = 250
     seed = 42
     np.random.seed(seed)
     
@@ -95,8 +91,8 @@ if True:
     N_term = NTerm
     Q_term = Q_perf / N_term
     P_drop = 1.33e7 -7.98e6 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
-    viscosity = 3.6 # 3.6cp = 3.6mPa = 3.6 kg mm-1 s-2 (check works with radius and length in mm)
-    N_con = 1
+    viscosity = 3.6 # 3.6cp = 3.6mPa = 3.6 kg mm-1 s-2 (check works with radius and length in mm) #3.6 cp =3.6e-3 Pa.s = 3.6e-9 MPa.s 
+    N_con = 20
     N_con_max = 40
     
     # About  convexe perfusion surface : defines a disc surface 
@@ -147,22 +143,12 @@ if True:
         # test closest neighbors
         neighbors = tree.find_neighbors(new_child_location, N_con)
         args=[]
-        #
-#        for n_index in range (len(neighbors)):
-#            tree_copy = copy.deepcopy(tree)
-#            arg=[neighbors[n_index], new_child_location]
-#            args.append(arg)                     
-#            #cet[n_index] = tree_copy.test_connection(neighbors[n_index], new_child_location)              
-#            args = [neighbors[n_index], new_child_location]            
-#            cet[n_index] = pool.map(tree_copy.test_connection_list, arg)
-#            print cet
-        args = [[tree, neighbors[i],new_child_location] for i in range (len(neighbors))]
-        print args
-        #with Pool(processes=N_con) as pool: 
-        pool = Pool(processes = N_con)             
-        cet = pool.map(test_connection_listb,args) 
-        
-        break
+        for n_index in range (len(neighbors)):
+            tree_copy = copy.deepcopy(tree)
+            arg=[tree_copy,neighbors[n_index], new_child_location]
+            args.append(arg)                     
+            cet[n_index] = tree_copy.test_connection(neighbors[n_index], new_child_location)              
+            
         cet_filtered = filter(None,cet)
         cet_values = np.array(cet_filtered, dtype_r)   
         if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
@@ -174,24 +160,24 @@ if True:
             added_location.append(cet_final.tolist()[1:])
 
         # test extra neighbors if no connection candidate has fullfilled constraints
-#        else: 
-#            test_N_con_max = False
-#            neighbors = tree.find_neighbors(new_child_location, N_con_max)
-#            extra_neighbs = neighbors[N_con:N_con_max]
-#            
-#            for n_index in range (len(extra_neighbs)):
-#                tree_copy = copy.deepcopy(tree)
-#                cet[N_con + n_index] = tree_copy.test_connection(neighbors[n_index], new_child_location)             
-#                
-#            cet_filtered = filter(None,cet)
-#            cet_values = np.array(cet_filtered, dtype_r)   
-#            if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
-#                cet_values = np.array(cet_filtered, dtype_r)
-#                cet_sel = cet_values[cet_values['convgce']>0]
-#                cet_sorted = np.sort(cet_sel, order = "volume")
-#                cet_final=cet_sorted[0]
-#                adding_location = True
-#                added_location.append(cet_final.tolist()[1:])
+        else: 
+            test_N_con_max = False
+            neighbors = tree.find_neighbors(new_child_location, N_con_max)
+            extra_neighbs = neighbors[N_con:N_con_max]
+            
+            for n_index in range (len(extra_neighbs)):
+                tree_copy = copy.deepcopy(tree)
+                cet[N_con + n_index] = tree_copy.test_connection(extra_neighbs[n_index], new_child_location)             
+                
+            cet_filtered = filter(None,cet)
+            cet_values = np.array(cet_filtered, dtype_r)   
+            if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
+                cet_values = np.array(cet_filtered, dtype_r)
+                cet_sel = cet_values[cet_values['convgce']>0]
+                cet_sorted = np.sort(cet_sel, order = "volume")
+                cet_final=cet_sorted[0]
+                adding_location = True
+                added_location.append(cet_final.tolist()[1:])
             
         
         if (adding_location): # optimal connection found!
@@ -225,7 +211,7 @@ if True:
         print "stored cet", store_cet
     fac = 5
         
-    plot_tree(last_tree, area_descptr, "./Results/tree_Nt%i_f%i_s%i_paral" %(NTerm,fac,seed), fac)#tree_stored[-1]
+    plot_tree(last_tree, area_descptr, "./Results/tree_Nt%i_f%i_s%i_dbg" %(NTerm,fac,seed), fac)#tree_stored[-1]
     #return last_tree
 
 
