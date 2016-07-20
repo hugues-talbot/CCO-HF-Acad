@@ -174,23 +174,23 @@ We are in the case of measuring the curvature along a segment, so we could use t
 
 We calculate the distances $\lambda_i$ that solves:
 \begin{equation}
-\omega (p_1) + \lambda_1 <\nabla \omega(p_1), p_1p_2> = 0 
+\omega (p_1) + \lambda_1 <\nabla \omega(p_1), \overset{\rightarrow}{p_1p_2}> = 0 
 \end{equation}
 \begin{equation}
-\omega (p_2) + \lambda_2 <\nabla \omega(p_2), p_2p_1> = 0
+\omega (p_2) + \lambda_2 <\nabla \omega(p_2), \overset{\rightarrow}{p_1p_2}> = 0
 \end{equation}
 
 and then select:
 \begin{equation}
-\lambda = min(\lambda_1, \lambda_2)
+\lambda = \min(\lambda_1, \lambda_2)
 \end{equation}
 to obtain :
 \begin{equation}
-n = ceiling(\frac{1}{\lambda})
+n = \operatorname{ceiling}(\frac{1}{\lambda})
 \end{equation}
 We keep in mind that this method would fail for any case where the dot product $<\nabla \omega(p_1), p_1p_2> simeq 0$, and in some specific situations such as the figure x, so we define a global boundary:
 \begin{equation}
-n \geq \frac{||p_1p_2||}{2R_{max}}
+n \geq \frac{||p_1p_2||}{2R_{\text{max}}}
 \end{equation}
 with $R_{max}$ the maximal curvature radius of both inner and outer surfaces.\\
 
