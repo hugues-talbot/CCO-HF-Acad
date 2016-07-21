@@ -110,9 +110,12 @@ def single_bif_volume(r, l):
     
 #input r : r[0] and r[1] are the radii before connection added (r0 = r1 = r1 = radius of original segment before connection added) 
 #        this estimated r is used to calculate dp, then is updated in the calculate_radii function     
-def kamiya_loop_r2(x_ini,y_ini,c0,c1,c2,f, r):
+def kamiya_loop_r2(x_ini,y_ini,c0,c1,c2,f, r, length_factor):
     l = np.zeros(3)
-    l[0],l[1],l[2] = calculate_segment_lengths(c0,c1,c2,x_ini,y_ini)
+    coord_ini = np.array([x_ini, y_ini])
+    l[0] = rescaled_length(c0 - coord_ini, length_factor) #calculate_segment_lengths(c0,c1,c2,x_ini,y_ini)
+    l[1] = rescaled_length(c1 - coord_ini, length_factor)
+    l[2] = rescaled_length(c2 - coord_ini, length_factor)
     #print "segment lengths", l[0],l[1],l[2]
     dp1, dp2 = calculate_dp_from_Poiseuille(f,l,r)
     r[0], r[1], r[2] = calculate_squared_radii(f,l,dp1, dp2, np.power(r,2)[1:3])
@@ -124,11 +127,15 @@ def kamiya_loop_r2(x_ini,y_ini,c0,c1,c2,f, r):
         #print "new position ", x_new,y_new
         #print "new radii ", np.sqrt(r)
         return True, x_new, y_new, np.sqrt(r), l  
+        
+#when calculating segment length, need to consider a factor because current coordinates are scaled from a bigger perfusion territory
+def rescaled_length(vector, factor):
+    return np.sqrt(np.sum(vector**2))*factor
 
 # r =r0,r1,r2 in mm
 # f = flow in mm3/s
 # c are coordinates of each segment end
-def kamiya_single_bif_opt(r, f, c0, c1, c2, iter_max, tolerance, store_whole_results):
+def kamiya_single_bif_opt(r, f, c0, c1, c2, iter_max, tolerance, store_whole_results, length_factor):
     x, y = starting_point(c0,c1,c2,f)
     print "starting point coord ", x, y
     print "starting radii ", r
@@ -138,7 +145,7 @@ def kamiya_single_bif_opt(r, f, c0, c1, c2, iter_max, tolerance, store_whole_res
     storage = []
     
     while it < iter_max and gdt > tolerance:     
-        cvge, x_c, y_c, r_c, l = kamiya_loop_r2(x, y, c0, c1, c2, f, r)
+        cvge, x_c, y_c, r_c, l = kamiya_loop_r2(x, y, c0, c1, c2, f, r, length_factor)
         if (cvge):
             vol_c = single_bif_volume(r_c,l) 
             gdt = np.sqrt((x_c - x)**2 + (y_c - y)**2)       
