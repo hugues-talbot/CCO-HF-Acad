@@ -178,31 +178,34 @@ if True:
 
         # test extra neighbors if no connection candidate has fullfilled constraints
         else: 
-            test_N_con_max = False
-            neighbors = tree.find_neighbors(new_child_location, N_con_max)
-            extra_neighbs = neighbors[N_con:N_con_max]
-            
-            for n_index in range (len(extra_neighbs)):
-                tree_copy = copy.deepcopy(tree)
-                cet[N_con + n_index] = tree_copy.test_connection(extra_neighbs[n_index], new_child_location)             
+            if len(tree.nodes) > N_con:
+                test_N_con_max = False
+                neighbors = tree.find_neighbors(new_child_location, N_con_max)
+                extra_neighbs = neighbors[N_con:N_con_max]
+                print "len extra_neighbs", len(extra_neighbs)
+
+                for n_index in range (len(extra_neighbs)):
+                    tree_copy = copy.deepcopy(tree)
+                    cet[N_con + n_index] = tree_copy.test_connection(extra_neighbs[n_index], new_child_location) 
+                    print "n_index", n_index, "cet index storage", N_con + n_index
+                    
+                cet_filtered = filter(None,cet)
+                cet_values = np.array(cet_filtered, dtype_r)   
+                if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
+                    cet_values = np.array(cet_filtered, dtype_r)
+                    cet_sel = cet_values[cet_values['convgce']>0]
+                    cet_sorted = np.sort(cet_sel, order = "volume")
+                    cet_final=cet_sorted[0]
+                    adding_location = True
+                    added_location.append(cet_final.tolist()[1:])
                 
-            cet_filtered = filter(None,cet)
-            cet_values = np.array(cet_filtered, dtype_r)   
-            if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
-                cet_values = np.array(cet_filtered, dtype_r)
-                cet_sel = cet_values[cet_values['convgce']>0]
-                cet_sorted = np.sort(cet_sel, order = "volume")
-                cet_final=cet_sorted[0]
-                adding_location = True
-                added_location.append(cet_final.tolist()[1:])
-            
         
         if (adding_location): # optimal connection found!
             store_cet.append(filter(None,cet))
             if (test_N_con_max):
                 print "N con max was tested"
             print "size of cet", len(cet)
-            print "CET table", cet
+            #print "CET table", cet
             print "optimal connection from cet ", added_location[-1]
             opt = added_location[-1]
             if (tree.add_connection(opt[2], new_child_location, opt[1][1], opt[1][0])):
@@ -217,19 +220,22 @@ if True:
                 print "d_tresh value", d_tresh
                 print "k term is now ", tree.get_k_term()
                 print "root radius", tree.get_root_radius()
-                tree.printing_full()
+                #tree.printing_full()
                 #tree_stored.append(copy.deepcopy(tree))
                 last_tree = copy.deepcopy(tree)
+#                if tree.get_k_term() == 3:
+#                    break
             else:
                 print "failed to add connection on tree"
         else:
             print "location doesn't provide an optimal connection, testing new location"
-                
+#        if tree.get_k_term() == 2:
+#            break
         #keep going until reach Nterm!
         print "stored cet", store_cet
     fac = 1
         
-    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_f%i_s%i_dbgcpcheck" %(NTerm,fac,seed), fac)#tree_stored[-1]
+    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_f%i_s%i_dbgtestr" %(NTerm,fac,seed), fac)#tree_stored[-1]
     #return last_tree
 
 

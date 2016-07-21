@@ -51,7 +51,7 @@ class Node:
         self.children_index[1] = child_1_index
 
     def set_resistance(self, resistance):
-        print "setting resistance of", self.index, resistance
+        #print "setting resistance of", self.index, resistance
         self.resistance = resistance
         
     def set_label(self, label):
@@ -156,11 +156,13 @@ class Tree:
             print " "
         pass
     
+    def get_root_index(self):
+        children = self.nodes[0].children()
+        return children[0] if children[0]>0 else children[1]
+    
     def get_root_radius(self):
         #find the index of the root (not obviously 1)
-        children = self.nodes[0].children()
-        root_index = children[0] if children[0]>0 else children[2]
-        return np.power(self.resistance(root_index) * self.q_perf / self.p_drop, 1./4)
+        return np.power(self.resistance(self.get_root_index()) * self.q_perf / self.p_drop, 1./4)
     
     def update_length_factor(self):
         r_pk = np.sqrt((self.get_k_term() + 1)* self.r_supp**2)
@@ -178,17 +180,17 @@ class Tree:
             return 0.      
               
     def resistance(self, i):
-        res = 8.*self.nu / np.pi * self.length(i) 
+        res = 8.*self.nu * self.length(i) / np.pi 
         node = self.get_node(i)
         if i > 0 and (node.is_leaf() == False):
             children_index = node.children()
             res = res + 1./( ( (node.betas[0])**4 / (self.nodes[children_index[0]]).resistance) + 
                           ( (node.betas[1])**4 / (self.nodes[children_index[1]]).resistance) )
-        print "total resistance of index ", i, "is ", res
+        #print "total resistance of index ", i, "is ", res
         return res
         
     def update_resistance(self, index):
-        print "update resistance of", index
+        #print "update resistance of", index
         res = self.resistance(index)
         node = self.nodes[index]
         node.set_resistance(res)
@@ -233,7 +235,7 @@ class Tree:
         volume_found = 0.        
         root = self.get_root_radius()
         beta_start = 1.
-        vol_final = self.volume_iter(root, beta_start, 0, volume_found)
+        vol_final = self.volume_iter(root, beta_start, self.get_root_index(), volume_found)
         return vol_final
      
     # beta has been calculated with child_0/child_1 radius ratio where child_0 is old_child         
@@ -298,9 +300,12 @@ class Tree:
         dist_type = [("distance", float), ("index", int)]
         for i in self.nodes:
             if (i.index > 0):
+                print "location",location, "niegbbor of index", i.index, "and coords", i.coord
                 dist = cco_2df.segment_distance(i.coord, (self.nodes[i.parent()]).coord, location)
+                print "dist", dist
                 distances.append((dist, i.index))
         threshold = list_size if (len(self.nodes) > list_size) else len(distances)
+        print "threshold", threshold, "list_size", list_size, "number of nodes in tree", len(self.nodes)
         d_array = np.array(distances, dtype = dist_type)
         d_sorted = np.sort(d_array, order = "distance")
         return [i[1] for i in d_sorted[0 : threshold]]  
@@ -314,7 +319,7 @@ class Tree:
                 inv_length_factor = 1./self.length_factor
                 radius_i_rescaled = self.get_radius(i.index) * inv_length_factor
                 new_branches_radii_rescaled = new_branches_radii * inv_length_factor
-                print "testing connection with segment", "parent", parent_i.coord, "child", i.coord
+                #print "testing connection with segment", "parent", parent_i.coord, "child", i.coord
                 if (cco_2df.no_overlap(i.coord, parent_i.coord, new_child_location, branching_location, radius_i_rescaled, new_branches_radii_rescaled[2]) == False):
                     return False
                 old_parent_index = old_child.parent()
@@ -334,7 +339,7 @@ class Tree:
     def calculate_betas_of_parent(self, index): 
         current_node = self.nodes[index]        
         parent = self.nodes[current_node.parent()]
-        print "calculate betas of ", parent.index
+        #print "calculate betas of ", parent.index
         
         if parent.index > 0:
             current_node_is_child_0 = (parent.children()[0] == index)
@@ -355,7 +360,7 @@ class Tree:
             
     def balancing_ratios(self, index):
         parent_index = self.nodes[index].parent()
-        print "balancing ratio of parent of index " , parent_index
+        #print "balancing ratio of parent of index " , parent_index
         if (parent_index > 0):
             parent = self.nodes[parent_index]            
             betas = self.calculate_betas_of_parent(index)
@@ -393,7 +398,7 @@ class Tree:
         c0 = (self.nodes[self.nodes[old_child_index].parent()]).coord
         c1 = (self.nodes[old_child_index]).coord
         c2 = new_child_location
-        convergence, res = kami.kamiya_single_bif_opt(r, f, c0, c1, c2, iter_max, tolerance, False)
+        convergence, res = kami.kamiya_single_bif_opt(r, f, c0, c1, c2, iter_max, tolerance, False, self.length_factor)
         
         # constraints of the local optimization
         #check boundaries: segments are not degenerated
@@ -401,11 +406,12 @@ class Tree:
             branching_location = np.array([res[0][0], res[0][1]]) 
             radii = res[0][2] 
             print "radii", radii
-            convergence = cco_2df.degenerating_test(c0,c1,c2, branching_location, radii)
+            convergence = cco_2df.degenerating_test(c0,c1,c2, branching_location, radii, self.length_factor)
+            print "degenrqting test", convergence, new_child_location, old_child_index
             #check intersection: no segment intersects with other existing tree segments
             if (convergence == True):
                 convergence = self.check_intersection(old_child_index, c2, branching_location, radii)
-                
+                print "intersection test", convergence, new_child_location, old_child_index
         result = [[0.,0.], [0.,0.]]
         if (convergence == True):
             #make connection                       
@@ -418,7 +424,7 @@ class Tree:
                 
             # balancing ratio up to the root: update whole tree resistance by tuning radii
             self.balancing_ratios(old_child_index)
-            correct_beta= self.nodes[self.node_index-2].betas
+            correct_beta= self.nodes[self.node_index-2].betas #correspond to the just created bifurcation node
             
             #measure tree volume
             tree_volume = self.volume2()
