@@ -140,7 +140,7 @@
 Here we assume a non-convex territory with two nested surfaces as borders. Every point $p$ of the territory is associated with a value $\omega(p)$ so that $\omega(p) = 0$ if $p$ belongs to the inner surface, and $\omega(p) = 1$ on the outer surface. Numerically, $\omega$ can for example be computed from solving the electrostatic Poisson equation, i.e. a random walker. Our formulations and illustrations are in 2D but carry over to 3D without significant changes.
 
 
-Let $[p_1p_2]$ be the segment defined by the points $\{p_1, p_2\}$. We want to define how to sample this segment, so that we can conclude we high confidence whether or not the whole segment is located inside a non-convex territory. The number of samples ($n + 1$), shall be optimized in order to avoid too many tests (minimize computation time) but also to guarantee the result within a reasonable tolerance (maximize test accuracy).
+Let $[p_1p_2]$ be the segment defined by the points $\{p_1, p_2\}$. We want to define how to sample this segment, so that we can conclude with high confidence whether or not the whole segment is located inside a non-convex territory. The number of samples ($n + 1$), shall be optimized in order to avoid too many tests (minimize computation time) but also to guarantee the result within a reasonable tolerance (maximize test accuracy).
 
 	\subsection{First approach} \label{firstaproach}
 
@@ -200,7 +200,7 @@ to obtain :
 \begin{equation}
 n = \Bigl\lceil \frac{1}{\lambda} \Bigr\rceil,
 \end{equation}
-where $\lceil.\rceil$ denotes the ceiling operator, i.e. the function that maps a real number to the smallest integer that larger or equal to it.
+where $\lceil.\rceil$ denotes the ceiling operator, i.e. the function that maps a real number to the smallest integer that is larger or equal to it.
 
 If  $\lambda < 0$ or $\lambda > 1$, it means the line $(p_1p_2)$ crosses the concavity outside of the segment $[p_1p_2]$. We could consider that there is actually no need of refining the test along the segment. But we have to keep in mind that this interpretation comes only from a linear local approximation. In Fig.~\ref{fig:cec}, we show a counter-example, where this approach fails.
 
@@ -263,38 +263,62 @@ Given $p_1$ and $p_2$, we want to find length $M_1$ in Fig.~\ref{fig:findM} from
 First we denote $p_0$ the intersection of the steepest descent from $p_1$ with the 0-surface, the surface where $\omega=0$.  since $\nabla \omega(p_1)$ and $\gvec{p_0p_1}$ are co-linear, to first order we can write
 
 \begin{equation}
-\scal{\nabla \omega(p_1)}{\gvec{p_0p_1}} = \|\nabla \omega(p_1)\| \|\gvec{p_0p_1}\|  \approx \omega(p_1) - \omega(p_0),
+\nabla \omega(p_1) \approx \frac{\omega(p_0) - \omega(p_1)}{\gvec{p_1p_0}}
 \end{equation}
-Point $p_0$ is actually unknown, but $\omega(p_0) = 0$, so with $l_1=\|\gvec{p_0p_1}\|$, we have:
 
+
+
+Point $p_0$ is actually unknown, but $\omega(p_0) = 0$, so we have:
 \begin{equation}
-l_1 = \frac{\omega(p_1)}{\|\nabla \omega(p_1)\|}
+\gvec{p_1p_0} \approx \frac{- \omega(p_1)}{\nabla\omega(p_1)}
 \end{equation}
-
-Note: this is the Newton method for finding a root, so this estimate can be iteratively refined if need be, although in this case it is not probably very useful. We now want to project $l_1$ onto the line $(p_1p_2)$ to find the distance $M_1$. We note
-
-\begin{align}
-M_1 & = \|\gvec{p_0p_1}\|\cos \alpha = l_1 \cos \alpha\\
-\scal{\nabla \omega(p_1)}{\gvec{p_2p_1}} & = \|\nabla \omega(p_1)\|\|\gvec{p_2p_1}\|\cos \alpha
-\end{align}
-
-finally:
-
+Then we can project this vector $\gvec{p_1p_0}$ on the segment $gvec{p_1p_2}$:
 \begin{equation}
-M_1 = l_1 \frac{\scal{\nabla \omega(p_1)}{\gvec{p_2p_1}}}{\|\nabla \omega(p_1)\|\|\gvec{p_2p_1}\|}.
+M_1 = \frac{\scal{\gvec{p_1p_0}}{\gvec{p_1p_2}}}{||\gvec{p_1p_2}||}
 \end{equation}
 
-Symmetrically we have
 
+
+%Hugues's proposition
+%\begin{equation}
+%\scal{\nabla \omega(p_1)}{\gvec{p_0p_1}} = \|\nabla \omega(p_1)\| \|\gvec{p_0p_1}\|  \approx \omega(p_1) - \omega(p_0),
+%\end{equation}
+%Point $p_0$ is actually unknown, but $\omega(p_0) = 0$, so with $l_1=\|\gvec{p_0p_1}\|$, we have:
+%
+%\begin{equation}
+%l_1 = \frac{\omega(p_1)}{\|\nabla \omega(p_1)\|}
+%\end{equation}
+
+
+
+Note: the research of $\gvec{p_1p_0}$ is the Newton method for finding a root, so this estimate can be iteratively refined if need be, although in this case it is not probably very useful. 
+%We now want to project $l_1$ onto the line $(p_1p_2)$ to find the distance $M_1$. We note
+%
+%\begin{align}
+%M_1 & = \|\gvec{p_0p_1}\|\cos \alpha = l_1 \cos \alpha\\
+%\scal{\nabla \omega(p_1)}{\gvec{p_2p_1}} & = \|\nabla \omega(p_1)\|\|\gvec{p_2p_1}\|\cos \alpha
+%\end{align}
+%
+%finally:
+%
+%\begin{equation}
+%M_1 = l_1 \frac{\scal{\nabla \omega(p_1)}{\gvec{p_2p_1}}}{\|\nabla \omega(p_1)\|\|\gvec{p_2p_1}\|}.
+%\end{equation}
+
+Symmetrically we can find $M_2$, by first denoting $p_0$ the intersection of the steepest descent from $p_2$ with the 0-surface, and minding the vector reversal: 
+
+%\begin{equation}
+%l_2 = \frac{\omega(p_2)}{\|\nabla \omega(p_2)\|}
+%\end{equation}
+%
+%\begin{equation}
+%M_2 = l_2 \frac{\scal{\nabla \omega(p_2)}{\gvec{p_1p_2}}}{\|\nabla \omega(p_2)\|\|\gvec{p_1p_2}\|}.
+%\end{equation}
 \begin{equation}
-l_2 = \frac{\omega(p_2)}{\|\nabla \omega(p_2)\|}
+M_2 =  \frac{\scal{\gvec{p_2p_0}}{\gvec{p_2p_1}}}{||\gvec{p_2p_1}||}.
 \end{equation}
 
-\begin{equation}
-M_2 = l_2 \frac{\scal{\nabla \omega(p_2)}{\gvec{p_1p_2}}}{\|\nabla \omega(p_2)\|\|\gvec{p_1p_2}\|}.
-\end{equation}
-
-(mind the vector reversal). From this we take the smallest projection:
+From this we take the smallest projection:
 \begin{equation}
 d_{\text{proj}} = \min(M_1,M_2)
 \end{equation}
@@ -304,7 +328,7 @@ This distance $d_{\text{proj}}$ is a geometrically meaningful way to sample the 
 n = \Bigl\lceil\frac{||\gvec{p_1p_2}||}{d_{\text{proj}}}\Bigr\rceil
 \end{equation}
 
-These two last methods are expected to be more accurate than the one defined in section~\ref{firstaproach}, because we consider the potential along the segment as well as local and global curvatures and not solely at the tips,. It will be interesting to compare these methods.
+These two last methods are expected to be more accurate than the one defined in section~\ref{firstaproach}, because we consider the potential along the segment as well as local and global curvatures and not solely at the tips. It will be interesting to compare these methods.
 
 %
 %%You actually don't test if the line defined by the segment $p_1p_2$ crosses a concavity, which actually might not happen!
