@@ -22,7 +22,7 @@ def calculate_r_supp_2D(a_perf,n_term):
 def calculate_d_tresh_2D(r_supp, k_term):
     r_pk = np.sqrt((k_term + 1)* r_supp**2)
     return np.sqrt(np.pi*(r_pk)**2/k_term), r_pk
-    
+
 def get_d_tresh(a_perf, n_term, k_term):
     return calculate_d_tresh_2D(calculate_r_supp_2D(a_perf, n_term), k_term)
     
@@ -69,11 +69,9 @@ def first_segmt_end(area, area_descptr):
 def get_new_location(tree, area_descrpt, n_term):   
     area_surface = np.pi * area_descrpt[1]**2
     k_term = tree.get_k_term()
-
     d_tresh, r_pk = get_d_tresh(area_surface, n_term, k_term) 
     length_factor = r_pk / area_descrpt[1]
     d_tresh_factorised = d_tresh / length_factor
-
     meet_criteria = False
     ind = 0
     while (meet_criteria == False and ind < 1000):
@@ -94,6 +92,7 @@ def get_new_location(tree, area_descrpt, n_term):
 
 def test_connection_list(list_input):
     copy_tree = copy.deepcopy(list_input[0])
+    print "r_supp tree copyyyyyyyyyy", copy_tree.r_supp
     return copy_tree.test_connection(list_input[1], list_input[2])
 
 

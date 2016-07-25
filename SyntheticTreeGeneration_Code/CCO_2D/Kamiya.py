@@ -59,12 +59,6 @@ def calculate_new_bif_coords(c0,c1,c2,f,l,sqrd_r):
     new_y = ( c0[1]*sqrd_r[0]/l[0] + c1[1]*sqrd_r[1]/l[1] + c2[1]*sqrd_r[2]/l[2] ) /  ( sqrd_r[0]/l[0] + sqrd_r[1]/l[1] + sqrd_r[2]/l[2] )
     return new_x, new_y
     
-def total_tree_volume(radii, lengths):  
-    if (radii.size == lengths.size):
-        return np.sum(np.power(radii,2)*np.pi*lengths)
-    else:
-        print "error in total tree volume inputs"
-        return 0.
     
 def non_linear_solver(f,l,k,dp1,dp2,r_ori):
     def func(z):
@@ -111,7 +105,6 @@ def single_bif_volume(r, l):
 #        this estimated r is used to calculate dp, then is updated in the calculate_radii function     
 def kamiya_loop_r2(x_ini,y_ini,c0,c1,c2,f, r, length_factor):
     l = calculate_segment_lengths(c0,c1,c2,x_ini,y_ini, length_factor)
-    
     #print "segment lengths", l[0],l[1],l[2]
     dp1, dp2 = calculate_dp_from_Poiseuille(f,l,r)
     r[0], r[1], r[2] = calculate_squared_radii(f,l,dp1, dp2, np.power(r,2)[1:3])
@@ -125,6 +118,18 @@ def kamiya_loop_r2(x_ini,y_ini,c0,c1,c2,f, r, length_factor):
         return True, x_new, y_new, np.sqrt(r), l  
         
 #when calculating segment length, need to consider a factor because current coordinates are scaled from a bigger perfusion territory
+def rescaled_length(vector, factor):
+    return np.sqrt(np.sum(vector**2))*factor
+
+def calculate_seg_lengths(c0,c1,c2,x,y, length_factor):
+    coords = np.array([x,y])
+    l = np.zeros(3)
+    l[0] = rescaled_length(c0 - coords, length_factor)
+    l[1] = rescaled_length(c1 - coords, length_factor)
+    l[2] = rescaled_length(c2 - coords, length_factor)
+    return l
+
+#when calculating sehment length, need to consider q fqctor becqise current coordinates are scaled from a bigger perfusion territory
 def rescaled_length(vector, factor):
     return np.sqrt(np.sum(vector**2))*factor
 

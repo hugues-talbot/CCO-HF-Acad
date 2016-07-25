@@ -115,7 +115,6 @@ if True:
     NTerm = 4000
 
     seed = 42
-
     np.random.seed(seed)
     process_nb = 16
  
@@ -128,8 +127,7 @@ if True:
 
     P_drop = 1.33e7 - 7.98e6 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
     viscosity = 3.6 # 3.6cp = 3.6mPa = 3.6 kg mm-1 s-2 (check works with radius and length in mm) #3.6 cp =3.6e-3 Pa.s = 3.6e-9 MPa.s 
-
-    N_con = 20
+ N_con = 20
     N_con_max = 40
     
     # About  convexe perfusion surface : defines a disc surface 
@@ -171,7 +169,6 @@ if True:
             break
 
         cet = []#[] for i in range (N_con_max)c=
-
         adding_location = False
         added_location = []
         
@@ -188,7 +185,7 @@ if True:
         while (len(cet) < N_con) and (len(cet) < len(neighbors)):           
             end_lim = len(cet) + process_nb if (len(cet) + process_nb < len(neighbors)) else len(neighbors)            
             pool = Pool(processes =  process_nb)               
-            res = pool.map(cco_2df.test_connection_list,args[len(cet): end_lim]) 
+            res = pool.map(cco_2df.test_connection_list,args[len(cet): end_lim])            
             cet = cet + res
             pool.close()
 
@@ -202,10 +199,16 @@ if True:
             cet_final=cet_sorted[0]
             adding_location = True
             added_location.append(cet_final.tolist()[1:])
-
+#
+#        if tree.get_k_term() == 2:
+#            print "reached"
+#            print "cet", cet
+#            print "cet values", cet_values
+#            print added_location
+#            break
         # test extra neighbors if no connection candidate has fullfilled constraints
         else: 
-	    if len(neighbors) == N_con:  # if there are at least N_con neighbors there might be extra neighbors to test with
+	    if len(tree.nodes) > N_con:  # if there are at least N_con neighbors there might be extra neighbors to test with
 	      #print "testing extra"
 	      test_N_con_max = False
 	      neighbors = tree.find_neighbors(new_child_location, N_con_max)
@@ -229,12 +232,9 @@ if True:
                adding_location = True
                added_location.append(cet_final.tolist()[1:])
 
-        
-
         if (adding_location): # optimal connection found!
 
             store_cet.append(filter(None,cet))
-
             opt = added_location[-1]
             ante_tree = copy.deepcopy(tree)
             
@@ -266,8 +266,6 @@ if True:
         #keep going until reach Nterm!
 
     plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
-
-
 
 
 

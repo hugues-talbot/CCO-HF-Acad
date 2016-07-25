@@ -177,10 +177,6 @@ class Tree:
         r_pk = np.sqrt((self.get_k_term() + 1)* self.r_supp**2)
         self.length_factor =  r_pk / self.final_perf_radius
 
-    def update_length_factor(self):
-	r_pk = np.sqrt((self.get_k_term() + 1) * self.r_supp)
-	self.length_factor = r_pk / self.final_perf_radius
-
     
     # get the length of the segment connecting the node of index i and its parent
     def length(self, i):
@@ -345,8 +341,7 @@ class Tree:
                 if (old_child.is_leaf() == False):
                     old_child_children = old_child.children()
                     if (i.index != old_child_children[0]) and (i.index != old_child_children[1]):
-                        if (cco_2df.no_overlap(i.coord, parent_i.coord, old_child.coord, branching_location, radius_i_rescaled, new_branches_radii_rescaled[1]) ==  False):
-                            return False
+                        return False
         return True
                    
     def calculate_betas_of_parent(self, index): 
@@ -425,7 +420,7 @@ class Tree:
             if conv ==  False:
                 print "kamyia doesnt converge"
                 return False, 0., result, old_child_index
-            
+         
             #test degenerating segments
             branching_location = np.array([x_c,y_c])
 
