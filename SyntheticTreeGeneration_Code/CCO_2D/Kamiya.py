@@ -34,14 +34,13 @@ def starting_point(c0,c1,c2,f):
     y_coord = (c0[1]*f[0] + c1[1]*f[1] + c2[1]*f[2]) / (2* f[0])
     return x_coord, y_coord
     
-def calculate_segment_lengths(c0,c1,c2,x,y):
-    if (len(c0) != 2) or (len(c1) != 2) or (len(c2) != 2):
-        print "error in calculate_segment_lengths inputs"
-        return 0.,0.,0.
-    l0 = np.sqrt( (x-c0[0])**2 + (y - c0[1])**2 )
-    l1 = np.sqrt( (x-c1[0])**2 + (y - c1[1])**2 )
-    l2 = np.sqrt( (x-c2[0])**2 + (y - c2[1])**2 )
-    return l0,l1,l2
+def calculate_segment_lengths(c0,c1,c2,x,y, length_factor):
+    coords = np.array([x,y])
+    l = np.ones(3)
+    l[0] = rescaled_length(c0 - coords, length_factor)
+    l[1] = rescaled_length(c1 - coords, length_factor)
+    l[2] = rescaled_length(c2 - coords, length_factor)
+    return l
 
 #dp are the pressure loss: P1-P0 and P2-P0 
 #the r_ori is an estimated one to serve the iteration start
@@ -106,16 +105,13 @@ def calculate_squared_radii(f, l, dp1, dp2, r_ori):
         return 0.,0.,0.
         
 def single_bif_volume(r, l):
-    return np.sum(np.pi*r**2*l, axis = 0)
+    return np.sum(np.pi*(r**2)*l, axis = 0)
     
 #input r : r[0] and r[1] are the radii before connection added (r0 = r1 = r1 = radius of original segment before connection added) 
 #        this estimated r is used to calculate dp, then is updated in the calculate_radii function     
 def kamiya_loop_r2(x_ini,y_ini,c0,c1,c2,f, r, length_factor):
-    l = np.zeros(3)
-    coord_ini = np.array([x_ini, y_ini])
-    l[0] = rescaled_length(c0 - coord_ini, length_factor) #calculate_segment_lengths(c0,c1,c2,x_ini,y_ini)
-    l[1] = rescaled_length(c1 - coord_ini, length_factor)
-    l[2] = rescaled_length(c2 - coord_ini, length_factor)
+    l = calculate_segment_lengths(c0,c1,c2,x_ini,y_ini, length_factor)
+    
     #print "segment lengths", l[0],l[1],l[2]
     dp1, dp2 = calculate_dp_from_Poiseuille(f,l,r)
     r[0], r[1], r[2] = calculate_squared_radii(f,l,dp1, dp2, np.power(r,2)[1:3])
@@ -141,14 +137,15 @@ def kamiya_single_bif_opt(r, f, c0, c1, c2, iter_max, tolerance, store_whole_res
     print "starting radii ", r
     it = 0
     gdt = 1
-    volume = 0
+    l_ori = calculate_segment_lengths(c0,c1,c2,x,y, length_factor)
+    volume = single_bif_volume(r, l_ori)
     storage = []
     
     while it < iter_max and gdt > tolerance:     
         cvge, x_c, y_c, r_c, l = kamiya_loop_r2(x, y, c0, c1, c2, f, r, length_factor)
         if (cvge):
             vol_c = single_bif_volume(r_c,l) 
-            gdt = np.sqrt((x_c - x)**2 + (y_c - y)**2)       
+            gdt = np.sqrt((x_c - x)**2 + (y_c - y)**2) * length_factor      
             if (gdt < tolerance) and (vol_c < volume):              
                 print "\n convergence found at iteration ", it
                 #print "position gdt ", gdt
@@ -156,7 +153,7 @@ def kamiya_single_bif_opt(r, f, c0, c1, c2, iter_max, tolerance, store_whole_res
                 #print "optimal volume ", vol_c
                 print  "optimal position ", x_c, y_c
                 print "optimal radii ", np.sqrt(r_c)
-                storage.append([x_c, y_c, r_c])                
+                storage.append([x_c, y_c, r_c])
                 return True, storage #x_c, y_c, r
             else:
                 it = it + 1
