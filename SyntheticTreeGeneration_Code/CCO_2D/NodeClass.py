@@ -123,11 +123,15 @@ class Tree:
     
     # get the number of terminal segments in the current tree            
     def get_k_term(self):
-        self.k_term = len(self.nodes)/2
+        self.k_term = len(self.nodes)/2 #because it is a dichotomic tree
         return self.k_term
     		
     def get_q_term(self):
-        return float(self.q_perf) / self.get_k_term()   
+        print " qterm non tissue dependant", float(self.q_perf) / self.get_k_term() 
+        final_q_term = float(self.q_perf) / self.n_term
+        print "final qterm", final_q_term
+        print "flow at k", final_q_term * self.get_k_term()
+        return final_q_term * self.get_k_term()#float(self.q_perf) / self.get_k_term()   
 
     def add_node(self, node):		
         if len(self.nodes) < 2*self.n_term:
@@ -162,7 +166,7 @@ class Tree:
     
     def get_root_radius(self):
         #find the index of the root (not obviously 1)
-        return np.power(self.resistance(self.get_root_index()) * self.q_perf / self.p_drop, 1./4)
+        return np.power(self.resistance(self.get_root_index()) * (self.get_k_term() * self.get_q_term()) / self.p_drop, 1./4)
     
     def update_length_factor(self):
         r_pk = np.sqrt((self.get_k_term() + 1)* self.r_supp**2)
@@ -274,7 +278,7 @@ class Tree:
         children_index = parent_node.children()  
         children_index[np.where(children_index == old_child_index)[0]] = branching_node.index
         #no need to update parent_node resistance, will be done in balancing_ratio
-        
+        print "initial flows", f
         return True
                 
     def get_terms_recurs(self, index, nb):
@@ -300,12 +304,9 @@ class Tree:
         dist_type = [("distance", float), ("index", int)]
         for i in self.nodes:
             if (i.index > 0):
-                print "location",location, "niegbbor of index", i.index, "and coords", i.coord
                 dist = cco_2df.segment_distance(i.coord, (self.nodes[i.parent()]).coord, location)
-                print "dist", dist
                 distances.append((dist, i.index))
         threshold = list_size if (len(self.nodes) > list_size) else len(distances)
-        print "threshold", threshold, "list_size", list_size, "number of nodes in tree", len(self.nodes)
         d_array = np.array(distances, dtype = dist_type)
         d_sorted = np.sort(d_array, order = "distance")
         return [i[1] for i in d_sorted[0 : threshold]]  
@@ -382,7 +383,8 @@ class Tree:
         self.DepthFirst_resistances(0)         
         
         # update flow values in tree
-        q_term = self.q_perf / (self.get_k_term() + 1) 
+        q_term = self.get_q_term()#self.q_perf / (self.get_k_term()) # + 1
+        print "qterm", q_term
         f= np.zeros(3)
         f[1] = self.get_terms(old_child_index) * q_term
         f[2] = q_term
@@ -398,21 +400,38 @@ class Tree:
         c0 = (self.nodes[self.nodes[old_child_index].parent()]).coord
         c1 = (self.nodes[old_child_index]).coord
         c2 = new_child_location
+        
         convergence, res = kami.kamiya_single_bif_opt(r, f, c0, c1, c2, iter_max, tolerance, False, self.length_factor)
+        #while convergence not reached and iter max not reached:
+        #call Kamiya : cvge, x_c, y_c, r_c, l = kamiya_loop_r2(x, y, c0, c1, c2, f, r, length_factor)
+        #get radius, length
+        #create copy of tree
+        #connect new branch
+        #balance ratios
+        #test degenerating segments
+        #store corrected beta
+        #calculate total tree volume
+        #calculate total volume gradient
+        #if gradients is under tolerance, and iter_max not reached:
+        #   save this bifurcation result: beta, bif position, index of neighbor
+        #else:
+        #   provides Kamiya with current position, radii, (flow?)
         
         # constraints of the local optimization
         #check boundaries: segments are not degenerated
         if (convergence == True):                     
             branching_location = np.array([res[0][0], res[0][1]]) 
-            radii = res[0][2] 
+            radii = res[0][2]
             print "radii", radii
             convergence = cco_2df.degenerating_test(c0,c1,c2, branching_location, radii, self.length_factor)
-            print "degenrqting test", convergence, new_child_location, old_child_index
+            print "degenrqting test", convergence, #new_child_location, old_child_index
             #check intersection: no segment intersects with other existing tree segments
             if (convergence == True):
                 convergence = self.check_intersection(old_child_index, c2, branching_location, radii)
-                print "intersection test", convergence, new_child_location, old_child_index
+                print "intersection test", convergence, #new_child_location, old_child_index
         result = [[0.,0.], [0.,0.]]
+        
+        
         if (convergence == True):
             #make connection                       
             estimate_betas = cco_2df.calculate_betas(radii[1]/radii[2], 3.) #this involves old_child will be child_0, new_child is child_1
@@ -421,14 +440,15 @@ class Tree:
             
             #update flows 
             self.update_flow()
-                
+            
             # balancing ratio up to the root: update whole tree resistance by tuning radii
             self.balancing_ratios(old_child_index)
             correct_beta= self.nodes[self.node_index-2].betas #correspond to the just created bifurcation node
-            
+
             #measure tree volume
             tree_volume = self.volume2()
-            result=[correct_beta, branching_location]              
+            result=[correct_beta, branching_location]  
+            #self.printing_full()
             return convergence, tree_volume, result, old_child_index
         else:
             print "connection test failed"
