@@ -252,13 +252,12 @@ if True:
                 print "k term is now ", tree.get_k_term()
 
                 last_tree = copy.deepcopy(tree)
-
+                
                 if tree.get_k_term() % 50  == 0:
                     plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
 
                 print "k term is now ", tree.get_k_term()
 
-            else:
                 print "failed to add connection on tree"
         else:
             print "location doesn't provide an optimal connection, testing newwwwwwwww location"

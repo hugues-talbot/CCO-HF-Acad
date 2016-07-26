@@ -72,6 +72,7 @@ def get_new_location(tree, area_descrpt, n_term):
     d_tresh, r_pk = get_d_tresh(area_surface, n_term, k_term) 
     length_factor = r_pk / area_descrpt[1]
     d_tresh_factorised = d_tresh / length_factor
+
     meet_criteria = False
     ind = 0
     while (meet_criteria == False and ind < 1000):
@@ -86,6 +87,7 @@ def get_new_location(tree, area_descrpt, n_term):
             print "using new value: ", d_tresh_factorised
             ind = 0
     return False, np.array([0.,0.]), d_tresh_factorised
+
 
 
 #######################################################
