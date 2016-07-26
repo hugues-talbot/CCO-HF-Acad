@@ -21,7 +21,11 @@ def calculate_r_supp_2D(a_perf,n_term):
     return np.sqrt(a_perf/(n_term*np.pi))  
     
 def calculate_d_tresh_2D(r_supp, k_term):
-    return np.power(np.pi*r_supp*r_supp/(k_term), 1./2.)
+    r_pk = np.sqrt((k_term + 1)* r_supp**2)
+    print "rpk", r_pk
+    print "d_tresh", np.sqrt(np.pi*(r_pk)**2/(k_term))
+    print "k_term", k_term
+    return np.sqrt(np.pi*(r_pk)**2/k_term), r_pk
     
 def get_d_tresh(a_perf, n_term, k_term):
     return calculate_d_tresh_2D(calculate_r_supp_2D(a_perf, n_term), k_term)
@@ -70,22 +74,26 @@ def get_new_location(tree, area_descrpt, n_term):
     area_surface = np.pi * area_descrpt[1]**2
     k_term = tree.get_k_term()
     print "k_term", k_term
-    d_tresh = get_d_tresh(area_surface, n_term, k_term)
+    d_tresh, r_pk = get_d_tresh(area_surface, n_term, k_term) 
     print "d_tresh", d_tresh
+    length_factor = r_pk / area_descrpt[1]
+    print "length_factor", length_factor 
+    d_tresh_factorised = d_tresh / length_factor
+    print "d_tresh_factorised", d_tresh_factorised 
     meet_criteria = False
     ind = 0
     while (meet_criteria == False and ind < 1000):
         point = random_location()
-        if (test_dist_criteria(tree, point, d_tresh, area_descrpt)):
+        if (test_dist_criteria(tree, point, d_tresh_factorised, area_descrpt)):
             print "location found"
-            return True, point, d_tresh
+            return True, point, d_tresh_factorised
         ind = ind + 1
         if ind == 1000:
             print "impossible to find new location with current d_tresh"
-            d_tresh = 0.9*d_tresh
-            print "using new value: ", d_tresh
+            d_tresh_factorised = 0.9*d_tresh_factorised
+            print "using new value: ", d_tresh_factorised
             ind = 0
-    return False, np.array([0.,0.]), d_tresh
+    return False, np.array([0.,0.]), d_tresh_factorised
 
 
 

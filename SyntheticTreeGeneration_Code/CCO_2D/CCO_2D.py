@@ -43,7 +43,7 @@ def plot_tree(tree, area_descptr, name, factor_radius):
                 
             #ax.plot([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'b')
             ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius*factor_radius , color = 'k'))#colors[sgmt.label]
-            
+      
     ax.set_xlim(area_descptr[0][0] - area_descptr[1]*1.5,area_descptr[0][0]+ area_descptr[1]*1.5)
     ax.set_ylim(area_descptr[0][1] - area_descptr[1]*1.5,area_descptr[0][1]+ area_descptr[1]*1.5)
     outfile_path1 = "./"+name+"all.txt"
@@ -74,8 +74,8 @@ def plot_trees(trees, area_descptr):
                 #print radius
                 ax.plot([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = colors[ind], alpha = 0.4)
         ind = ind +1   
-    ax.set_xlim(area_descptr[0][0] - area_descptr[1]*1.5,area_descptr[0][0]+ area_descptr[1]*1.5)
-    ax.set_ylim(area_descptr[0][1] - area_descptr[1]*1.5,area_descptr[0][1]+ area_descptr[1]*1.5)
+    ax.set_xlim(0,200)#area_descptr[0][0] - area_descptr[1]*1.5,area_descptr[0][0]+ area_descptr[1]*1.5
+    ax.set_ylim(0,200)#area_descptr[0][1] - area_descptr[1]*1.5,area_descptr[0][1]+ area_descptr[1]*1.5
 
     return fig
     
@@ -120,8 +120,6 @@ if True:
     
     #### initialization ##    
     # tree
-    #tree_stored= []
-    
     store_cet = []
     tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, area, area_radius)
      
@@ -138,16 +136,22 @@ if True:
     first_node = nclass.Node(1, first_node_position, Q_perf,0)
     first_node.set_label(0)
     tree.add_node(first_node)
+    print "flow3",tree.nodes[1].flow
     tree.update_length_factor()
     tree.DepthFirst_resistances(0)
+    tree.update_flow()
+    print "flow3",tree.nodes[1].flow
     
+    
+
     while tree.get_k_term() < N_term: 
+
         success, new_child_location, d_tresh = cco_2df.get_new_location(tree, area_descptr, N_term)
         if (success == False):
             print "impossible to satisfy distance criteria", "d_tresh", d_tresh
             ##HT then try again
             break
-        
+
         print "new location found"
         cet = [[] for i in range (N_con_max)]
         adding_location = False
@@ -165,7 +169,8 @@ if True:
             arg=[tree_copy,neighbors[n_index], new_child_location]
             args.append(arg)                     
             cet[n_index] = tree_copy.test_connection(neighbors[n_index], new_child_location)              
-            
+            if tree.get_k_term() == 40 and cet[n_index][0] == True:
+                plot_tree(tree_copy, area_descptr, "./Results/kterm41/tree_Nt%i_f%i_s%i_neighb%i" %(tree_copy.get_k_term(),1.,seed, neighbors[n_index]), 1.)
         cet_filtered = filter(None,cet)
         cet_values = np.array(cet_filtered, dtype_r)   
         if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
@@ -188,7 +193,7 @@ if True:
                     tree_copy = copy.deepcopy(tree)
                     cet[N_con + n_index] = tree_copy.test_connection(extra_neighbs[n_index], new_child_location) 
                     print "n_index", n_index, "cet index storage", N_con + n_index
-                    
+
                 cet_filtered = filter(None,cet)
                 cet_values = np.array(cet_filtered, dtype_r)   
                 if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
@@ -199,8 +204,9 @@ if True:
                     adding_location = True
                     added_location.append(cet_final.tolist()[1:])
                 
-        
+
         if (adding_location): # optimal connection found!
+
             store_cet.append(filter(None,cet))
             if (test_N_con_max):
                 print "N con max was tested"
@@ -208,6 +214,8 @@ if True:
             #print "CET table", cet
             print "optimal connection from cet ", added_location[-1]
             opt = added_location[-1]
+            ante_tree = copy.deepcopy(tree)
+            
             if (tree.add_connection(opt[2], new_child_location, opt[1][1], opt[1][0])):
                 branching_added_node = tree.nodes[len(tree.nodes) - 2]       
                 added_node = tree.nodes[len(tree.nodes) - 1]
@@ -217,25 +225,24 @@ if True:
                 added_node.set_label(label)
                 branching_added_node.set_label(label)
                 print "connection added on tree up node", opt[2]
-                print "d_tresh value", d_tresh
+                #print "d_tresh value", d_tresh
                 print "k term is now ", tree.get_k_term()
-                print "root radius", tree.get_root_radius()
+                #print "root radius", tree.get_root_radius()
                 #tree.printing_full()
                 #tree_stored.append(copy.deepcopy(tree))
                 last_tree = copy.deepcopy(tree)
-#                if tree.get_k_term() == 3:
-#                    break
+                if tree.get_k_term() == 10:
+                    break
             else:
                 print "failed to add connection on tree"
         else:
-            print "location doesn't provide an optimal connection, testing new location"
-#        if tree.get_k_term() == 2:
-#            break
+            print "location doesn't provide an optimal connection, testing newwwwwwwww location"
+
         #keep going until reach Nterm!
         print "stored cet", store_cet
     fac = 1
         
-    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_f%i_s%i_dbgtestr" %(NTerm,fac,seed), fac)#tree_stored[-1]
+    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_f%i_s%i_dbgd_tresh" %(tree.get_k_term(),fac,seed), fac)#tree_stored[-1]
     #return last_tree
 
 
