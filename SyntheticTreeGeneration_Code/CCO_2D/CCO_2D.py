@@ -199,13 +199,7 @@ if True:
             cet_final=cet_sorted[0]
             adding_location = True
             added_location.append(cet_final.tolist()[1:])
-#
-#        if tree.get_k_term() == 2:
-#            print "reached"
-#            print "cet", cet
-#            print "cet values", cet_values
-#            print added_location
-#            break
+
         # test extra neighbors if no connection candidate has fullfilled constraints
         else: 
 	    if len(tree.nodes) > N_con:  # if there are at least N_con neighbors there might be extra neighbors to test with
@@ -263,7 +257,6 @@ if True:
             print "location doesn't provide an optimal connection, testing newwwwwwwww location"
 
         #keep going until reach Nterm!
-
     plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
 
 

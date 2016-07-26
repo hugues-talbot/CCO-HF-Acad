@@ -172,7 +172,7 @@ class Tree:
     
     def get_root_radius(self):
         return np.power(self.resistance(self.get_root_index()) * (self.get_q_perf_k()) / self.p_drop, 1./4) 
-    
+
     def update_length_factor(self):
         r_pk = np.sqrt((self.get_k_term() + 1)* self.r_supp**2)
         self.length_factor =  r_pk / self.final_perf_radius
@@ -389,7 +389,6 @@ class Tree:
 
         # update flow values in tree
         q_term = self.get_q_term()#self.q_perf / (self.get_k_term()) # + 1
-        print "qterm", q_term
         f= np.zeros(3)
         f[1] = self.get_terms(old_child_index) * q_term
         f[2] = q_term
