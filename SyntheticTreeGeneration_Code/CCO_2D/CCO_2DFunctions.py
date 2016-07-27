@@ -23,6 +23,8 @@ def calculate_d_tresh_2D(r_supp, k_term):
     r_pk = np.sqrt((k_term + 1)* r_supp**2)
     return np.sqrt(np.pi*(r_pk)**2/k_term), r_pk
 
+    
+
 def get_d_tresh(a_perf, n_term, k_term):
     return calculate_d_tresh_2D(calculate_r_supp_2D(a_perf, n_term), k_term)
     
@@ -94,7 +96,6 @@ def get_new_location(tree, area_descrpt, n_term):
 
 def test_connection_list(list_input):
     copy_tree = copy.deepcopy(list_input[0])
-    print "r_supp tree copyyyyyyyyyy", copy_tree.r_supp
     return copy_tree.test_connection(list_input[1], list_input[2])
 
 
@@ -149,6 +150,7 @@ def degenerating_test(c0, c1, c2, branching_location, radii, length_factor):
     seg_parent_length = np.sqrt(np.sum((c0 - branching_location)**2)) * length_factor
     seg_old_child_length = np.sqrt(np.sum((c1 - branching_location)**2)) * length_factor
     seg_new_child_length = np.sqrt(np.sum((c2 - branching_location)**2)) * length_factor
+
     #print "branching location", branching_location
     #print "parent length", seg_parent_length, "2*radius", 2.*radii[0]
     if (seg_parent_length < 2.*radii[0]):

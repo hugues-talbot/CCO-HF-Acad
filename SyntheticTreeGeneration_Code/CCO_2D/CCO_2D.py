@@ -229,6 +229,7 @@ if True:
         if (adding_location): # optimal connection found!
 
             store_cet.append(filter(None,cet))
+
             opt = added_location[-1]
             ante_tree = copy.deepcopy(tree)
             
@@ -246,17 +247,20 @@ if True:
                 print "k term is now ", tree.get_k_term()
 
                 last_tree = copy.deepcopy(tree)
+
                 
                 if tree.get_k_term() % 50  == 0:
                     plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
 
                 print "k term is now ", tree.get_k_term()
 
+
                 print "failed to add connection on tree"
         else:
             print "location doesn't provide an optimal connection, testing newwwwwwwww location"
 
         #keep going until reach Nterm!
+
     plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
 
 
