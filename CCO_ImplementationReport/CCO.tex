@@ -94,13 +94,15 @@ Combination of CFD laws, geometry, and optimization. Encapsulated articles : req
 
 Constrained Constructive Optimization (CCO) consists of growing a tree governed by minimizing a target function. 
 
-In Karch's method the tree is constrained into a given convex perfusion volume, and the target function minimizes the total tree volume during growth. Segment are added one by one and fulfill both local optimization (single bifurcation scale) and global optimization (tree scale). The local optimization is based on Kamiya's work \cite{kamiya1972optimal}, whereas the global optimization has been implemented first by Schreiner in 2D \cite{schreiner1993computer}. 
+In Karch's method the tree is constrained into a growing convex perfusion volume, and the target function minimizes the total tree volume along growth. Segments are added one by one and fulfill both local optimization (single bifurcation scale) and global optimization (tree scale). The local optimization is based on Kamiya's work \cite{kamiya1972optimal}, whereas the global optimization has been implemented first by Schreiner in 2D \cite{schreiner1993computer}. 
 
 \section{Global optimization}
 
-Initialization of the method requires some physiological parameters as input, and a randomized starting point.
+Initialization of the method requires some physiological parameters as input, the number of terminal segments to reach, and a randomized starting point.
 
-Then Karch's protocol consists of a complete loop for each added segment. A  random location is picked under some constraints (geometry and physiology), to use it as a candidate for segment extremity. Its connection is tested with neighbor segments, producing a bifurcation under topological, structural and functional constraints. In view of this new branch impact on the whole tree (induced by fluid mechanics laws), the optimal connection is selected by minimizing a target function (the minimal volume of the total tree). 
+The perfusion territory is slightly increased before each new segment added, to simulate tissue growth concomitant with vascular growth.
+
+Karch's protocol consists of a complete loop for each added segment. A  random location is picked under some constraints (geometry and physiology), to use it as a candidate for segment extremity. Its connection is tested with neighbor segments, producing a bifurcation under topological, structural and functional constraints. In view of this new branch impact on the whole tree (induced by fluid mechanics laws), the optimal connection is selected by minimizing a target function (the minimal volume of the total tree). 
 
 
 \subsection{Assumptions and boundary conditions}
@@ -159,8 +161,32 @@ Inputs:
 \item a random location inside the perfusion territory for the first segment end 
 \end{itemize}
 
+From these inputs we estimate the average perfusion territory of each terminal segment when reaching the goal $N_{term}$, named "micro-circulatory black box", and calculate $r_{supp}$, its average radius:
+\begin{equation}
+r_{supp} = Q_{perf} / N_{term}
+\end{equation}  
+
+Before each added segment, the perfusion territory is added one micro-circulatory black box to its total area. The segments are stretched correspondingly to this inflation, which then induces a rescaling of each segment radius in order to correct the total tree resistance.  So for a tree with $k_term$ terminal segments, after the inflation we obtain the perfusion territory area $A_k$:
+\begin{equation}
+A_k = (k + 1) \pi r_{supp}^2
+\end{equation}
+
+Note that we actually do not recalculate segment positions after tree stretching but compute a conversion to the $k_{world}$ via a scaling factor $r_{kf}$:
+\begin{equation}
+r_{kf} = \sqrt{\pi A_k}
+\end{equation}   
+With this factor, we recalculate all segment resistances via a depth-first algorithm, which consequently rescales all radii.
+
+In a similar fashion, knowing the flow at terminal segments $Q_{term}$, we will increase the perfusion flow with each added segment, calculated as:
+\begin{equation}
+Q_{pk} = k Q_{term}
+\end{equation}  
+
 \subsection{Loop to add new segment}
-We are provided a new location, $n_{loc}$, and want to find its optimal connection to the existing tree. For this purpose we select the $N_{con}$ closest existing segments to this location, compute a local optimization for each of them, then evaluate the connection impact on the whole tree, and as a global optimization process, we determine the one minimizing best the total tree volume.
+We are provided a new location, $n_{loc}$, and want to find its optimal connection to the existing tree. For this purpose we select the $N_{con}$ closest existing segments to this location, test their optimal connection to the new location, and store the total tree volume resulting of it. Then, as a global optimization process, we select the neighbor connection minimizing best the total tree volume.
+
+
+%compute a local optimization for each of them, then evaluate the connection impact on the whole tree, and as a global optimization process, we determine the one minimizing best the total tree volume.
 
 \begin{figure}[!h]
 \centering
@@ -189,18 +215,40 @@ with
 \end{equation}
 This distance criteron is updated after each new segment is added, so that it decreases during tree growth. If no location is found that respect this distance to existing segments within the perfusion territory, then the distance criterion is multiplied by 0.9 and the process repeated until a new position is found that fulfills both constraints. 
 
-\subsubsection{Test local connection}
+\subsubsection{Test connection}
 
-For each neighbor segment of $n_{loc}$ we calculate what would be the optimal connection to $n_{loc}$ based on a single bifurcation optimization procedure established by Kamyia \cite{kamiya1972optimal}, and is fully detailed in section \ref{Kamiya}. If this local optimization process is successful, we apply two additional checks:
-\begin{itemize}
-\item We control that the resulting segments are not degenerate, which means all three segments of the new bifurcations respect the following constraint between length and radius: $2r_i \leq l_i$
+The connection test corresponds to a single bifurcation optimization while taking into account its impact on the whole tree.\\
 
-\item We control that none of the three resulting segments overlap any other existing tree segment.
-\end{itemize}
+Kamyia proposes a single bifurcation optimization by an iterative procedure \cite{kamiya1972optimal}, which is fully detailed in section \ref{Kamiya}. 
+At each of Kamyia's iteration, we are provided a bifurcation point location and radii of the concerned segments. 
+\begin{enumerate}
+\item  We control that the resulting segments are not degenerate, which means all three segments of the new bifurcations respect the following constraint between length and radius: $2r_i \leq l_i$. If they do degenerate we consider this bifurcation non plausible, skip it, and go testing another neighbor segment.
 
-With this step we ensure the connection to be locally optimal and plausible for the tree.
+\item We assess and apply the consequence of this connection on the whole tree before measuring the total tree volume. This process is detailed in sections \ref{propagate} and \ref{target}.
+
+\item We provide the 
+\end{enumerate}
+
+
+Along Kamyia's iterations, the total tree volume is expected to converge to a local minimum. 
+If so, we apply an additional checks: we control that none of the three resulting segments overlap any other existing tree segment.
+The bifurcation location, segments radii, and total tree volume at convergence are stored to be later compared with other connections.
+
+%Calculating the volume gradient along each iteration,  
+%If the iteration is successfull, (it can fail because induces convergence research), we use 
+
+
+%For each neighbor segment of $n_{loc}$ we calculate what would be the optimal connection to $n_{loc}$ based on a single bifurcation optimization procedure established by Kamyia \cite{kamiya1972optimal}, and is fully detailed in section \ref{Kamiya}. If this local optimization process is successful, we apply two additional checks:
+%\begin{itemize}
+%\item We control that the resulting segments are not degenerate, which means all three segments of the new bifurcations respect the following constraint between length and radius: $2r_i \leq l_i$
+%
+%\item We control that none of the three resulting segments overlap any other existing tree segment.
+%\end{itemize}
+%
+%With this step we ensure the connection to be locally optimal and plausible for the tree.
 
 \subsubsection{Propagate impact on whole tree}
+\label{propagate}
 By adding a new terminal segments, inducing a new generated bifurcation, we perturb the distribution of segmental flows. In order to reestablish the correct terminal flows, the hydrodynamic resistance of the tree must be adjusted. As the lengths of the segments as well as the terminal and perfusion pressures are fixed, this can only be accomplished by proper rescaling of the segment's radii.\\
 
 If we define the reduced hydrodynamic resistance $R^*$ as $R^*_i = R_i r_i^4$ we can calculate the reduced hydrodynamic resistance of a segment including its left and right subtrees by recursively traversing the subtrees:
@@ -226,9 +274,10 @@ The subtrees distal to the new bifurcation remain constant and unaffected by the
 
 
 \subsubsection{Measure target function}
+\label{target}
 Calculate the root radius from
 \begin{equation}
-r_{root} = \left( R_{sub, root}^* \frac{Q_{perf}}{P_{perf}-P_{term}}\right)^\frac{1}{4}
+r_{root} = \left( R_{sub, root}^* \frac{Q_{pk}}{P_{perf}-P_{term}}\right)^\frac{1}{4}
 \end{equation}
 Then for each segment we obtain the radius from:
 \begin{equation}
