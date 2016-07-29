@@ -4,6 +4,7 @@ import Kamiya as kami
 
 import CCO_2DFunctions as cco_2df
 
+
 # We define here the classes for our dichotomic tree structure:
 
 # a tree is a list of nodes 
@@ -93,18 +94,18 @@ class Tree:
     def __init__(self, nodes, n_term, q_perf, p_drop, visc, a_perf, r_f):
         self.nodes = nodes
         self.n_term = n_term
-        self.q_perf = q_perf
+        self.final_q_perf = q_perf
         self.p_drop = p_drop
-        self.node_index = 0
+        self.node_index = 0 #index of the next added node
         self.nu = visc
-        self.a_perf = a_perf
+        self.a_perf = a_perf #final perfusion territory area
         self.r_supp = (np.sqrt(a_perf / (n_term * np.pi)))
-        self.final_perf_radius = r_f
-        self.length_factor = 1
+        self.final_perf_radius = r_f #radius (mm) of the final perfusion area
+        self.length_factor = 1 # size factor from final world to k world 
         
     
     def __deepcopy__(self, tree):
-        return Tree(copy.deepcopy(self.nodes), self.n_term, self.q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius)    		
+        return Tree(copy.deepcopy(self.nodes), self.n_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius)    		
             
     def nodes(self):
         return self.nodes
@@ -125,14 +126,16 @@ class Tree:
     def get_k_term(self):
         self.k_term = len(self.nodes)/2 #because it is a dichotomic tree
         return self.k_term
-    		
+    	
+    #flow throughout terminal segments, is constant along tree growth
     def get_q_term(self):
-        print " qterm non tissue dependant", float(self.q_perf) / self.get_k_term() 
-        final_q_term = float(self.q_perf) / self.n_term
-        print "final qterm", final_q_term
-        print "flow at k", final_q_term * self.get_k_term()
-        return final_q_term * self.get_k_term()#float(self.q_perf) / self.get_k_term()   
-
+        return float(self.final_q_perf) / self.n_term
+    
+    #flow at feeding artery, depending on the number of kterm
+    def get_q_perf_k(self):
+        return float(self.get_k_term()) * self.get_q_term()
+    
+    #when adding node on tree need to update the node_index
     def add_node(self, node):		
         if len(self.nodes) < 2*self.n_term:
             self.nodes.append(node)
@@ -160,13 +163,13 @@ class Tree:
             print " "
         pass
     
+    # during tree growth the root segment is modified by new connections, consequently its index changes
     def get_root_index(self):
         children = self.nodes[0].children()
         return children[0] if children[0]>0 else children[1]
     
     def get_root_radius(self):
-        #find the index of the root (not obviously 1)
-        return np.power(self.resistance(self.get_root_index()) * (self.get_k_term() * self.get_q_term()) / self.p_drop, 1./4)
+        return np.power(self.resistance(self.get_root_index()) * (self.get_q_perf_k()) / self.p_drop, 1./4) 
     
     def update_length_factor(self):
         r_pk = np.sqrt((self.get_k_term() + 1)* self.r_supp**2)
@@ -182,7 +185,8 @@ class Tree:
         else:
             print "no parent found, unable to calculate length"
             return 0.      
-              
+    
+    # resistance of a segment depends on segment length and its children's resistance          
     def resistance(self, i):
         res = 8.*self.nu * self.length(i) / np.pi 
         node = self.get_node(i)
@@ -190,7 +194,6 @@ class Tree:
             children_index = node.children()
             res = res + 1./( ( (node.betas[0])**4 / (self.nodes[children_index[0]]).resistance) + 
                           ( (node.betas[1])**4 / (self.nodes[children_index[1]]).resistance) )
-        #print "total resistance of index ", i, "is ", res
         return res
         
     def update_resistance(self, index):
@@ -198,13 +201,14 @@ class Tree:
         res = self.resistance(index)
         node = self.nodes[index]
         node.set_resistance(res)
-        
-    def DepthFirst_resistances(self,index):
+    
+    #update resistances on the tree along a post order depth first traversal
+    def depthfirst_resistances(self,index):
         children = (self.nodes[index]).children()
         if children[0] > 0:
-            self.DepthFirst_resistances(children[0])
+            self.depthfirst_resistances(children[0])
         if children[1] > 0:
-            self.DepthFirst_resistances(children[1])
+            self.depthfirst_resistances(children[1])
         if index > 0:
             self.update_resistance(index)
             
@@ -242,6 +246,7 @@ class Tree:
         vol_final = self.volume_iter(root, beta_start, self.get_root_index(), volume_found)
         return vol_final
      
+    # add bifurcation on tree structure, and set the two children new resistances 
     # beta has been calculated with child_0/child_1 radius ratio where child_0 is old_child         
     def make_connection(self, old_child_index, new_child_location, branching_location, f, beta):
         #creating new nodes
@@ -278,7 +283,6 @@ class Tree:
         children_index = parent_node.children()  
         children_index[np.where(children_index == old_child_index)[0]] = branching_node.index
         #no need to update parent_node resistance, will be done in balancing_ratio
-        print "initial flows", f
         return True
                 
     def get_terms_recurs(self, index, nb):
@@ -340,7 +344,6 @@ class Tree:
     def calculate_betas_of_parent(self, index): 
         current_node = self.nodes[index]        
         parent = self.nodes[current_node.parent()]
-        #print "calculate betas of ", parent.index
         
         if parent.index > 0:
             current_node_is_child_0 = (parent.children()[0] == index)
@@ -358,10 +361,10 @@ class Tree:
             print "beta of root point, no need to calculate"
             return np.array([1., 1.])            
 
-            
+    # the new bifurcation added has impacted on the whole tree resistance:
+    # requires radius rescaling, which is propagated upstream until reaching root        
     def balancing_ratios(self, index):
         parent_index = self.nodes[index].parent()
-        #print "balancing ratio of parent of index " , parent_index
         if (parent_index > 0):
             parent = self.nodes[parent_index]            
             betas = self.calculate_betas_of_parent(index)
@@ -372,15 +375,13 @@ class Tree:
             print "root reached"
                 
 
-    # testing the connection between the new_child_location and the segment made of "old_child_index" and its parent   
-
-    
+    # testing the connection between the new_child_location and the segment made of "old_child_index" and its parent       
     def test_connection(self, old_child_index, new_child_location):
         ##update perfusion territory: add a microcirculatory black box
         # by updating the length factor 
         self.update_length_factor()  
         # and updating the resistance on whole tree so all radii are rescaled
-        self.DepthFirst_resistances(0)         
+        self.depthfirst_resistances(0)         
         
         # update flow values in tree
         q_term = self.get_q_term()#self.q_perf / (self.get_k_term()) # + 1
@@ -400,64 +401,72 @@ class Tree:
         c0 = (self.nodes[self.nodes[old_child_index].parent()]).coord
         c1 = (self.nodes[old_child_index]).coord
         c2 = new_child_location
-        
-        convergence, res = kami.kamiya_single_bif_opt(r, f, c0, c1, c2, iter_max, tolerance, False, self.length_factor)
-        #while convergence not reached and iter max not reached:
-        #call Kamiya : cvge, x_c, y_c, r_c, l = kamiya_loop_r2(x, y, c0, c1, c2, f, r, length_factor)
-        #get radius, length
-        #create copy of tree
-        #connect new branch
-        #balance ratios
-        #test degenerating segments
-        #store corrected beta
-        #calculate total tree volume
-        #calculate total volume gradient
-        #if gradients is under tolerance, and iter_max not reached:
-        #   save this bifurcation result: beta, bif position, index of neighbor
-        #else:
-        #   provides Kamiya with current position, radii, (flow?)
-        
-        # constraints of the local optimization
-        #check boundaries: segments are not degenerated
-        if (convergence == True):                     
-            branching_location = np.array([res[0][0], res[0][1]]) 
-            radii = res[0][2]
-            print "radii", radii
-            convergence = cco_2df.degenerating_test(c0,c1,c2, branching_location, radii, self.length_factor)
-            print "degenrqting test", convergence, #new_child_location, old_child_index
-            #check intersection: no segment intersects with other existing tree segments
-            if (convergence == True):
-                convergence = self.check_intersection(old_child_index, c2, branching_location, radii)
-                print "intersection test", convergence, #new_child_location, old_child_index
-        result = [[0.,0.], [0.,0.]]
-        
-        
-        if (convergence == True):
-            #make connection                       
-            estimate_betas = cco_2df.calculate_betas(radii[1]/radii[2], 3.) #this involves old_child will be child_0, new_child is child_1
-            
-            self.make_connection(old_child_index, new_child_location, branching_location, f, estimate_betas)
-            
-            #update flows 
-            self.update_flow()
-            
-            # balancing ratio up to the root: update whole tree resistance by tuning radii
-            self.balancing_ratios(old_child_index)
-            correct_beta= self.nodes[self.node_index-2].betas #correspond to the just created bifurcation node
 
-            #measure tree volume
-            tree_volume = self.volume2()
-            result=[correct_beta, branching_location]  
-            #self.printing_full()
-            return convergence, tree_volume, result, old_child_index
-        else:
-            print "connection test failed"
-            return False, 0., result, old_child_index
+        iterat = 0
+        #x,y = kami.starting_point(c0,c1,c2,f)
+        x,y = (c0 + c1)/2.
+        #calculate original Vtot or take a bigger approximation
+        initial_tree_vol = self.volume2() * 10.
+        print "initial_tree vol", initial_tree_vol
+        
+        while (iterat < iter_max):
+            #call Kamiya : cvge, x_c, y_c, r_c, l = kamiya_loop_r2(x, y, c0, c1, c2, f, r, length_factor)
+            conv, x_c, y_c, r_c, l = kami.kamiya_loop_r2(x, y, c0, c1, c2, f, r, self.length_factor)
+            result = [[0.,0.], [0.,0.]]
+            if conv ==  False:
+                print "kamyia doesnt converge"
+                return False, 0., result, old_child_index
+            
+            #test degenerating segments
+            branching_location = np.array([x_c,y_c])
+
+            #create copy of tree and connect new branch
+            tree_copy = copy.deepcopy(self)
+            tree_copy.update_length_factor()
+            tree_copy.depthfirst_resistances(0)
+            tree_copy.update_flow()
+            #tree_copy.printing_full()
+            estimate_betas = cco_2df.calculate_betas(r_c[1]/r_c[2], 3.) 
+            tree_copy.make_connection(old_child_index, new_child_location, branching_location, f, estimate_betas)
+            tree_copy.update_flow()
+            #balance ratios and store corrected beta
+            tree_copy.balancing_ratios(old_child_index)
+            correct_beta= tree_copy.nodes[tree_copy.node_index-2].betas           
+            #calculate total tree volume and volume gradient
+            tree_vol = tree_copy.volume2()
+            
+            new_radii = np.array([tree_copy.get_radius(tree_copy.node_index-2), tree_copy.get_radius(old_child_index), tree_copy.get_radius(tree_copy.node_index-1)])
+            if cco_2df.degenerating_test(c0,c1,c2, branching_location, new_radii, self.length_factor) == False :
+                    print "degeneratedddddddddddd segments"
+                    return False, 0., [[0.,0.], [0.,0.]], old_child_index 
+            vol_gdt = initial_tree_vol - tree_vol
+            print "volume gdt", vol_gdt
+            if np.abs(vol_gdt) < tolerance:
+                
+                #test intersection on the tree not connected to the new branch
+                if self.check_intersection(old_child_index, c2, branching_location, new_radii) ==  True:
+                    result=[correct_beta, branching_location]  
+                    print "connection test succeed!"  
+                    return True, tree_vol, result, old_child_index
+                else:
+                    print "intersection test failed"
+                    return False, 0., result, old_child_index
+            else:
+                initial_tree_vol = tree_vol
+                x,y,r = x_c,y_c,new_radii
+                iterat = iterat + 1
+
+        print "connection test failed : iter max reached"
+        return False, 0., result, old_child_index 
+        
+            
+            
+
     
     # add the two nodes and update tree
     def add_connection(self, old_child_index, new_child_location, branching_location, betas):
         self.update_length_factor()
-        self.DepthFirst_resistances(0)
+        self.depthfirst_resistances(0)
         f= np.zeros(3)
         if (self.make_connection(old_child_index, new_child_location, branching_location, f, betas)):
             self.update_flow()

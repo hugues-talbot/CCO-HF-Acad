@@ -24,7 +24,7 @@ import time
 
 ############# Visualisation tools ####################
 
-def plot_tree(tree, area_descptr, name, factor_radius):
+def plot_tree(tree, area_descptr, name):
     fig = plt.figure(figsize=(8,8))#figsize=(8,8)
     ax = fig.add_subplot(111)
     #colors=['k', 'b', 'g', 'm', 'r']
@@ -32,17 +32,17 @@ def plot_tree(tree, area_descptr, name, factor_radius):
     ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[1], color = 'r', alpha = 0.5))
     all_radii = []
     leaves_radii = []
+    inv_length_fac = 1. / tree.length_factor
     for sgmt in tree.nodes:
         if (sgmt.parent() >= 0):
             distal = sgmt.coord
             proximal = tree.get_node(sgmt.parent()).coord
-            radius = tree.get_radius(sgmt.index)  #*10
+            radius = tree.get_radius(sgmt.index) *inv_length_fac #*10
             all_radii.append(radius)
             if sgmt.is_leaf():
-                leaves_radii.append(radius)
-                
+                leaves_radii.append(radius)               
             #ax.plot([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'b')
-            ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius*factor_radius , color = 'k'))#colors[sgmt.label]
+            ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'k'))#colors[sgmt.label]
       
     ax.set_xlim(area_descptr[0][0] - area_descptr[1]*1.5,area_descptr[0][0]+ area_descptr[1]*1.5)
     ax.set_ylim(area_descptr[0][1] - area_descptr[1]*1.5,area_descptr[0][1]+ area_descptr[1]*1.5)
@@ -97,7 +97,7 @@ if store_data:
 if True:
 
     NTerm = 250
-    seed = 42
+    seed = 42 
     np.random.seed(seed)
     
     #### Parameters to define: ##
@@ -106,7 +106,7 @@ if True:
     Q_perf = 8.33e3
     N_term = NTerm
     Q_term = Q_perf / N_term
-    P_drop = 1.33e7 - 8.38e6# 1.33e7 -7.98e6 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
+    P_drop = 1.33e7 - 7.98e6 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
     viscosity = 3.6 # 3.6cp = 3.6mPa = 3.6 kg mm-1 s-2 (check works with radius and length in mm) #3.6 cp =3.6e-3 Pa.s = 3.6e-9 MPa.s 
     N_con = 20
     N_con_max = 40
@@ -136,13 +136,9 @@ if True:
     first_node = nclass.Node(1, first_node_position, Q_perf,0)
     first_node.set_label(0)
     tree.add_node(first_node)
-    print "flow3",tree.nodes[1].flow
     tree.update_length_factor()
-    tree.DepthFirst_resistances(0)
+    tree.depthfirst_resistances(0)
     tree.update_flow()
-    print "flow3",tree.nodes[1].flow
-    
-    
 
     while tree.get_k_term() < N_term: 
 
@@ -169,11 +165,9 @@ if True:
             arg=[tree_copy,neighbors[n_index], new_child_location]
             args.append(arg)                     
             cet[n_index] = tree_copy.test_connection(neighbors[n_index], new_child_location)              
-            if tree.get_k_term() == 40 and cet[n_index][0] == True:
-                plot_tree(tree_copy, area_descptr, "./Results/kterm41/tree_Nt%i_f%i_s%i_neighb%i" %(tree_copy.get_k_term(),1.,seed, neighbors[n_index]), 1.)
         cet_filtered = filter(None,cet)
         cet_values = np.array(cet_filtered, dtype_r)   
-        if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
+        if (np.sum(cet_values['convgce']) >= 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
             
             cet_sel = cet_values[cet_values['convgce']>0]
             cet_sorted = np.sort(cet_sel, order = "volume")
@@ -196,7 +190,7 @@ if True:
 
                 cet_filtered = filter(None,cet)
                 cet_values = np.array(cet_filtered, dtype_r)   
-                if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
+                if (np.sum(cet_values['convgce']) >= 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
                     cet_values = np.array(cet_filtered, dtype_r)
                     cet_sel = cet_values[cet_values['convgce']>0]
                     cet_sorted = np.sort(cet_sel, order = "volume")
@@ -225,24 +219,21 @@ if True:
                 added_node.set_label(label)
                 branching_added_node.set_label(label)
                 print "connection added on tree up node", opt[2]
-                #print "d_tresh value", d_tresh
                 print "k term is now ", tree.get_k_term()
-                #print "root radius", tree.get_root_radius()
-                #tree.printing_full()
-                #tree_stored.append(copy.deepcopy(tree))
+
                 last_tree = copy.deepcopy(tree)
-                if tree.get_k_term() == 10:
-                    break
+                if tree.get_k_term() % 50  == 0:
+                    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
             else:
                 print "failed to add connection on tree"
         else:
             print "location doesn't provide an optimal connection, testing newwwwwwwww location"
 
         #keep going until reach Nterm!
-        print "stored cet", store_cet
-    fac = 1
+
+
         
-    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_f%i_s%i_dbgd_tresh" %(tree.get_k_term(),fac,seed), fac)#tree_stored[-1]
+    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
     #return last_tree
 
 
