@@ -46,7 +46,7 @@ def plot_tree(tree, area_descptr, name):
                 leaves_radii.append(radius)               
             #ax.plot([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'b')
             ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'k'))#colors[sgmt.label]
-      
+
     ax.set_xlim(area_descptr[0][0] - area_descptr[1]*1.5,area_descptr[0][0]+ area_descptr[1]*1.5)
     ax.set_ylim(area_descptr[0][1] - area_descptr[1]*1.5,area_descptr[0][1]+ area_descptr[1]*1.5)
     outfile_path1 = "./"+name+"all.txt"
@@ -74,8 +74,8 @@ def plot_tree(tree, area_descptr, name):
         outfile2.write(str(i) + "\n")
     #np.save(outfile2, np.array(leaves_radii))
     outfile2.close()
-    
     fig.show()
+
 
 def plot_trees(trees, area_descptr):
     fig = plt.figure(figsize=(8,8))
@@ -127,7 +127,7 @@ if True:
 
     P_drop = 1.33e7 - 7.98e6 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
     viscosity = 3.6 # 3.6cp = 3.6mPa = 3.6 kg mm-1 s-2 (check works with radius and length in mm) #3.6 cp =3.6e-3 Pa.s = 3.6e-9 MPa.s 
- N_con = 20
+    N_con = 20
     N_con_max = 40
     
     # About  convexe perfusion surface : defines a disc surface 
@@ -157,18 +157,20 @@ if True:
     tree.add_node(first_node)
     tree.update_flow()
     tree.update_length_factor()
-    tree.depthfirst_resistances(0)
-            
-    process_nb = 4            
-    while tree.get_k_term() < N_term: 
 
-        success, new_child_location, d_tresh = cco_2df.get_new_location(tree, area_descptr, N_term)
+    tree.depthfirst_resistances(0)        
+    last_tree = copy.deepcopy(tree) 
+    count_tested_loc = 0
+    d_tresh_fac = 1.
+    while tree.get_k_term() < N_term: 
+        success, new_child_location, d_tresh = cco_2df.get_new_location(tree, area_descptr, N_term, d_tresh_fac)
         if (success == False):
             #print "impossible to satisfy distance criteria", "d_tresh", d_tresh
             ## then try again with
             break
 
-        cet = []#[] for i in range (N_con_max)c=
+        cet = []#[] for i in range (N_con_max)
+
         adding_location = False
         added_location = []
         
@@ -193,7 +195,7 @@ if True:
         cet_values = np.array(cet_filtered, dtype_r)
         
         #if there is a candidate that converges
-        if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):        
+        if (np.sum(cet_values['convgce']) >= 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):        
             cet_sel = cet_values[cet_values['convgce']>0]
             cet_sorted = np.sort(cet_sel, order = "volume")
             cet_final=cet_sorted[0]
@@ -226,6 +228,7 @@ if True:
                adding_location = True
                added_location.append(cet_final.tolist()[1:])
 
+       
         if (adding_location): # optimal connection found!
 
             store_cet.append(filter(None,cet))
@@ -241,28 +244,27 @@ if True:
                     label = 4
                 added_node.set_label(label)
                 branching_added_node.set_label(label)
-
-
                 print "connection added on tree up node", opt[2]
                 print "k term is now ", tree.get_k_term()
-
                 last_tree = copy.deepcopy(tree)
-
+                dtresh_fac = 1.
+                count_tested_loc = 0
                 
                 if tree.get_k_term() % 50  == 0:
                     plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
 
                 print "k term is now ", tree.get_k_term()
-
-
+            else:
                 print "failed to add connection on tree"
         else:
             print "location doesn't provide an optimal connection, testing newwwwwwwww location"
-
+            count_tested_loc = count_tested_loc + 1
+            if count_tested_loc > 50:
+                d_tresh_fac = 0.9 - float(int((count_tested_loc / 50))) * 0.1
+                print "d_tresh_faccccccccccccccccccccccccccc",d_tresh_fac
         #keep going until reach Nterm!
 
     plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
-
 
 
 

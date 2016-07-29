@@ -128,8 +128,7 @@ class Tree:
     # get the number of terminal segments in the current tree            
     def get_k_term(self):
         self.k_term = len(self.nodes)/2 #because it is a dichotomic tree
-        return self.k_term
-    	
+        return self.k_term    	
     #flow throughout terminal segments, is constant along tree growth
     def get_q_term(self):
         return float(self.final_q_perf) / self.n_term
@@ -173,6 +172,7 @@ class Tree:
     
     def get_root_radius(self):
         return np.power(self.resistance(self.get_root_index()) * (self.get_q_perf_k()) / self.p_drop, 1./4) 
+
 
     def update_length_factor(self):
         r_pk = np.sqrt((self.get_k_term() + 1)* self.r_supp**2)
@@ -410,7 +410,10 @@ class Tree:
         
         if GLOBAL_INCREMENT == True:
             iterat = 0
-            x,y = kami.starting_point(c0,c1,c2,f)
+            #x,y = kami.starting_point(c0,c1,c2,f)
+            x,y = (c0 + c1) / 2. 
+          
+            
             #calculate original Vtot or take a bigger approximation
             initial_tree_vol = self.volume2() * 10.
             while (iterat < iter_max):
@@ -423,9 +426,7 @@ class Tree:
                 
                 #test degenerating segments
                 branching_location = np.array([x_c,y_c])
-                if cco_2df.degenerating_test(c0,c1,c2, branching_location, r_c, self.length_factor) == False :
-                    print "degenerated segments, skipping"
-                    return False, 0., result, old_child_index
+
                 #create copy of tree and connect new branch
                 tree_copy = copy.deepcopy(self)
                 tree_copy.update_length_factor()
@@ -438,24 +439,32 @@ class Tree:
                 #balance ratios              
                 #store corrected beta
                 tree_copy.balancing_ratios(old_child_index)
-                correct_beta= tree_copy.nodes[tree_copy.node_index-2].betas             
+                correct_beta= tree_copy.nodes[tree_copy.node_index-2].betas
+                
                 #calculate total tree volume and volume gradient
                 tree_vol = tree_copy.volume2()
-                print "new tree volume found", tree_vol
+                new_radii = np.array([tree_copy.get_radius(tree_copy.node_index-2), tree_copy.get_radius(old_child_index), tree_copy.get_radius(tree_copy.node_index-1)])
+                if cco_2df.degenerating_test(c0,c1,c2, branching_location, new_radii, self.length_factor) == False :
+                        print "degeneratedddddddddddd segments"
+                        return False, 0., [[0.,0.], [0.,0.]], old_child_index 
                 vol_gdt = initial_tree_vol - tree_vol
-                print "gdt", vol_gdt
+                print "volume gdt", vol_gdt
                 if np.abs(vol_gdt) < tolerance:
+                    
                     #test intersection on the tree not connected to the new branch
-                    if self.check_intersection(old_child_index, c2, branching_location, r_c) ==  True:
+                    if self.check_intersection(old_child_index, c2, branching_location, new_radii) ==  True:
                         result=[correct_beta, branching_location]  
-                        print "connection test succeed!"        
+                        print "connection test succeed!"  
                         return True, tree_vol, result, old_child_index
                     else:
                         print "intersection test failed"
+                        print tree_copy.length_factor, self.length_factor
+                        #result=[correct_beta, branching_location]  
+                        #return True, tree_vol, result, old_child_index
                         return False, 0., result, old_child_index
                 else:
                     initial_tree_vol = tree_vol
-                    x,y,r = x_c,y_c,r_c
+                    x,y,r = x_c,y_c,new_radii
                     iterat = iterat + 1
                 #if gradients is under tolerance, and iter_max not reached:
                 #   save this bifurcation result: beta, bif position, index of neighbor

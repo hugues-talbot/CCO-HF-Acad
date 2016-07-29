@@ -68,7 +68,7 @@ def first_segmt_end(area, area_descptr):
             return position
 
 # a new location is a random location constrained by perfusion territory and distance criterion            
-def get_new_location(tree, area_descrpt, n_term):   
+def get_new_location(tree, area_descrpt, n_term, dtresh_fac):   
     area_surface = np.pi * area_descrpt[1]**2
     k_term = tree.get_k_term()
     d_tresh, r_pk = get_d_tresh(area_surface, n_term, k_term) 

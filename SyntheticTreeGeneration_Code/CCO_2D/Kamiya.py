@@ -21,7 +21,7 @@ from scipy import optimize
 # if position converges and total tree volume decreases: solved 
 
 
-VISCOSITY = 3.6 #cp 
+VISCOSITY = 3.6e-3 #cp 
 
 #ci contains coordinate xi and y1 of the point
 #f contains f0,f1,f2
@@ -129,9 +129,6 @@ def calculate_seg_lengths(c0,c1,c2,x,y, length_factor):
     l[2] = rescaled_length(c2 - coords, length_factor)
     return l
 
-#when calculating sehment length, need to consider q fqctor becqise current coordinates are scaled from a bigger perfusion territory
-def rescaled_length(vector, factor):
-    return np.sqrt(np.sum(vector**2))*factor
 
 # r =r0,r1,r2 in mm
 # f = flow in mm3/s
