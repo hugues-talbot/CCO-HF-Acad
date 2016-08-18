@@ -98,32 +98,34 @@ class Tree:
         self.nodes = nodes
         self.n_term = n_term
         self.final_q_perf = q_perf
+        self.q_term = q_perf / float(n_term)
         self.p_drop = p_drop
         self.node_index = 0 #index of the next added node
         self.nu = visc
-        self.a_perf = a_perf #final perfusion territory area
-        self.r_supp = (np.sqrt(a_perf / (n_term * np.pi)))
-        self.final_perf_radius = r_f #radius (mm) of the final perfusion area
-        self.length_factor = 1 # size factor from final world to k world 
-        
-    
+        self.a_perf = a_perf
+        self.r_supp = np.sqrt(a_perf / (n_term * np.pi)) #microbox radius: average radius of terminal segment perfusion territory when reaching final tree growth
+        self.final_perf_radius = r_f #real size of the perfusion territory radius when plotting result
+        self.length_factor = 1 # not a const, is updated during tree growth after each added bifurcation
+
     def __deepcopy__(self, tree):
         return Tree(copy.deepcopy(self.nodes), self.n_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius)    		
             
     def nodes(self):
         return self.nodes
-        
+    
+    #counting the nodes in list to update set the node_index for next added segment    
     def update_node_index(self):
         self.node_index = len(self.nodes)
-        
+    
+    # updating flow by calculating number of terminal segment downstream each node
+    # should be optimized with a depth first traversal path?
     def update_flow(self):
-        q_term = self.get_q_term()
         for i in self.nodes:
             if i.is_leaf():
-                i.set_flow(q_term)
+                i.set_flow(self.q_term)
             else:
                 terms = self.get_terms(i.index)
-                i.set_flow(terms * q_term)
+                i.set_flow(terms * self.q_term)
     
     # get the number of terminal segments in the current tree            
     def get_k_term(self):
@@ -137,6 +139,9 @@ class Tree:
     def get_q_perf_k(self):
         return float(self.get_k_term()) * self.get_q_term()
     
+    def get_pk_drop(self):       
+        return float(self.get_k_term()) * self.p_drop / self.n_term
+
     #when adding node on tree need to update the node_index
     def add_node(self, node):		
         if len(self.nodes) < 2*self.n_term:
@@ -250,6 +255,41 @@ class Tree:
         beta_start = 1.
         vol_final = self.volume_iter(root, beta_start, self.get_root_index(), volume_found)
         return vol_final
+        
+    
+    
+    ## test if new location is over d_tresh distance from existing tree segments
+    def test_dist_criteria(self, location, d_tresh, area):
+        if (cco_2df.belongs_to_area(location, area)):    
+            for sgmt in self.nodes:
+                if (sgmt.parent() >= 0):
+                    dist = cco_2df.segment_distance(sgmt.coord, (self.get_node(sgmt.parent())).coord, location)
+                    if (dist < d_tresh):
+                        return False
+        else:
+            return False
+        #print "point inside area and over distance threshold"
+        return True      
+    
+    # a new location is a random location constrained by perfusion territory and distance criterion            
+    def get_new_location(self, area_descrpt, n_term):   
+        k_term = self.get_k_term()
+        d_tresh, r_pk = cco_2df.calculate_d_tresh_2D(self.r_supp, k_term)
+        length_factor = r_pk /  area_descrpt[1]
+        d_tresh_factorized = d_tresh / length_factor
+        meet_criteria = False
+        ind = 0
+        while (meet_criteria == False and ind < 1000):
+            point = cco_2df.random_location()
+            if (self.test_dist_criteria(point, d_tresh_factorized, area_descrpt)):
+                print "location found"
+                return True, point, d_tresh_factorized
+            ind = ind + 1
+            if ind == 1000:
+                d_tresh_factorized = 0.9*d_tresh_factorized
+                print "using new value: ", d_tresh_factorized
+                ind = 0
+        return False, np.array([0.,0.]), d_tresh_factorized
      
     # add bifurcation on tree structure, and set the two children new resistances 
     # beta has been calculated with child_0/child_1 radius ratio where child_0 is old_child         
@@ -390,11 +430,10 @@ class Tree:
         
 
         # update flow values in tree
-        q_term = self.get_q_term()#self.q_perf / (self.get_k_term()) # + 1
         f= np.zeros(3)
-        f[1] = self.get_terms(old_child_index) * q_term
-        f[2] = q_term
-        f[0] = f[1] + f[2]      
+        f[1] = self.get_terms(old_child_index) * self.q_term
+        f[2] = self.q_term
+        f[0] = f[1] + f[2]
         
         #set original radii: use the original old child radius for all      
         radius_ori = self.get_radius(old_child_index)
@@ -445,7 +484,7 @@ class Tree:
                 tree_vol = tree_copy.volume2()
                 new_radii = np.array([tree_copy.get_radius(tree_copy.node_index-2), tree_copy.get_radius(old_child_index), tree_copy.get_radius(tree_copy.node_index-1)])
                 if cco_2df.degenerating_test(c0,c1,c2, branching_location, new_radii, self.length_factor) == False :
-                        print "degeneratedddddddddddd segments"
+                        print "degenerated segments"
                         return False, 0., [[0.,0.], [0.,0.]], old_child_index 
                 vol_gdt = initial_tree_vol - tree_vol
                 print "volume gdt", vol_gdt
@@ -469,7 +508,7 @@ class Tree:
                 #if gradients is under tolerance, and iter_max not reached:
                 #   save this bifurcation result: beta, bif position, index of neighbor
                 #else:
-                #   provides Kamiya with current position, radii, (flow?)
+                #   provides Kamiya with current position and radii as starting point
             print "connection test failed : iter max reached"
             return False, 0., result, old_child_index        
         

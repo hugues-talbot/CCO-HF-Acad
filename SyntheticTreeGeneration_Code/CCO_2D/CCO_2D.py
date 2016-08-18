@@ -101,6 +101,7 @@ def plot_trees(trees, area_descptr):
 
 timing = True
 store_data = False
+parallelized = True
 
 if timing:
     debut = time.time()
@@ -113,8 +114,8 @@ if store_data:
 if True:
 
     NTerm = 4000
-
     seed = 42
+
     np.random.seed(seed)
     process_nb = 16
  
@@ -138,7 +139,7 @@ if True:
     
     
     #### initialization ##    
-    # tree
+
     store_cet = []
     tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, area, area_radius)
      
@@ -160,17 +161,16 @@ if True:
 
     tree.depthfirst_resistances(0)        
     last_tree = copy.deepcopy(tree) 
-    count_tested_loc = 0
-    d_tresh_fac = 1.
+
     while tree.get_k_term() < N_term: 
-        success, new_child_location, d_tresh = cco_2df.get_new_location(tree, area_descptr, N_term, d_tresh_fac)
+        success, new_child_location, d_tresh = tree.get_new_location(area_descptr, N_term)
         if (success == False):
-            #print "impossible to satisfy distance criteria", "d_tresh", d_tresh
-            ## then try again with
+            print "impossible to satisfy distance criteria", "d_tresh", d_tresh
             break
 
-        cet = []#[] for i in range (N_con_max)
-
+        cet = [] 
+        if parallelized == False:
+            cet = [[] for i in range (N_con_max)]
         adding_location = False
         added_location = []
         
@@ -184,12 +184,19 @@ if True:
         args = [[tree, neighbors[i],new_child_location] for i in range (len(neighbors))]
 
         #process all neighbors connection test batch by batch
-        while (len(cet) < N_con) and (len(cet) < len(neighbors)):           
-            end_lim = len(cet) + process_nb if (len(cet) + process_nb < len(neighbors)) else len(neighbors)            
-            pool = Pool(processes =  process_nb)               
-            res = pool.map(cco_2df.test_connection_list,args[len(cet): end_lim])            
-            cet = cet + res
-            pool.close()
+
+        if parallelized == True:
+            while (len(cet) < N_con) and (len(cet) < len(neighbors)):           
+                end_lim = len(cet) + process_nb if (len(cet) + process_nb < len(neighbors)) else len(neighbors)            
+                pool = Pool(processes =  process_nb)               
+                res = pool.map(cco_2df.test_connection_list,args[len(cet): end_lim])            
+                cet = cet + res
+                pool.close()
+        else:
+            for n_index in range(len(neighbors)):
+                tree_copy = copy.deepcopy(tree)
+                cet[n_index] = tree_copy.test_connection(neighbors[n_index], new_child_location)
+
 
         cet_filtered = filter(None,cet)
         cet_values = np.array(cet_filtered, dtype_r)
@@ -232,7 +239,6 @@ if True:
         if (adding_location): # optimal connection found!
 
             store_cet.append(filter(None,cet))
-
             opt = added_location[-1]
             ante_tree = copy.deepcopy(tree)
             
@@ -244,27 +250,28 @@ if True:
                     label = 4
                 added_node.set_label(label)
                 branching_added_node.set_label(label)
-                print "connection added on tree up node", opt[2]
-                print "k term is now ", tree.get_k_term()
-                last_tree = copy.deepcopy(tree)
+                #print "connection added on tree up node", opt[2]
+                print "k termmmmmmmmmmmmmmmmmmmmmmmmmm is now ", tree.get_k_term()
+                #last_tree = copy.deepcopy(tree)
+                kterm=tree.get_k_term()
                 dtresh_fac = 1.
                 count_tested_loc = 0
-                
-                if tree.get_k_term() % 50  == 0:
-                    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
-
-                print "k term is now ", tree.get_k_term()
+                fac=1
+                if (kterm%1000 == 0):
+                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_f%i_s%i_30" %(NTerm,kterm,fac,seed),fac)
+                if tree.get_k_term() ==50:
+#                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_f%i_s%i_30" %(NTerm,kterm,fac,seed),fac)
+                    break          
             else:
                 print "failed to add connection on tree"
         else:
-            print "location doesn't provide an optimal connection, testing newwwwwwwww location"
-            count_tested_loc = count_tested_loc + 1
-            if count_tested_loc > 50:
-                d_tresh_fac = 0.9 - float(int((count_tested_loc / 50))) * 0.1
-                print "d_tresh_faccccccccccccccccccccccccccc",d_tresh_fac
+
+            print "ktemmmmmmmmmmmmmmmmmmmmmmmmmmmmmm", tree.get_k_term()
+            print "location doesn't provide an optimal connection, testing new location"
+
         #keep going until reach Nterm!
 
-    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_final" %(tree.get_k_term(),seed))#tree_stored[-1]
+    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_31" %(tree.get_k_term(),seed))
 
 
 

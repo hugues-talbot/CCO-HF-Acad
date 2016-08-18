@@ -13,13 +13,11 @@ import copy
 
 ## distance criteria
 # n_term is the final number of terminal segment
-# k_term is the current number of terminal segment (atg the current growth step)
+# k_term is the current number of terminal segment (at the current growth step)
 
-# a_perf is the total perfused area
-def calculate_r_supp_2D(a_perf,n_term):
-    return np.sqrt(a_perf/(n_term*np.pi))  
-    
+#the distance criterion d_tresh is defined by k_term and r_supp (microbox radius) 
 def calculate_d_tresh_2D(r_supp, k_term):
+<<<<<<< HEAD
     r_pk = np.sqrt((k_term + 1)* r_supp**2)
     return np.sqrt(np.pi*(r_pk)**2/k_term), r_pk
 
@@ -28,28 +26,15 @@ def calculate_d_tresh_2D(r_supp, k_term):
 def get_d_tresh(a_perf, n_term, k_term):
     return calculate_d_tresh_2D(calculate_r_supp_2D(a_perf, n_term), k_term)
     
+=======
+    r_pk = np.sqrt((k_term + 1) * r_supp**2)
+    return np.sqrt(np.pi*(r_pk**2)/(k_term)), r_pk
+    
+>>>>>>> tidying and cleaning code
 ## random location generation
 def random_location():
     return np.random.rand(2)*200
-    
-## test if new location is over d_tresh distance from existing segments
-def test_dist_criteria(tree, location, d_tresh, area):
-    if (belongs_to_area(location, area)):    
-        for sgmt in tree.nodes:
-            if (sgmt.parent() >= 0):
-                dist = segment_distance(sgmt.coord, (tree.get_node(sgmt.parent())).coord, location)
-                if (dist < d_tresh):
-                    #print "point too close of existing segments"
-                    #print "dist", dist, "d_tresh", d_tresh
-                    #print "location", location
-                    return False
-    else:
-        #print "point out of area"
-        #print "location", location
-        return False
-    #print "point inside area and over distance threshold"
-    return True  
-    
+       
     
 # area is defined by two descriptors: [0] = center coord(x,y) and [1] = radius
 def belongs_to_area(coords, area):
@@ -67,6 +52,7 @@ def first_segmt_end(area, area_descptr):
         if (belongs_to_area(position, area_descptr)):
             return position
 
+<<<<<<< HEAD
 # a new location is a random location constrained by perfusion territory and distance criterion            
 def get_new_location(tree, area_descrpt, n_term, dtresh_fac):   
     area_surface = np.pi * area_descrpt[1]**2
@@ -90,6 +76,8 @@ def get_new_location(tree, area_descrpt, n_term, dtresh_fac):
             ind = 0
     return False, np.array([0.,0.]), d_tresh_factorised
 
+=======
+>>>>>>> tidying and cleaning code
 
 
 #######################################################
@@ -174,15 +162,10 @@ def no_overlap(point_a, point_b, point_c, point_d, width_ab, width_cd):
     intersect, pos = determinant(point_a, point_b, point_c, point_d)
     if (intersect): 
         #print "intersection between lines"
-        # if intersection belongs to one of the segment
-        #   return False
 
         if point_is_inside_rectangle(point_a, point_b, width_ab, pos) and point_is_inside_rectangle(point_c, point_d, width_cd, pos):
             #print "intersection is inside segments"
-            return False
-        #else:
-            #print "intersection out of seg"
-        
+            return False        
         
         # if any segment end is inside the cercle of radius = sum of width
         #   return False
@@ -231,7 +214,7 @@ def point_is_inside_rectangle(seg_pt_a, seg_pt_b, width, point):
     norm_to_ab = normalize(normal_to_ab)
     a = seg_pt_a - norm_to_ab * 0.5 * width
     b = seg_pt_a + norm_to_ab * 0.5 * width
-    c = seg_pt_b + norm_to_ab * 0.5 * width
+    #c = seg_pt_b + norm_to_ab * 0.5 * width
     d = seg_pt_b - norm_to_ab * 0.5 * width
     
     #mesuring
