@@ -27,11 +27,10 @@ from multiprocessing import Pool, TimeoutError
 ############# Visualisation tools ####################
 
 def plot_tree(tree, area_descptr, name):
-    fig = plt.figure(figsize=(8,8))#figsize=(8,8)
+    fig = plt.figure(figsize=(8,8))
     ax = fig.add_subplot(111)
     #colors=['k', 'b', 'g', 'm', 'r']
     # labels for cet ['r','m','g','b']
-
     ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[1], color = 'r', alpha = 0.5))
     all_radii = []
     leaves_radii = []
@@ -44,36 +43,27 @@ def plot_tree(tree, area_descptr, name):
             all_radii.append(radius)
             if sgmt.is_leaf():
                 leaves_radii.append(radius)               
-            #ax.plot([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'b')
             ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'k'))#colors[sgmt.label]
 
     ax.set_xlim(area_descptr[0][0] - area_descptr[1]*1.5,area_descptr[0][0]+ area_descptr[1]*1.5)
     ax.set_ylim(area_descptr[0][1] - area_descptr[1]*1.5,area_descptr[0][1]+ area_descptr[1]*1.5)
+    
+    #store tree radii for study
+    #all radii
     outfile_path1 = "./"+name+"all.txt"
     outfile1 = open(outfile_path1,"w")
     for i in all_radii:
         outfile1.write(str(i) + "\n")
-        
+    outfile1.close()
+    #radii of terminal segments only
     outfile_path2 = "./"+name+"leaves.txt"
     outfile2 = open(outfile_path2,"w")
     for i in leaves_radii:
-        outfile2.write(str(i) + "\n")
+        outfile2.write(str(i) + "\n")  
+    outfile2.close()
     
     fig.savefig(name+".png")
     fig.savefig(name+".pdf")	
-
-    outfile_path1 = "./"+name+"1.txt"
-    outfile1 = open(outfile_path1, "w")
-    for i in all_radii:
-	outfile1.write(str(i) + "\n") 
-    #np.save(outfile1, np.array(all_radii))outfile1.close()c
-    outfile1.close()
-    outfile_path2 = "./"+name+"2.txt"
-    outfile2 = open(outfile_path2, "w")
-    for i in leaves_radii:
-        outfile2.write(str(i) + "\n")
-    #np.save(outfile2, np.array(leaves_radii))
-    outfile2.close()
     fig.show()
 
 
@@ -91,9 +81,8 @@ def plot_trees(trees, area_descptr):
                 
                 ax.plot([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = colors[ind], alpha= 0.4)
         ind = ind +1   
-    ax.set_xlim(0,200)#area_descptr[0][0] - area_descptr[1]*1.5,area_descptr[0][0]+ area_descptr[1]*1.5
-    ax.set_ylim(0,200)#area_descptr[0][1] - area_descptr[1]*1.5,area_descptr[0][1]+ area_descptr[1]*1.5
-
+    ax.set_xlim(area_descptr[0][0] - area_descptr[1]*1.5,area_descptr[0][0]+ area_descptr[1]*1.5)
+    ax.set_ylim(area_descptr[0][1] - area_descptr[1]*1.5,area_descptr[0][1]+ area_descptr[1]*1.5)
     return fig
     
 ##################################################################################
@@ -101,7 +90,7 @@ def plot_trees(trees, area_descptr):
 
 timing = True
 store_data = False
-parallelized = True
+parallelized = False
 
 if timing:
     debut = time.time()
@@ -126,8 +115,13 @@ if True:
     N_term = NTerm
     Q_term = Q_perf / N_term
 
-    P_drop = 1.33e7 - 7.98e6 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
-    viscosity = 3.6 # 3.6cp = 3.6mPa = 3.6 kg mm-1 s-2 (check works with radius and length in mm) #3.6 cp =3.6e-3 Pa.s = 3.6e-9 MPa.s 
+    P_drop = 1.33e4 - 7.98e3 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
+    viscosity = 3.6e-3 # 3.6cp = 3.6mPa = 3.6 kg mm-1 s-2 =3.6e-3 Pa.s = 3.6e-9 MPa.s 
+    
+    # need to be carefull about unit: relativ between P_drop and viscosity
+    # ex: 1.33e7  - 7.98e6 (kg mm-1 s-2)   and 3.6    (kg mm-1 s-2)
+    # ex: 1.33e-2 - 7.98e-3 (MPa = N mm-2) and 3.6e-9 (MPa)
+    # ex: 1.33e4  - 7.98e3 (Pa)            and 3.6e-3 (Pa.s)  
     N_con = 20
     N_con_max = 40
     
@@ -158,9 +152,7 @@ if True:
     tree.add_node(first_node)
     tree.update_flow()
     tree.update_length_factor()
-
     tree.depthfirst_resistances(0)        
-    last_tree = copy.deepcopy(tree) 
 
     while tree.get_k_term() < N_term: 
         success, new_child_location, d_tresh = tree.get_new_location(area_descptr, N_term)
@@ -180,11 +172,9 @@ if True:
         
         # test closest neighbors
         neighbors = tree.find_neighbors(new_child_location, N_con)
-
         args = [[tree, neighbors[i],new_child_location] for i in range (len(neighbors))]
 
         #process all neighbors connection test batch by batch
-
         if parallelized == True:
             while (len(cet) < N_con) and (len(cet) < len(neighbors)):           
                 end_lim = len(cet) + process_nb if (len(cet) + process_nb < len(neighbors)) else len(neighbors)            
@@ -211,54 +201,43 @@ if True:
 
         # test extra neighbors if no connection candidate has fullfilled constraints
         else: 
-	    if len(tree.nodes) > N_con:  # if there are at least N_con neighbors there might be extra neighbors to test with
-	      #print "testing extra"
-	      test_N_con_max = False
-	      neighbors = tree.find_neighbors(new_child_location, N_con_max)
-	      extra_neighbs = neighbors[N_con:N_con_max]
-	      argsb = [[tree, extra_neighbs[i],new_child_location] for i in range (len(extra_neighbs))]
-	      #process all neighbors connection test batch by batch
-	      while (len(cet) < N_con_max) and (len(cet) < N_con + len(extra_neighbs)):
-               end_lim = (len(cet) + process_nb - N_con) if (len(cet) + process_nb - N_con < len(extra_neighbs)) else len(extra_neighbs)  
-               poolb = Pool(processes =  process_nb)               
-               res = poolb.map(cco_2df.test_connection_list,argsb[len(cet) - N_con: end_lim]) 
-               cet = cet + res 
-               poolb.close()
-
-	      cet_filtered = filter(None,cet)
-	      cet_values = np.array(cet_filtered, dtype_r)   
-	      if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
-               cet_values = np.array(cet_filtered, dtype_r)
-               cet_sel = cet_values[cet_values['convgce']>0]
-               cet_sorted = np.sort(cet_sel, order = "volume")
-               cet_final=cet_sorted[0]
-               adding_location = True
-               added_location.append(cet_final.tolist()[1:])
-
-       
+            if len(tree.nodes) > N_con:  # if there are at least N_con neighbors there might be extra neighbors to test with
+            	   #print "testing extra"
+                test_N_con_max = False
+                neighbors = tree.find_neighbors(new_child_location, N_con_max)
+                extra_neighbs = neighbors[N_con:N_con_max]
+                argsb = [[tree, extra_neighbs[i],new_child_location] for i in range (len(extra_neighbs))]
+                #process all neighbors connection test batch by batch
+                if parallelized == True:
+                    while (len(cet) < N_con_max) and (len(cet) < N_con + len(extra_neighbs)):
+                        end_lim = (len(cet) + process_nb - N_con) if (len(cet) + process_nb - N_con < len(extra_neighbs)) else len(extra_neighbs)  
+                        poolb = Pool(processes =  process_nb)               
+                        res = poolb.map(cco_2df.test_connection_list,argsb[len(cet) - N_con: end_lim]) 
+                        cet = cet + res 
+                        poolb.close()
+                else: 
+                    for n_index in range(len(extra_neighbs)):
+                        tree_copy = copy.deepcopy(tree)
+                        cet[N_con + n_index] = tree_copy.test_connection(extra_neighbs[n_index], new_child_location)
+                cet_filtered = filter(None,cet)
+                cet_values = np.array(cet_filtered, dtype_r)
+                if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
+                    cet_values = np.array(cet_filtered, dtype_r)
+                    cet_sel = cet_values[cet_values['convgce']>0]
+                    cet_sorted = np.sort(cet_sel, order = "volume")
+                    cet_final=cet_sorted[0]
+                    adding_location = True
+                    added_location.append(cet_final.tolist()[1:])
+                    
         if (adding_location): # optimal connection found!
-
             store_cet.append(filter(None,cet))
             opt = added_location[-1]
             ante_tree = copy.deepcopy(tree)
             
             if (tree.add_connection(opt[2], new_child_location, opt[1][1], opt[1][0])):
-                branching_added_node = tree.nodes[len(tree.nodes) - 2]       
-                added_node = tree.nodes[len(tree.nodes) - 1]
-                label = int(len(tree.nodes) / 100.)             
-                if (label == 5):
-                    label = 4
-                added_node.set_label(label)
-                branching_added_node.set_label(label)
-                #print "connection added on tree up node", opt[2]
                 print "k termmmmmmmmmmmmmmmmmmmmmmmmmm is now ", tree.get_k_term()
-                #last_tree = copy.deepcopy(tree)
                 kterm=tree.get_k_term()
-                dtresh_fac = 1.
-                count_tested_loc = 0
-                fac=1
-                if (kterm%1000 == 0):
-                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_f%i_s%i_30" %(NTerm,kterm,fac,seed),fac)
+
                 if tree.get_k_term() ==50:
 #                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_f%i_s%i_30" %(NTerm,kterm,fac,seed),fac)
                     break          

@@ -17,20 +17,9 @@ import copy
 
 #the distance criterion d_tresh is defined by k_term and r_supp (microbox radius) 
 def calculate_d_tresh_2D(r_supp, k_term):
-<<<<<<< HEAD
-    r_pk = np.sqrt((k_term + 1)* r_supp**2)
-    return np.sqrt(np.pi*(r_pk)**2/k_term), r_pk
-
-    
-
-def get_d_tresh(a_perf, n_term, k_term):
-    return calculate_d_tresh_2D(calculate_r_supp_2D(a_perf, n_term), k_term)
-    
-=======
     r_pk = np.sqrt((k_term + 1) * r_supp**2)
     return np.sqrt(np.pi*(r_pk**2)/(k_term)), r_pk
     
->>>>>>> tidying and cleaning code
 ## random location generation
 def random_location():
     return np.random.rand(2)*200
@@ -51,33 +40,6 @@ def first_segmt_end(area, area_descptr):
         position = random_location()
         if (belongs_to_area(position, area_descptr)):
             return position
-
-<<<<<<< HEAD
-# a new location is a random location constrained by perfusion territory and distance criterion            
-def get_new_location(tree, area_descrpt, n_term, dtresh_fac):   
-    area_surface = np.pi * area_descrpt[1]**2
-    k_term = tree.get_k_term()
-    d_tresh, r_pk = get_d_tresh(area_surface, n_term, k_term) 
-    length_factor = r_pk / area_descrpt[1]
-    d_tresh_factorised = d_tresh / length_factor
-
-    meet_criteria = False
-    ind = 0
-    while (meet_criteria == False and ind < 1000):
-        point = random_location()
-        if (test_dist_criteria(tree, point, d_tresh_factorised, area_descrpt)):
-            print "location found"
-            return True, point, d_tresh_factorised
-        ind = ind + 1
-        if ind == 1000:
-            print "impossible to find new location with current d_tresh"
-            d_tresh_factorised = 0.9*d_tresh_factorised
-            print "using new value: ", d_tresh_factorised
-            ind = 0
-    return False, np.array([0.,0.]), d_tresh_factorised
-
-=======
->>>>>>> tidying and cleaning code
 
 
 #######################################################
@@ -103,7 +65,6 @@ def segment_distance(seg_pt_a, seg_pt_b, point):
     vect_bp = point - seg_pt_b
     squared_length_ab = float(np.sum(vect_ab**2))
     if (squared_length_ab == 0.): 
-        #print 1
         return np.sqrt(vect_ap[0]**2 + vect_ap[1]**2)
     
     relative_position = (vect_ap[0]*vect_ab[0] + vect_ap[1]*vect_ab[1]) / squared_length_ab
@@ -139,18 +100,14 @@ def degenerating_test(c0, c1, c2, branching_location, radii, length_factor):
     seg_old_child_length = np.sqrt(np.sum((c1 - branching_location)**2)) * length_factor
     seg_new_child_length = np.sqrt(np.sum((c2 - branching_location)**2)) * length_factor
 
-    #print "branching location", branching_location
-    #print "parent length", seg_parent_length, "2*radius", 2.*radii[0]
     if (seg_parent_length < 2.*radii[0]):
         #print "parent seg degenerate"            
         return False
 
-    #print "old child length", seg_old_child_length, "2*radius", 2.*radii[1]    
     if (seg_old_child_length < 2.*radii[1]):
         #print "old child seg degenerate"
         return False
-    
-    #print "new child length", seg_new_child_length, "2*radius", 2.*radii[2]   
+ 
     if (seg_new_child_length < 2.*radii[2]):
         #print "new child seg degenerate"
         return False
@@ -162,13 +119,10 @@ def no_overlap(point_a, point_b, point_c, point_d, width_ab, width_cd):
     intersect, pos = determinant(point_a, point_b, point_c, point_d)
     if (intersect): 
         #print "intersection between lines"
-
         if point_is_inside_rectangle(point_a, point_b, width_ab, pos) and point_is_inside_rectangle(point_c, point_d, width_cd, pos):
             #print "intersection is inside segments"
             return False        
         
-        # if any segment end is inside the cercle of radius = sum of width
-        #   return False
         dist_a_pos = np.sqrt(np.sum((pos - point_a)**2)) 
         dist_b_pos = np.sqrt(np.sum((pos - point_b)**2)) 
         dist_c_pos = np.sqrt(np.sum((pos - point_c)**2)) 

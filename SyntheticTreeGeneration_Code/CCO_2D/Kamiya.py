@@ -21,8 +21,6 @@ from scipy import optimize
 # if position converges and total tree volume decreases: solved 
 
 
-VISCOSITY = 3.6e-3 #cp 
-
 #ci contains coordinate xi and y1 of the point
 #f contains f0,f1,f2
 #returns position of starting point
@@ -44,8 +42,8 @@ def calculate_segment_lengths(c0,c1,c2,x,y, length_factor):
 
 #dp are the pressure loss: P1-P0 and P2-P0 
 #the r_ori is an estimated one to serve the iteration start
-def calculate_dp_from_Poiseuille(f,l,r_ori):
-    kappa = 8 * VISCOSITY / np.pi    
+def calculate_dp_from_Poiseuille(f,l,r_ori, visc):
+    kappa = 8 * visc / np.pi    
     r0_ori4 = r_ori[0]*r_ori[0]*r_ori[0]*r_ori[0]
     r1_ori4 = r_ori[1]*r_ori[1]*r_ori[1]*r_ori[1]
     r2_ori4 = r_ori[2]*r_ori[2]*r_ori[2]*r_ori[2]
@@ -87,8 +85,8 @@ def non_linear_solver(f,l,k,dp1,dp2,r_ori):
     return sol.success, sol.x
     
 #l contains l0, l1, l2
-def calculate_squared_radii(f, l, dp1, dp2, r_ori):
-    k=8*VISCOSITY/np.pi
+def calculate_squared_radii(f, l, dp1, dp2, r_ori, visc):
+    k=8*visc/np.pi
     success, r_1_2 = non_linear_solver(f,l,k,dp1,dp2, r_ori)
     r1 = r_1_2[0]
     r2 = r_1_2[1]
@@ -103,21 +101,18 @@ def single_bif_volume(r, l):
     
 #input r : r[0] and r[1] are the radii before connection added (r0 = r1 = r1 = radius of original segment before connection added) 
 #        this estimated r is used to calculate dp, then is updated in the calculate_radii function     
-def kamiya_loop_r2(x_ini,y_ini,c0,c1,c2,f, r, length_factor):
+def kamiya_loop_r2(x_ini,y_ini,c0,c1,c2,f, r, length_factor, visc):
     l = calculate_segment_lengths(c0,c1,c2,x_ini,y_ini, length_factor)
-    #print "segment lengths", l[0],l[1],l[2]
-    dp1, dp2 = calculate_dp_from_Poiseuille(f,l,r)
-    r[0], r[1], r[2] = calculate_squared_radii(f,l,dp1, dp2, np.power(r,2)[1:3])
+    dp1, dp2 = calculate_dp_from_Poiseuille(f,l,r, visc)
+    r[0], r[1], r[2] = calculate_squared_radii(f,l,dp1, dp2, np.power(r,2)[1:3], visc)
     if (r[0] == 0.):
         return False, x_ini, y_ini, np.sqrt(r), l
     else:        
         x_new,y_new = calculate_new_bif_coords(c0,c1,c2,f,l,r)
-        #print "pressure drops ", dp1, dp2
-        #print "new position ", x_new,y_new
-        #print "new radii ", np.sqrt(r)
         return True, x_new, y_new, np.sqrt(r), l  
         
-#when calculating segment length, need to consider a factor because current coordinates are scaled from a bigger perfusion territory
+#when calculating segment length, need to consider a factor 
+#because current coordinates are scaled from a bigger perfusion territory
 def rescaled_length(vector, factor):
     return np.sqrt(np.sum(vector**2))*factor
 
@@ -161,8 +156,7 @@ def kamiya_single_bif_opt(r, f, c0, c1, c2, iter_max, tolerance, store_whole_res
                 it = it + 1
                 x , y , volume, r = x_c, y_c, vol_c, r_c
                 if store_whole_results:
-                    storage.append([x, y, r]) #### need it if used in Kamyia testing 
-                
+                    storage.append([x, y, r]) #### need it if used in Kamyia testing               
                 #print " position gdt ", gdt
                 #print "volume gdt ", volume - vol_c
                 #print "volume ", vol_c
@@ -174,13 +168,3 @@ def kamiya_single_bif_opt(r, f, c0, c1, c2, iter_max, tolerance, store_whole_res
     print " \n max iteration reached"
     return False, storage # x, y, r
             
-            
-    
-#f=[8.3e3,4.15e3,4.15e3]
-#f=[8.3e3,2.075e3,6.225e3]
-#c0=[0.0, 0.0]
-#c1=[50., 0]
-#c2=[0., 50.]
-#r_ori_sqred = [6.35,4.,4.]
-#r_ori = np.sqrt(r_ori_sqred)
-#kamiya_single_bif_opt(r_ori, f,c0,c1,c2,100,0.01)
