@@ -16,21 +16,31 @@ from scipy.interpolate import RegularGridInterpolator
 if False:
     ext_radius = 200
     int_radius = 50
+    #f1 = 0.94#0.95
+    #f2 = 0.84#0.85
     a = np.zeros((512, 512)).astype('uint8')
-    cx, cy = 256, 256 # The center of circle
-    y, x = np.ogrid[-ext_radius: ext_radius, -ext_radius: ext_radius]
+    # The center of circle
+    cx, cy = 256, 256 
+    f4 = 10
+    # the "grid": pixel indexes
+    y, x = np.ogrid[-ext_radius-f4: ext_radius+f4, -ext_radius-f4: ext_radius+f4]
     index = x**2 + y**2 <= ext_radius**2
-    a[cy-ext_radius:cy+ext_radius, cx-ext_radius:cx+ext_radius][index] = 1
+    a[cy-ext_radius-f4:cy+ext_radius+f4, cx-ext_radius-f4:cx+ext_radius+f4][index] = 1
     
-    y_i, x_i = np.ogrid[-int_radius: int_radius, -int_radius: int_radius]
+    y_i, x_i = np.ogrid[-int_radius: int_radius, -int_radius: int_radius] ####too small///!!!
     index_int = x_i**2 + y_i**2 <= int_radius**2
     a[cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 0
       
     #markers definition
     markers = np.zeros((512, 512)).astype('uint8')
-    index = np.logical_and(x**2 + y**2 >= ext_radius**2 * 0.95, x**2 + y**2 <= ext_radius**2)
-    markers[cy-ext_radius:cy+ext_radius, cx-ext_radius:cx+ext_radius][index] = 2
-    index_int = np.logical_and(x_i**2 + y_i**2 >= int_radius**2 * 0.85, x_i**2 + y_i**2 <= int_radius**2)
+    #indexes of outter circle border
+    #f3 = 1.15
+    
+    #index = np.logical_and(x**2 + y**2 > ext_radius**2 , x**2 + y**2 <= (ext_radius**2) +f4)
+    index = x**2 + y**2 > ext_radius**2
+    markers[cy-ext_radius-f4:cy+ext_radius+f4, cx-ext_radius-f4:cx+ext_radius+f4][index] = 2
+    #index_int = np.logical_and(x_i**2 + y_i**2 >= int_radius**2 * f2, x_i**2 + y_i**2 <= int_radius**2)
+    index_int = x_i**2 + y_i**2 < int_radius**2
     markers[cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 3
 
     result = random_walker(a, markers, copy =True, return_full_prob = True)
@@ -42,7 +52,10 @@ if False:
     plt.subplot(1,4,3)
     plt.imshow(result[0])
     plt.subplot(1,4,4)
+    plt.Circle([cx,cy], radius=ext_radius, color = 'r', fill = False)
+    plt.Circle([cx,cy], radius=int_radius, color = 'w', alpha = 0.5)
     plt.imshow(result[1])
+   
     plt.show()
     
 def potential_image(center, ext_radius, int_radius):
@@ -50,18 +63,26 @@ def potential_image(center, ext_radius, int_radius):
     im = np.zeros((cx+ext_radius*2, cy+ext_radius*2)).astype('uint8')
     markers = np.zeros((cx+ext_radius*2, cy+ext_radius*2)).astype('uint8')
 
-    y,x = np.ogrid[-ext_radius: ext_radius, -ext_radius: ext_radius]   
+    y,x = np.ogrid[-ext_radius: ext_radius, -ext_radius: ext_radius] 
+    #indexes of the whole plain disc (without concavity)
     index = x**2 + y**2 <= ext_radius**2
     print index
     im[cy-ext_radius:cy+ext_radius, cx-ext_radius:cx+ext_radius][index] = 1
     
     y_i, x_i = np.ogrid[-int_radius: int_radius, -int_radius: int_radius]
+    
+    #indexes of inner disc (the concavity)
     index_int = x_i**2 + y_i**2 <= int_radius**2
     im[cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 0
-    
-    index = np.logical_and(x**2 + y**2 >= ext_radius**2 * 0.94, x**2 + y**2 <= ext_radius**2)
+     
+    #indexes of outter circle border
+    f1 = 0.94
+    index = np.logical_and(x**2 + y**2 >= ext_radius**2 * f1, x**2 + y**2 <= ext_radius**2)
     markers[cy-ext_radius:cy+ext_radius, cx-ext_radius:cx+ext_radius][index] = 2
-    index_int = np.logical_and(x_i**2 + y_i**2 >= int_radius**2 * 0.84, x_i**2 + y_i**2 <= int_radius**2)
+    
+    # indexes of the inner circle border
+    f2 = 0.84
+    index_int = np.logical_and(x_i**2 + y_i**2 >= int_radius**2 * f2, x_i**2 + y_i**2 <= int_radius**2)
     markers[cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 3
     
     result = random_walker(im, markers, copy =True, return_full_prob = True)
@@ -83,23 +104,23 @@ def get_interpolating_function(grid):
 
 
 #######testing gradient and interpolations
-
-ext_radius = 50
-int_radius = 15
-center=np.array([100, 50])
-w = potential_image(center, ext_radius, int_radius)
-gy,gx = np.gradient(w)
-
-interp_w = get_interpolating_function(w)
-interp_gx = get_interpolating_function(gx)
-interp_gy = get_interpolating_function(gy)
-loc = np.array([100,30])
-print "w(loc)", w[loc[1], loc[0]]
-print "interpw(loc)", interp_w(loc[::-1])
-print "gx(loc)", gx[loc[1], loc[0]]
-print "interpgx", interp_gx(loc[::-1])
-print "gy", gy[loc[1], loc[0]]
-print "interpgy", interp_gy(loc[::-1])
+if True:
+    ext_radius = 50
+    int_radius = 15
+    center=np.array([100, 50])
+    w = potential_image(center, ext_radius, int_radius)
+    gy,gx = np.gradient(w)
+    
+    interp_w = get_interpolating_function(w)
+    interp_gx = get_interpolating_function(gx)
+    interp_gy = get_interpolating_function(gy)
+    loc = np.array([100,30])
+    print "w(loc)", w[loc[1], loc[0]]
+    print "interpw(loc)", interp_w(loc[::-1])
+    print "gx(loc)", gx[loc[1], loc[0]]
+    print "interpgx", interp_gx(loc[::-1])
+    print "gy", gy[loc[1], loc[0]]
+    print "interpgy", interp_gy(loc[::-1])
 
 
 def length(vect):
@@ -178,15 +199,15 @@ def starting_point(w,interp_w,interp_gx, interp_gy, seg_pt1, seg_pt2, new_locati
     return start_point
         
 ####### testing newton-raphson implementation to find bifurcation point to initialize Kamiya algo with
-if False: 
+if True: 
     #target_line_vect = np.array([0.5,0.5])
     target_w = 0.2
-    point = loc    
+    point = np.array([64.09,82.2])#loc    
     eps = 0.001  
     #newton_algo_visu(w,interp_w, interp_gx, interp_gy, loc, target_line_vect, target_w, eps)
-    seg_1=np.array([80,20])
-    seg_2 = np.array([95,20])
-    starting_point(w, interp_w, interp_gx, interp_gy, seg_1, seg_2, loc, 0.001)
+    seg_1=np.array([105,5])
+    seg_2 = np.array([112,30])
+    starting_point(w, interp_w, interp_gx, interp_gy, seg_1, seg_2, point, 0.001)
     
 ########testing research of sampling n
 def local_n(w, interp_w, interp_gx, interp_gy, seg_1, seg_2):
@@ -245,8 +266,8 @@ def calculate_sampling(tolerance, max_curv_radius, w, interp_w, interp_gx, inter
         plt.scatter(locsa[:,0], locsa[:,1], color = "r")
         print "final n", global_n
         return global_n
-
-seg_1 = np.array([100,15])
-seg_2 = np.array([105,20])    
-#find_sampling(w, interp_w, interp_gx, interp_gy, seg_1, seg_2)
-calculate_sampling(1,int_radius, w, interp_w, interp_gx, interp_gy, seg_1, seg_2)    
+if False:
+    seg_1 = np.array([100,15])
+    seg_2 = np.array([105,20])    
+    #find_sampling(w, interp_w, interp_gx, interp_gy, seg_1, seg_2)
+    calculate_sampling(1,int_radius, w, interp_w, interp_gx, interp_gy, seg_1, seg_2)    

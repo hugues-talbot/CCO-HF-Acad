@@ -150,7 +150,7 @@ class Tree:
     def calculate_sampling(self, tolerance, max_curv_radius, seg_1, seg_2):
         loc_n = self.local_n(seg_1, seg_2)
         #r_star = max_curv_radius - tolerance
-        c= np.sqrt(max_curv_radius**2 - (max_curv_radius-tolerance)**2)
+        c= np.sqrt(max_curv_radius**2 - (max_curv_radius+tolerance)**2)
         global_n = np.ceil(cco_2df.length(seg_2-seg_1) / c)
         print "global n", global_n
         if (loc_n >= global_n):
