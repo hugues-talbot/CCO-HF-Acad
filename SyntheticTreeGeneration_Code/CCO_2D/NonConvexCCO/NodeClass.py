@@ -261,7 +261,7 @@ class Tree:
     
     ## test if new location is over d_tresh distance from existing tree segments
     def test_dist_criteria(self, location, d_tresh, area):
-        if (self.inside_perf_territory(location)):    
+        if (self.inside_perf_territory(location) == True):    
             for sgmt in self.nodes:
                 if (sgmt.parent() >= 0):
                     dist = cco_2df.segment_distance(sgmt.coord, (self.get_node(sgmt.parent())).coord, location)
@@ -269,6 +269,7 @@ class Tree:
                         return False
         else:
             return False
+        print "test inside perf",self.inside_perf_territory(location)
         return True      
     
     # a new location is a random location constrained by perfusion territory and distance criterion            
@@ -299,17 +300,19 @@ class Tree:
         while inside_area == False :    
             position = cco_2df.random_location()
             if (self.inside_perf_territory(position)):
-                tolce = self.max_curv_rad * 0.1
-                n = self.calculate_sampling(tolce, self.max_curv_rad, position, first_node_coord)
+                n = self.calculate_sampling(self.max_curv_rad, position, first_node_coord)
                 if self.sample_and_test(position, first_node_coord, n) == True:
                     return position
                 
     def inside_perf_territory(self, location):
         if location[1] < 0. or location[0] < 0.:
             return False
-        if location[1] < self.w_pot.shape[0]-1 and location[0] < self.w_pot.shape[1]-1:           
-            pot_val = self.get_w(location)
-            if pot_val> 0. and pot_val < 1.:
+        if location[1] < (self.w_pot.shape[0]-1) and location[0] < (self.w_pot.shape[1]-1): 
+            pot_val = round(self.get_w(location),5)
+            print "pot val ", pot_val
+            print "round 10", round(self.get_w(location),10)
+            print "round 20", round(self.get_w(location),20)
+            if (pot_val> 0.) and (pot_val < 1.0):                
                 return True
         return False
         
@@ -486,11 +489,12 @@ class Tree:
         midp = (seg_pt1 + seg_pt2)*0.5
         #find gdt of w at mid point
         gdt_vec = np.array([self.get_gx(midp), self.get_gy(midp)])
-        print "gdt vec",gdt_vec
+        #print "gdt vec",gdt_vec
         #find on this line the point p where w(p) = 0.5 * (w(seg_pt1) + w(seg_pt2))
         target_w = 0.5 * (self.get_w(seg_pt1) + self.get_w(seg_pt2))
         print "test", new_location, gdt_vec, target_w, eps
-        starting_point = self.newton_algo(new_location, gdt_vec, target_w, eps, 0, 100,1.)
+        starting_point = self.newton_algo(midp, gdt_vec, target_w, eps, 0, 100,1.)
+        print "starting point", starting_point
         return starting_point
         
     def newton_step(self, point, target_line_vect, target_w, fac):
@@ -506,9 +510,9 @@ class Tree:
         #print "vect_proj", vect_proj
 
         scal_gap = - self.get_w(point) + self.get_w(point + vect_proj)
-        print "scal gap", scal_gap
+        #print "scal gap", scal_gap
         scal_gap_2 = target_w - self.get_w(point)
-        print "scal_gap_2", scal_gap_2
+        #print "scal_gap_2", scal_gap_2
         k = (scal_gap_2 / scal_gap ) 
         print "k", k
         proj_pt = point + k*vect_proj_length * norm_line_vect * fac
@@ -540,12 +544,13 @@ class Tree:
                 # if goes out again, it means there is no solution
             
             
-    def calculate_sampling(self, tolerance, max_curv_radius, seg_1, seg_2):
+    def calculate_sampling(self, max_curv_radius, seg_1, seg_2):
+        tolerance = 0.05*max_curv_radius
         loc_n = self.local_n(seg_1, seg_2)
         #r_star = max_curv_radius - tolerance
         c= np.sqrt(max_curv_radius**2 - (max_curv_radius-tolerance)**2)
         global_n = np.ceil(cco_2df.length(seg_2-seg_1) / c)
-        print "global n", global_n
+        #print "global n", global_n
         if (loc_n >= global_n):
             print "n is local one", loc_n
             return loc_n
@@ -556,9 +561,12 @@ class Tree:
     #sample, and test along but not final point (no need to test it because location already tested previously, as a new location)
     def sample_and_test(self, seg_pt1, seg_pt2, n):
         p1p2_vec = seg_pt2 - seg_pt1
+        #print "sampling toward", seg_pt2
         #interval = cco_2df.length(p1p2_vec) / float(n)
+        #print "n", n
         for i in range (1,int(n)):
             loc = seg_pt1 + (i / n) * p1p2_vec
+            #print "location test",loc
             if (self.inside_perf_territory(loc)) == False:
                 print "segment outside of perfusion territory"
                 return False
@@ -595,9 +603,7 @@ class Tree:
         eps = 0.001
         print "tesing with node index", old_child_index, "coord", self.nodes[old_child_index].coord
         print "new_child_location",new_child_location
-        print "value", self.get_w(new_child_location)
         xy = self.starting_point(c0, c1, c2, eps)
-        print "start point out function", xy
         if self.inside_perf_territory(xy) == False:
             print "branching location starting point out of territory: unplausible location"
             return False, 0., [[0.,0.], [0.,0.]], old_child_index
@@ -605,11 +611,12 @@ class Tree:
         
         x,y = xy[0], xy[1]
         #calculate n = number of sampling for concavity test during process
-        tolce = self.max_curv_rad * 0.1
-        sampling_n1 = self.calculate_sampling(tolce, self.max_curv_rad, c0, xy)
-        sampling_n2 = self.calculate_sampling(tolce, self.max_curv_rad, xy, c1)
-        sampling_n3 = self.calculate_sampling(tolce, self.max_curv_rad, xy, c2)
+
+        sampling_n1 = self.calculate_sampling(self.max_curv_rad, c0, xy)
+        sampling_n2 = self.calculate_sampling(self.max_curv_rad, xy, c1)
+        sampling_n3 = self.calculate_sampling(self.max_curv_rad, xy, c2)
         sampling_n = max(sampling_n1, sampling_n2, sampling_n3)
+        print "official smapling n", sampling_n
         #calculate original tree volume or take a bigger approximation (easier because no need of adding segment)
         initial_tree_vol = self.volume() * 10.
         previous_result = [[0.,0.], [0.,0.]]
@@ -658,34 +665,34 @@ class Tree:
                     print "degenerated segments"
                     return False, 0., [[0.,0.], [0.,0.]], old_child_index 
             vol_gdt = initial_tree_vol - tree_vol
-            if np.abs(vol_gdt) < tolerance:
-                #if gradients is under tolerance, and iter_max not reached:                
-                #test intersection on the tree not connected to the new branch
-                if self.check_intersection(old_child_index, c2, branching_location, new_radii) ==  True:
-                    if inside_territory == True:
+            if inside_territory == True:
+                if np.abs(vol_gdt) < tolerance:
+                    #if gradients is under tolerance, and iter_max not reached:                
+                    #test intersection on the tree not connected to the new branch
+                    if self.check_intersection(old_child_index, c2, branching_location, new_radii) ==  True:
                         result=[correct_beta, branching_location]  
                         print "connection test succeed!"  
-                        return True, tree_vol, result, old_child_index
-                    else:# return previous result: where the bifurcation was still inside the territory (even if no convergence found)
-                        print "outside territory"
-                        print previous_result
-                        if previous_result[1][0] != 0. and previous_result[1][1] != 0. :
-                            print "using previous result which was inside territory"
-                            return True, initial_tree_vol, previous_result, old_child_index
-                        else: #if no previous result, the test failed
-                            print "no previous result, connection test failed "
-                            return False, 0., result, old_child_index
+                        return True, tree_vol, result, old_child_index                                
+                    else:
+                        print "intersection test failed"
+                        print tree_copy.length_factor, self.length_factor
+                        return False, 0., result, old_child_index
                 else:
-                    print "intersection test failed"
-                    print tree_copy.length_factor, self.length_factor
-                    return False, 0., result, old_child_index
+                    #provides Kamiya with current position and radii as new starting point
+                    print "next iteration of Kamiya"
+                    previous_result = [correct_beta, branching_location]
+                    initial_tree_vol = tree_vol
+                    x,y,r = x_c,y_c,new_radii
+                    iterat = iterat + 1
             else:
-                #provides Kamiya with current position and radii as new starting point
-                previous_result = [correct_beta, branching_location]
-                initial_tree_vol = tree_vol
-                x,y,r = x_c,y_c,new_radii
-                iterat = iterat + 1
-           
+                if previous_result[1][0] != 0. and previous_result[1][1] != 0. :
+                    print "using previous result which was inside territory"
+                    return True, initial_tree_vol, previous_result, old_child_index
+                else: 
+                    #if no previous result, the test failed
+                    print "no previous result, connection test failed "
+                    return False, 0., result, old_child_index
+                           
         print "connection test failed : iter max reached"
         return False, 0., result, old_child_index        
         

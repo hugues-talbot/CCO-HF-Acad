@@ -14,11 +14,13 @@ import matplotlib.pyplot as plt
 ## creating a potential grid using random walker
 #inner surface and concavity potential value is 1
 #outer surface potential value is 0
-def potential_image(center, ext_radius, int_radius):
-    cx,cy = center[0], center[1]
+def potential_image(center, ext_radius_f, int_radius_f):
+    cx,cy = int(center[0]), int(center[1])
+    ext_radius = int(ext_radius_f)
+    int_radius =int(int_radius_f)
     im = np.zeros((cx+ext_radius*3, cy+ext_radius*3)).astype('uint8')
     markers = np.zeros((cx+ext_radius*3, cy+ext_radius*3)).astype('uint8')
-    margin = np.ceil(ext_radius/20)
+    margin = int(np.ceil(ext_radius/20.))
     y,x = np.ogrid[-ext_radius-margin: ext_radius+margin, -ext_radius-margin: ext_radius+margin]  
     index = x**2 + y**2 <= ext_radius**2
     im[cy-ext_radius-margin:cy+ext_radius+margin, cx-ext_radius-margin:cx+ext_radius+margin][index] = 1
@@ -27,14 +29,17 @@ def potential_image(center, ext_radius, int_radius):
     index_int = x_i**2 + y_i**2 <= int_radius**2
     im[cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 0
     
-    index = np.logical_and(x**2 + y**2 >= ext_radius**2 * 0.94, x**2 + y**2 <= ext_radius**2)
+    #index = np.logical_and(x**2 + y**2 >= ext_radius**2 * 0.94, x**2 + y**2 <= ext_radius**2)
     index = x**2 + y**2 > ext_radius**2
     markers[cy-ext_radius-margin:cy+ext_radius+margin, cx-ext_radius-margin:cx+ext_radius+margin][index] = 2
     #index_int = np.logical_and(x_i**2 + y_i**2 >= int_radius**2 * 0.84, x_i**2 + y_i**2 <= int_radius**2)
     index_int = x_i**2 + y_i**2 < int_radius**2
     markers[cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 3
     result = random_walker(im, markers, copy =True, return_full_prob = True)   
-    
+    print result.shape
+    print markers.shape
+    #index_int = x_i**2 + y_i**2 < int_radius**2
+    #result[cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 1.
     return result[1]
     
     

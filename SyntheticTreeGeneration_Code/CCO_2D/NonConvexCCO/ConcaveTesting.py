@@ -13,7 +13,7 @@ from scipy.interpolate import RegularGridInterpolator
 #### testing random walker to create potential between two surfaces #####
 
 ##image definition
-if False:
+if True:
     ext_radius = 200
     int_radius = 50
     #f1 = 0.94#0.95
@@ -104,7 +104,7 @@ def get_interpolating_function(grid):
 
 
 #######testing gradient and interpolations
-if True:
+if False:
     ext_radius = 50
     int_radius = 15
     center=np.array([100, 50])
@@ -199,7 +199,7 @@ def starting_point(w,interp_w,interp_gx, interp_gy, seg_pt1, seg_pt2, new_locati
     return start_point
         
 ####### testing newton-raphson implementation to find bifurcation point to initialize Kamiya algo with
-if True: 
+if False: 
     #target_line_vect = np.array([0.5,0.5])
     target_w = 0.2
     point = np.array([64.09,82.2])#loc    

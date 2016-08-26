@@ -33,7 +33,7 @@ def plot_tree(tree, area_descptr, name,w):
     # labels for cet ['r','m','g','b']
     ax.imshow(w)
     ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[1], color = 'r', fill = False))
-    ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[2], color = 'w', alpha = 0.5))
+    #ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[2], color = 'w', alpha = 0.5))
     all_radii = []
     leaves_radii = []
     inv_length_fac = 1. / tree.length_factor
@@ -91,7 +91,7 @@ def plot_trees(trees, area_descptr):
 ############# Karch algo : CCO ####################
 
 timing = True
-store_data = False
+store_data = True
 parallelized = False
 
 if timing:
@@ -130,8 +130,8 @@ if True:
     
     # About  convexe perfusion surface : defines a disc surface 
     area_center = np.array([100.,80.])
-    area_ext_radius = 50
-    area_int_radius = 15
+    area_ext_radius = 50.
+    area_int_radius = 15.
     area_descptr = [area_center, area_ext_radius, area_int_radius]
     area = np.pi*(area_ext_radius**2 - area_int_radius**2)     
     potential = cco_2df.potential_image(area_center, area_ext_radius,area_int_radius)
@@ -241,7 +241,7 @@ if True:
                 print "k termmmmmmmmmmmmmmmmmmmmmmmmmm is now ", tree.get_k_term()
                 kterm=tree.get_k_term()
 
-                if tree.get_k_term() ==3:
+                if tree.get_k_term() ==50:
 #                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_f%i_s%i_30" %(NTerm,kterm,fac,seed),fac)
                     break          
             else:
