@@ -218,7 +218,7 @@ with $R_{\text{max}}$ the maximal curvature radius of both inner and outer surfa
 
 Note: if the segmentation is noisy, we might actually measure non-physical very high curvatures, i.e. $R_{max}$ close to zero, hence it is necessary to consider a tolerance $s$ so that 
 \begin{equation}
-R_{max}^* = R_{max} + s
+R_{max}^* = R_{max} - s
 \end{equation}
 
 \begin{figure}[h!]
@@ -229,11 +229,11 @@ R_{max}^* = R_{max} + s
 
 The semi-cord $c$ defined by $R_{max}^*$ and $s$ is calculated as:
 \begin{equation}
-c = \sqrt{(R_{max}^*-s)^2 - R_{max}^{*2}}
+c = \sqrt{R_{max}^2 - R_{max}^{*2}}
 \end{equation} 
 That can be simplified as:
 \begin{equation}
-c = \sqrt{R_{max}^2 - (R_{max} + s)^2}
+c = \sqrt{R_{max}^2 - (R_{max} - s)^2}
 \end{equation}
 The global boundary follows this tolerance:
 \begin{equation}
