@@ -108,6 +108,7 @@ class Tree:
         self.length_factor = 1 # not a const, is updated during tree growth after each added bifurcation
         self.w_pot = w
         self.interp_w = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),w)
+        self.nearest_w = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),w, method = "nearest")
         self.interp_gx = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),np.gradient(w)[1])
         self.interp_gy = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),np.gradient(w)[0])
         self.max_curv_rad = max_curv_radius
@@ -308,7 +309,7 @@ class Tree:
         if location[1] < 0. or location[0] < 0.:
             return False
         if location[1] < (self.w_pot.shape[0]-1) and location[0] < (self.w_pot.shape[1]-1): 
-            pot_val = round(self.get_w(location),5)
+            pot_val = round(self.get_nearest_w(location),3)
             print "pot val ", pot_val
             print "round 10", round(self.get_w(location),10)
             print "round 20", round(self.get_w(location),20)
@@ -327,6 +328,9 @@ class Tree:
 #        print location[::-1]
 #        print float(self.interp_w(location[::-1]))
         return float(self.interp_w(location[::-1]))
+        
+    def get_nearest_w(self, location):
+        return float(self.nearest_w(location[::-1])) 
         
     def get_gx(self, location):
         #print self.interp_gx(location)

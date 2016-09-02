@@ -91,8 +91,8 @@ def plot_trees(trees, area_descptr):
 ############# Karch algo : CCO ####################
 
 timing = True
-store_data = True
-parallelized = False
+store_data = False
+parallelized = True
 
 if timing:
     debut = time.time()
@@ -238,22 +238,23 @@ if True:
             ante_tree = copy.deepcopy(tree)
             
             if (tree.add_connection(opt[2], new_child_location, opt[1][1], opt[1][0])):
-                print "k termmmmmmmmmmmmmmmmmmmmmmmmmm is now ", tree.get_k_term()
+                print "k termmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm is now ", tree.get_k_term()
                 kterm=tree.get_k_term()
 
-                if tree.get_k_term() ==50:
-#                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_f%i_s%i_30" %(NTerm,kterm,fac,seed),fac)
-                    break          
+                if kterm % 100 == 0:
+                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_s%i_40" %(NTerm,kterm,seed),potential)
+                #if kterm == 250:
+                    #break          
             else:
                 print "failed to add connection on tree"
         else:
 
-            print "ktemmmmmmmmmmmmmmmmmmmmmmmmmmmmmm", tree.get_k_term()
+            print "ktemmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm", tree.get_k_term()
             print "location doesn't provide an optimal connection, testing new location"
 
         #keep going until reach Nterm!
 
-    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_31" %(tree.get_k_term(),seed), potential)
+    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_32" %(tree.get_k_term(),seed), potential)
 
 
 
