@@ -36,7 +36,7 @@ def potential_image(center, ext_radius_f, int_radius_f):
     index_int = x_i**2 + y_i**2 < int_radius**2
     markers[cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 3
     result = random_walker(im, markers, copy =True, return_full_prob = True)   
-    print result.shape
+    print "rdm walker shape",result.shape
     print markers.shape
     #index_int = x_i**2 + y_i**2 < int_radius**2
     #result[cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 1.
@@ -102,8 +102,12 @@ def calculate_d_tresh_2D(r_supp, k_term):
     return np.sqrt(np.pi*(r_pk**2)/(k_term)), r_pk
     
 ## random location generation
-def random_location():
-    return np.random.rand(2)*160
+def random_location(center, radius):
+    max_border = np.max(center+radius)+10
+    #print "mqx border", max_border
+    position = np.random.rand(2)*max_border
+    #print "position", position
+    return position
        
     
 # area is defined by two descriptors: [0] = center coord(x,y) and [1] = radius

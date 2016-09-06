@@ -6,8 +6,8 @@ Created on Fri Apr  1 15:35:19 2016
 """
 
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import Kamiya as kami
 import NodeClass as nclass
@@ -20,7 +20,7 @@ import cPickle as pickle
 import sys  # Need to have acces to sys.stdout
 import time
 from multiprocessing import Pool, TimeoutError
-
+import pickle
 
 
 
@@ -31,9 +31,14 @@ def plot_tree(tree, area_descptr, name,w):
     ax = fig.add_subplot(111)
     #colors=['k', 'b', 'g', 'm', 'r']
     # labels for cet ['r','m','g','b']
-    ax.imshow(w)
+    N=500
+    colors = [(1.0,1.0,1.0)]
+    colors.extend(plt.cm.jet(np.linspace(0., 1., N)))
+    colors.extend([(1.0,1.0,1.0)])
+    cmap = mpl.colors.ListedColormap(colors)
+    ax.imshow(w,cmap=cmap, vmin=0., vmax=1.)
     ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[1], color = 'r', fill = False))
-    #ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[2], color = 'w', alpha = 0.5))
+    ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[2], color = 'b', fill = False))
     all_radii = []
     leaves_radii = []
     inv_length_fac = 1. / tree.length_factor
@@ -45,7 +50,7 @@ def plot_tree(tree, area_descptr, name,w):
             all_radii.append(radius)
             if sgmt.is_leaf():
                 leaves_radii.append(radius)               
-            ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'k'))#colors[sgmt.label]
+            ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius*2., color = 'k'))#colors[sgmt.label]
 
     ax.set_xlim(area_descptr[0][0] - area_descptr[1]*1.5,area_descptr[0][0]+ area_descptr[1]*1.5)
     ax.set_ylim(area_descptr[0][1] - area_descptr[1]*1.5,area_descptr[0][1]+ area_descptr[1]*1.5)
@@ -129,24 +134,23 @@ if True:
     N_con_max = 40
     
     # About  convexe perfusion surface : defines a disc surface 
-    area_center = np.array([100.,80.])
-    area_ext_radius = 50.
-    area_int_radius = 15.
+    area_center = np.array([120.,130.])
+    area_ext_radius = 100.
+    area_int_radius = 30.
     area_descptr = [area_center, area_ext_radius, area_int_radius]
     area = np.pi*(area_ext_radius**2 - area_int_radius**2)     
     potential = cco_2df.potential_image(area_center, area_ext_radius,area_int_radius)
     
     #### initialization ##    
     store_cet = []
-    tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, area, np.sqrt(area_ext_radius**2 - area_int_radius**2), potential, area_int_radius)
+    tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, area, np.sqrt(area_ext_radius**2 - area_int_radius**2), potential, area_int_radius, area_center,area_ext_radius)
      
     # source point : define the root position
-    root_position = np.array([100,130])
+    root_position = np.array([area_center[0],area_center[1]+area_ext_radius])
     root_node = nclass.Node(0,root_position, Q_perf, -1)
     root_node.set_child_0_index(1)
     root_node.set_label(0)
     tree.add_node(root_node)    
-    
     #first segment end: randomly picked inside perfusion surface
     tree.update_length_factor()
     first_node_position = tree.first_segmt_end()
@@ -156,9 +160,8 @@ if True:
     tree.update_flow()
     tree.update_length_factor()
     tree.depthfirst_resistances(0)        
-    
+
     while tree.get_k_term() < N_term: 
-        
         success, new_child_location, d_tresh = tree.get_new_location(area_descptr, N_term)
         if (success == False):
             print "impossible to satisfy distance criteria", "d_tresh", d_tresh
@@ -243,8 +246,8 @@ if True:
 
                 if kterm % 100 == 0:
                     plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_s%i_40" %(NTerm,kterm,seed),potential)
-                #if kterm == 250:
-                    #break          
+                if kterm == 2:
+                    break          
             else:
                 print "failed to add connection on tree"
         else:
@@ -254,9 +257,10 @@ if True:
 
         #keep going until reach Nterm!
 
-    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_32" %(tree.get_k_term(),seed), potential)
+    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_32t" %(tree.get_k_term(),seed), potential)
 
 
+    pickle.dump(tree, open("treetNt%i_s%i_32.p"%(tree.get_k_term(),seed), "wb"))
 
 if store_data:
     sys.stdout=old_stdout # here we restore the default behavior

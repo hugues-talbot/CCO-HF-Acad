@@ -94,7 +94,7 @@ class Tree:
     "a_perf: total perfusion area of the final tree"
     "r_f: real radius (mm) of the total perfusion area"
 
-    def __init__(self, nodes, n_term, q_perf, p_drop, visc, a_perf, r_f, w, max_curv_radius):
+    def __init__(self, nodes, n_term, q_perf, p_drop, visc, a_perf, r_f, w, max_curv_radius,center,real_radius):
         self.nodes = nodes
         self.n_term = n_term
         self.final_q_perf = q_perf
@@ -112,9 +112,11 @@ class Tree:
         self.interp_gx = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),np.gradient(w)[1])
         self.interp_gy = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),np.gradient(w)[0])
         self.max_curv_rad = max_curv_radius
+        self.center = center
+        self.real_final_radius = real_radius #real size of the final cercle (includes the concavity)
         
     def __deepcopy__(self, tree):
-        return Tree(copy.deepcopy(self.nodes), self.n_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius, self.w_pot, self.max_curv_rad)    		
+        return Tree(copy.deepcopy(self.nodes), self.n_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius, self.w_pot, self.max_curv_rad,self.center, self.real_final_radius)    		
             
     def nodes(self):
         return self.nodes
@@ -282,7 +284,7 @@ class Tree:
         meet_criteria = False
         ind = 0
         while (meet_criteria == False and ind < 1000):
-            point = cco_2df.random_location()
+            point = cco_2df.random_location(self.center, self.real_final_radius)
             if (self.test_dist_criteria(point, d_tresh_factorized, area_descrpt)):
                 print "location found"
                 print point
@@ -299,7 +301,7 @@ class Tree:
         inside_area = False
         first_node_coord = self.nodes[0].coord
         while inside_area == False :    
-            position = cco_2df.random_location()
+            position = cco_2df.random_location(self.center, self.real_final_radius)
             if (self.inside_perf_territory(position)):
                 n = self.calculate_sampling(self.max_curv_rad, position, first_node_coord)
                 if self.sample_and_test(position, first_node_coord, n) == True:
@@ -311,8 +313,8 @@ class Tree:
         if location[1] < (self.w_pot.shape[0]-1) and location[0] < (self.w_pot.shape[1]-1): 
             pot_val = round(self.get_nearest_w(location),3)
             print "pot val ", pot_val
-            print "round 10", round(self.get_w(location),10)
-            print "round 20", round(self.get_w(location),20)
+            #print "round 10", round(self.get_w(location),10)
+            #print "round 20", round(self.get_w(location),20)
             if (pot_val> 0.) and (pot_val < 1.0):                
                 return True
         return False
