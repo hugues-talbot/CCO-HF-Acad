@@ -20,18 +20,18 @@ import cPickle as pickle
 import sys  # Need to have acces to sys.stdout
 import time
 from multiprocessing import Pool, TimeoutError
-
+import pickle
 
 
 
 ############# Visualisation tools ####################
 
-def plot_tree(tree, area_descptr, name):
+def plot_tree(tree, area_descptr, name,final):
     fig = plt.figure(figsize=(8,8))
     ax = fig.add_subplot(111)
     #colors=['k', 'b', 'g', 'm', 'r']
     # labels for cet ['r','m','g','b']
-    ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[1], color = 'r', alpha = 0.5))
+    ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[1], color = 'r', alpha = 0.2))
     all_radii = []
     leaves_radii = []
     inv_length_fac = 1. / tree.length_factor
@@ -43,24 +43,24 @@ def plot_tree(tree, area_descptr, name):
             all_radii.append(radius)
             if sgmt.is_leaf():
                 leaves_radii.append(radius)               
-            ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'k'))#colors[sgmt.label]
+            ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius*2., color = 'k'))#colors[sgmt.label]
 
     ax.set_xlim(area_descptr[0][0] - area_descptr[1]*1.5,area_descptr[0][0]+ area_descptr[1]*1.5)
     ax.set_ylim(area_descptr[0][1] - area_descptr[1]*1.5,area_descptr[0][1]+ area_descptr[1]*1.5)
-    
-    #store tree radii for study
-    #all radii
-    outfile_path1 = "./"+name+"all.txt"
-    outfile1 = open(outfile_path1,"w")
-    for i in all_radii:
-        outfile1.write(str(i) + "\n")
-    outfile1.close()
-    #radii of terminal segments only
-    outfile_path2 = "./"+name+"leaves.txt"
-    outfile2 = open(outfile_path2,"w")
-    for i in leaves_radii:
-        outfile2.write(str(i) + "\n")  
-    outfile2.close()
+    if final == True:
+        #store tree radii for study
+        #all radii
+        outfile_path1 = "./"+name+"all.txt"
+        outfile1 = open(outfile_path1,"w")
+        for i in all_radii:
+            outfile1.write(str(i) + "\n")
+        outfile1.close()
+        #radii of terminal segments only
+        outfile_path2 = "./"+name+"leaves.txt"
+        outfile2 = open(outfile_path2,"w")
+        for i in leaves_radii:
+            outfile2.write(str(i) + "\n")  
+        outfile2.close()
     
     fig.savefig(name+".png")
     fig.savefig(name+".pdf")	
@@ -90,7 +90,7 @@ def plot_trees(trees, area_descptr):
 
 timing = True
 store_data = False
-parallelized = False
+parallelized = True
 
 if timing:
     debut = time.time()
@@ -102,8 +102,8 @@ if store_data:
 
 if True:
 
-    NTerm = 4000
-    seed = 42
+    NTerm = 250
+    seed = 37
 
     np.random.seed(seed)
     process_nb = 16
@@ -115,7 +115,7 @@ if True:
     N_term = NTerm
     Q_term = Q_perf / N_term
 
-    P_drop = 1.33e4 - 7.98e3 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
+    P_drop = 1.33e4 - 8.38e3 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
     viscosity = 3.6e-3 # 3.6cp = 3.6mPa = 3.6 kg mm-1 s-2 =3.6e-3 Pa.s = 3.6e-9 MPa.s 
     
     # need to be carefull about unit: relativ between P_drop and viscosity
@@ -238,9 +238,11 @@ if True:
                 print "k termmmmmmmmmmmmmmmmmmmmmmmmmm is now ", tree.get_k_term()
                 kterm=tree.get_k_term()
 
-                if tree.get_k_term() ==50:
-#                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_f%i_s%i_30" %(NTerm,kterm,fac,seed),fac)
-                    break          
+                if kterm% 500 ==0:
+                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_s%i_33" %(NTerm,kterm,seed), False)
+                    #break
+#                if tree.get_k_term() == 2:
+#                    break
             else:
                 print "failed to add connection on tree"
         else:
@@ -250,8 +252,9 @@ if True:
 
         #keep going until reach Nterm!
 
-    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_31" %(tree.get_k_term(),seed))
-
+    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_33" %(tree.get_k_term(),seed), True)
+    cco_2df.collect_radii_along_bifurcations(tree, "./Results/radii_Nt%i_s%i_33"%(tree.get_k_term(),seed))
+    pickle.dump(tree, open("./Results/treetNt%i_s%i_33.p"%(tree.get_k_term(),seed), "wb"))
 
 
 if store_data:
