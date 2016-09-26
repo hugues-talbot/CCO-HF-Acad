@@ -312,7 +312,7 @@ class Tree:
             return False
         if location[1] < (self.w_pot.shape[0]-1) and location[0] < (self.w_pot.shape[1]-1): 
             pot_val = round(self.get_nearest_w(location),3)
-            print "pot val ", pot_val
+            #print "pot val ", pot_val
             #print "round 10", round(self.get_w(location),10)
             #print "round 20", round(self.get_w(location),20)
             if (pot_val> 0.) and (pot_val < 1.0):                
@@ -578,6 +578,25 @@ class Tree:
                 return False
         return True 
             
+    def concavity_test_for_segments(self, branching_location, c0, c1, c2,sampling_n):
+        inside_territory = True
+        if self.sample_and_test(branching_location, c0, sampling_n) == False:
+            inside_territory = False
+        if self.sample_and_test(branching_location, c1, sampling_n) == False:
+            inside_territory = False
+        if self.sample_and_test(branching_location, c2, sampling_n) == False:
+            inside_territory = False
+        return inside_territory 
+        
+    def calculate_official_sampling(self, c0, c1, c2, xy):
+        sampling_n1 = self.calculate_sampling(self.max_curv_rad, c0, xy)
+        sampling_n2 = self.calculate_sampling(self.max_curv_rad, xy, c1)
+        sampling_n3 = self.calculate_sampling(self.max_curv_rad, xy, c2)
+        sampling_n = max(sampling_n1, sampling_n2, sampling_n3)
+        print "official smapling n", sampling_n
+        return sampling_n
+                    
+    
     # testing the connection between the new_child_location and the segment made of "old_child_index" and its parent       
     def test_connection(self, old_child_index, new_child_location):
         ##update perfusion territory: add a microcirculatory black box
@@ -616,91 +635,166 @@ class Tree:
         
         
         x,y = xy[0], xy[1]
-        #calculate n = number of sampling for concavity test during process
-
-        sampling_n1 = self.calculate_sampling(self.max_curv_rad, c0, xy)
-        sampling_n2 = self.calculate_sampling(self.max_curv_rad, xy, c1)
-        sampling_n3 = self.calculate_sampling(self.max_curv_rad, xy, c2)
-        sampling_n = max(sampling_n1, sampling_n2, sampling_n3)
-        print "official smapling n", sampling_n
+        code= 0     
         #calculate original tree volume or take a bigger approximation (easier because no need of adding segment)
         initial_tree_vol = self.volume() * 10.
-        previous_result = [[0.,0.], [0.,0.]]
-        while (iterat < iter_max):
-            #call Kamiya : local optimization of the single bifurcation
-            conv, x_c, y_c, r_c, l = kami.kamiya_loop_r2(x, y, c0, c1, c2, f, r, self.length_factor, self.nu)
-            result = [[0.,0.], [0.,0.]]
-            if conv ==  False:
-                print "kamyia doesnt converge"
-                return False, 0., result, old_child_index
-
-            branching_location = np.array([x_c,y_c])
-            
-            inside_territory = True
-            # test intersection with concavity along the n samplings
-            print "branching location",branching_location,  self.get_w(branching_location)
-            if self.inside_perf_territory(branching_location) ==  False:
-                print "kmiya result is out territory", self.get_w(branching_location)
-                return False, 0., result, old_child_index
-            if self.sample_and_test(branching_location, c0, sampling_n) == False:
-                inside_territory = False
-            if self.sample_and_test(branching_location, c1, sampling_n) == False:
-                inside_territory = False
-            if self.sample_and_test(branching_location, c2, sampling_n) == False:
-                inside_territory = False
-
-
-            #create copy of tree and connect new branch given Kamyia's results
-            tree_copy = copy.deepcopy(self)
-            tree_copy.update_length_factor()
-            tree_copy.depthfirst_resistances(0)
-            tree_copy.update_flow()
-            estimate_betas = cco_2df.calculate_betas(r_c[1]/r_c[2], 3.) 
-            #we call it "estimate" because it's calculated with segment radii 
-            #(not using flow nor resistance, which is the strict method)
-            #the "correct" beta comes from balancing_ratio (resistance update)
-            tree_copy.make_connection(old_child_index, new_child_location, branching_location, f, estimate_betas)
-            tree_copy.update_flow()
-            tree_copy.balancing_ratios(old_child_index)           
-            correct_beta= tree_copy.nodes[tree_copy.node_index-2].betas
-            
-            #calculate total tree volume and volume gradient
-            tree_vol = tree_copy.volume()
-            new_radii = np.array([tree_copy.get_radius(tree_copy.node_index-2), tree_copy.get_radius(old_child_index), tree_copy.get_radius(tree_copy.node_index-1)])
-            if cco_2df.degenerating_test(c0,c1,c2, branching_location, new_radii, self.length_factor) == False :
-                    print "degenerated segments"
-                    return False, 0., [[0.,0.], [0.,0.]], old_child_index 
-            vol_gdt = initial_tree_vol - tree_vol
-            if inside_territory == True:
+        previous_result = [[0.,0.], [0.,0.]]            
+        lengths = kami.calculate_segment_lengths(c0,c1,c2,x,y,self.length_factor)
+        length_tol = 0.25*self.max_curv_rad*self.length_factor
+        if (lengths[0] < length_tol) and (lengths[1] < length_tol) and (lengths[2] < length_tol):
+            print "reaching boundary condition for concavity crossing test at node", self.get_k_term(),"with length_tol", length_tol
+            code=2            
+            #compute Kamiya iterqtion and apply concavity test only at the end
+            while (iterat < iter_max):
+                #call Kamiya : local optimization of the single bifurcation
+                conv, x_c, y_c, r_c, l = kami.kamiya_loop_r2(x, y, c0, c1, c2, f, r, self.length_factor, self.nu)
+                result = [[0.,0.], [0.,0.]]
+                if conv ==  False:
+                    print "kamyia doesnt converge"
+                    return code, False, 0., result, old_child_index
+    
+                branching_location = np.array([x_c,y_c])
+                
+                #create copy of tree and connect new branch given Kamyia's results
+                tree_copy = copy.deepcopy(self)
+                tree_copy.update_length_factor()
+                tree_copy.depthfirst_resistances(0)
+                tree_copy.update_flow()
+                estimate_betas = cco_2df.calculate_betas(r_c[1]/r_c[2], 3.) 
+                #we call it "estimate" because it's calculated with segment radii 
+                #(not using flow nor resistance, which is the strict method)
+                #the "correct" beta comes from balancing_ratio (resistance update)
+                tree_copy.make_connection(old_child_index, new_child_location, branching_location, f, estimate_betas)
+                tree_copy.update_flow()
+                tree_copy.balancing_ratios(old_child_index)           
+                correct_beta= tree_copy.nodes[tree_copy.node_index-2].betas
+                
+                #calculate total tree volume and volume gradient
+                tree_vol = tree_copy.volume()
+                new_radii = np.array([tree_copy.get_radius(tree_copy.node_index-2), tree_copy.get_radius(old_child_index), tree_copy.get_radius(tree_copy.node_index-1)])
+                if cco_2df.degenerating_test(c0,c1,c2, branching_location, new_radii, self.length_factor) == False :
+                        print "degenerated segments"
+                        return code, False, 0., [[0.,0.], [0.,0.]], old_child_index 
+                vol_gdt = initial_tree_vol - tree_vol
                 if np.abs(vol_gdt) < tolerance:
                     #if gradients is under tolerance, and iter_max not reached:                
                     #test intersection on the tree not connected to the new branch
                     if self.check_intersection(old_child_index, c2, branching_location, new_radii) ==  True:
                         result=[correct_beta, branching_location]  
-                        print "connection test succeed!"  
-                        return True, tree_vol, result, old_child_index                                
+                        print "connection test reaching concavity test" 
+                        #compute concavity crossing test:
+                        sampling_n = self.calculate_official_sampling(c0,c1,c2,xy)
+                        inside_territory = False
+                        if self.inside_perf_territory(branching_location) ==  False:
+                            print "kmiya result is out territory", self.get_w(branching_location)
+                            return code, False, 0., result, old_child_index
+                        inside_territory = self.concavity_test_for_segments(branching_location, c0,c1,c2, sampling_n)
+                        if (inside_territory == True): 
+                            print "connection test succeeed and bifurcation inside territory"                                               
+                            return 1, True, tree_vol, result, old_child_index  
+                        else:
+                            print "bifurcation outside territory"
+                            return code, False, 0., result, old_child_index
+                           
                     else:
                         print "intersection test failed"
-                        print tree_copy.length_factor, self.length_factor
-                        return False, 0., result, old_child_index
+                        return code, False, 0., result, old_child_index
                 else:
-                    #provides Kamiya with current position and radii as new starting point
-                    print "next iteration of Kamiya"
-                    previous_result = [correct_beta, branching_location]
-                    initial_tree_vol = tree_vol
-                    x,y,r = x_c,y_c,new_radii
-                    iterat = iterat + 1
-            else:
-                if previous_result[1][0] != 0. and previous_result[1][1] != 0. :
-                    print "using previous result which was inside territory"
-                    return True, initial_tree_vol, previous_result, old_child_index
-                else: 
-                    #if no previous result, the test failed
-                    print "no previous result, connection test failed "
-                    return False, 0., result, old_child_index
-                           
-        print "connection test failed : iter max reached"
-        return False, 0., result, old_child_index        
+                    if self.check_intersection(old_child_index, c2, branching_location, new_radii) ==  True:
+                        #provides Kamiya with current position and radii as new starting point
+                        print "next iteration of Kamiya"
+                        previous_result = [correct_beta, branching_location]
+                        initial_tree_vol = tree_vol
+                        x,y,r = x_c,y_c,new_radii
+                        iterat = iterat + 1
+                    else: 
+                        print "no cvgce and intersection test failed, not iterating kamiya"
+                        return code, False, 0., result, old_child_index
+            print "connection test failed : iter max reached"
+            return code, False, 0., result, old_child_index     
+                
+            
+        else:      
+            #calculate n = number of sampling for concavity test during process
+            sampling_n = self.calculate_official_sampling(c0,c1,c2,xy)
+    
+            while (iterat < iter_max):
+                #call Kamiya : local optimization of the single bifurcation
+                conv, x_c, y_c, r_c, l = kami.kamiya_loop_r2(x, y, c0, c1, c2, f, r, self.length_factor, self.nu)
+                result = [[0.,0.], [0.,0.]]
+                if conv ==  False:
+                    print "kamyia doesnt converge"
+                    return code, False, 0., result, old_child_index
+    
+                branching_location = np.array([x_c,y_c])
+                
+                inside_territory = True
+                # test intersection with concavity along the n samplings
+                print "branching location",branching_location,  self.get_w(branching_location)
+                if self.inside_perf_territory(branching_location) ==  False:
+                    print "kmiya result is out territory", self.get_w(branching_location)
+                    return code, False, 0., result, old_child_index                   
+                inside_territory = self.concavity_test_for_segments(branching_location, c0,c1,c2, sampling_n)
+                
+                #create copy of tree and connect new branch given Kamyia's results
+                tree_copy = copy.deepcopy(self)
+                tree_copy.update_length_factor()
+                tree_copy.depthfirst_resistances(0)
+                tree_copy.update_flow()
+                estimate_betas = cco_2df.calculate_betas(r_c[1]/r_c[2], 3.) 
+                #we call it "estimate" because it's calculated with segment radii 
+                #(not using flow nor resistance, which is the strict method)
+                #the "correct" beta comes from balancing_ratio (resistance update)
+                tree_copy.make_connection(old_child_index, new_child_location, branching_location, f, estimate_betas)
+                tree_copy.update_flow()
+                tree_copy.balancing_ratios(old_child_index)           
+                correct_beta= tree_copy.nodes[tree_copy.node_index-2].betas
+                
+                #calculate total tree volume and volume gradient
+                tree_vol = tree_copy.volume()
+                new_radii = np.array([tree_copy.get_radius(tree_copy.node_index-2), tree_copy.get_radius(old_child_index), tree_copy.get_radius(tree_copy.node_index-1)])
+                if cco_2df.degenerating_test(c0,c1,c2, branching_location, new_radii, self.length_factor) == False :
+                        print "degenerated segments"
+                        return code, False, 0., [[0.,0.], [0.,0.]], old_child_index 
+                vol_gdt = initial_tree_vol - tree_vol
+                if inside_territory == True:
+                    if np.abs(vol_gdt) < tolerance:
+                        #if gradients is under tolerance, and iter_max not reached:                
+                        #test intersection on the tree not connected to the new branch
+                        if self.check_intersection(old_child_index, c2, branching_location, new_radii) ==  True:
+                            result=[correct_beta, branching_location]  
+                            print "connection test succeed!" 
+                            nbr = iterat*sampling_n*3
+                            if nbr <3:
+                                nbr=3
+                            return nbr, True, tree_vol, result, old_child_index                                
+                        else:
+                            print "intersection test failed"
+                            return code, False, 0., result, old_child_index
+                    else:
+                        if self.check_intersection(old_child_index, c2, branching_location, new_radii) ==  True:
+                            #provides Kamiya with current position and radii as new starting point
+                            print "next iteration of Kamiya"
+                            previous_result = [correct_beta, branching_location]
+                            initial_tree_vol = tree_vol
+                            x,y,r = x_c,y_c,new_radii
+                            iterat = iterat + 1
+                        else: 
+                            print "no cvgce and intersection test failed, not iterating kamiya"
+                            return code, False, 0., result, old_child_index
+                else:
+                    if previous_result[1][0] != 0. and previous_result[1][1] != 0. :
+                        print "using previous result which was inside territory and not intersecting"
+                        nbr = iterat*sampling_n*3
+                        if nbr <3:
+                            nbr=3
+                        return nbr, True, initial_tree_vol, previous_result, old_child_index
+                    else: 
+                        print "no previous result,connection test failed "
+                        return code, False, 0., result, old_child_index
+                               
+            print "connection test failed : iter max reached"
+            return code, False, 0., result, old_child_index        
         
         
     
