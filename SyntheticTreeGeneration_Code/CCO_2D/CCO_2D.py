@@ -103,7 +103,7 @@ if store_data:
 if True:
 
     NTerm = 250
-    seed = 37
+    seed = 33
 
     np.random.seed(seed)
     process_nb = 16
