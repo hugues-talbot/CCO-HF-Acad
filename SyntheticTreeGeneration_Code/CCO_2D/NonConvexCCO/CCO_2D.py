@@ -103,7 +103,7 @@ if timing:
     debut = time.time()
     print debut
 if store_data:
-    fd = open('./Results/CCO_debugb.txt','w') # open the result file in write mode
+    fd = open('./Results/CCO_debugbi.txt','w') # open the result file in write mode
     old_stdout = sys.stdout   # store the default system handler to be able to restore it    
     sys.stdout = fd # Now your file is used by print as destination 
     
@@ -162,7 +162,7 @@ if True:
     tree.depthfirst_resistances(0)        
 
     count_extend_neighb_research = np.zeros(3)
-    counter = np.zeros(5)
+    counter = np.zeros(6)
     while tree.get_k_term() < N_term: 
         success, new_child_location, d_tresh = tree.get_new_location(area_descptr, N_term)
         if (success == False):
@@ -205,7 +205,8 @@ if True:
                     if code==1:
                         counter[3] = counter[3]+1
                         counter[4] = counter[4]+1
-                    
+                else:
+                    counter[5]=counter[5]+1
                 pool.close()
         else:
             for n_index in range(len(neighbors)):
@@ -222,6 +223,8 @@ if True:
                     if res[0]==1:
                         counter[3] = counter[3]+1
                         counter[4] = counter[4]+1
+                else:
+                    counter[5]=counter[5]+1
 
         cet_filtered = filter(None,cet)
         cet_values = np.array(cet_filtered, dtype_r)
@@ -288,7 +291,7 @@ if True:
 #                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_s%i_41d" %(NTerm,kterm,seed),potential)
                 #if kterm >600:
                 if kterm%100 == 0:
-                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_s%i_44" %(NTerm,kterm,seed),potential) 
+                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_s%i_44b" %(NTerm,kterm,seed),potential) 
 #                if kterm == 600:
 #                    print "over 600"
                 if kterm == 500:
@@ -302,13 +305,14 @@ if True:
 
         #keep going until reach Nterm!
 
-    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_44" %(tree.get_k_term(),seed), potential)
-    pickle.dump(tree, open("./Results/treetNt%i_s%i_44.p"%(tree.get_k_term(),seed), "wb"))
+    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_44b" %(tree.get_k_term(),seed), potential)
+    pickle.dump(tree, open("./Results/treetNt%i_s%i_44b.p"%(tree.get_k_term(),seed), "wb"))
     #print "number of total neighbor research", count_extend_neighb_research[0]
     #print "number of extended neihbor research",count_extend_neighb_research[1], "successfull ones", count_extend_neighb_research[2]
     print "number of connection tested", counter[0] 
-    print "number of connection tested with crossing test iterativ", counter[1]
-    print "total number of crossing test in iterativ method", counter[2]
+    print "number of connection tested with crossing test iterativ sucessfull", counter[1]
+    print "number of connection tested with crossing test iterativ failing", counter[5]
+    print "total number of crossing test for successfull tests in iterativ method", counter[2]
     print "number of connection tested at the end with concavity", counter[3]
     print "number of connection testedat the end with concavity positiv", counter[4]
 
