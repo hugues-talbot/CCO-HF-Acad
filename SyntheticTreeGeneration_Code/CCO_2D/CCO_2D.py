@@ -89,11 +89,11 @@ def plot_trees(trees, area_descptr):
 ############# Karch algo : CCO ####################
 
 
-def CCO_2D(nterm, seed_ind, storage):
+def CCO_2D(nterm, seed_ind, storage,gamma):
     
     timing = True
     store_data = storage
-    parallelized = True
+    parallelized = False
     
     if timing:
         debut = time.time()
@@ -121,7 +121,11 @@ def CCO_2D(nterm, seed_ind, storage):
         P_drop = 1.33e4 - 7.98e3 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
         viscosity = 3.6e-3 # 3.6cp = 3.6mPa = 3.6 kg mm-1 s-2 =3.6e-3 Pa.s = 3.6e-9 MPa.s 
         if NTerm == 250:
-            P_drop = 1.33e4 - 8.38e3
+            #Karch values
+            #P_drop = 1.33e4 - 9.60e3
+            #Schreiner values 
+            P_drop = 1.33e4 - 8.40e3
+        MurrayCoeff = gamma
         # need to be carefull about unit: relativ between P_drop and viscosity
         # ex: 1.33e7  - 7.98e6 (kg mm-1 s-2)   and 3.6    (kg mm-1 s-2)
         # ex: 1.33e-2 - 7.98e-3 (MPa = N mm-2) and 3.6e-9 (MPa)
@@ -139,7 +143,7 @@ def CCO_2D(nterm, seed_ind, storage):
         #### initialization ##    
     
         store_cet = []
-        tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, area, area_radius)
+        tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, area, area_radius, MurrayCoeff)
          
         # source point : define the root position
         root_position = np.array([100,100])
@@ -236,14 +240,14 @@ def CCO_2D(nterm, seed_ind, storage):
             if (adding_location): # optimal connection found!
                 store_cet.append(filter(None,cet))
                 opt = added_location[-1]
-                ante_tree = copy.deepcopy(tree)
-                
+                #ante_tree = copy.deepcopy(tree)
+                print "cet", cet
                 if (tree.add_connection(opt[2], new_child_location, opt[1][1], opt[1][0])):
                     print "k termmmmmmmmmmmmmmmmmmmmmmmmmm is now ", tree.get_k_term()
                     kterm=tree.get_k_term()
     
                     if kterm% 500 ==0:
-                        plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_s%i_33" %(NTerm,kterm,seed), False)
+                        plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_s%i_M%i_PK" %(NTerm,kterm,seed,int(MurrayCoeff*100)+1), False)
                         #break
     #                if tree.get_k_term() == 2:
     #                    break
@@ -253,12 +257,12 @@ def CCO_2D(nterm, seed_ind, storage):
     
                 print "ktemmmmmmmmmmmmmmmmmmmmmmmmmmmmmm", tree.get_k_term()
                 print "location doesn't provide an optimal connection, testing new location"
-    
+            break
             #keep going until reach Nterm!
     
-        plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_33" %(tree.get_k_term(),seed), False)
-        cco_2df.collect_radii_along_bifurcations(tree, "./Results/radii_Nt%i_s%i_33"%(tree.get_k_term(),seed))
-        pickle.dump(tree, open("./Results/treetNt%i_s%i_33.p"%(tree.get_k_term(),seed), "wb"))
+        plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_M%i_PS" %(tree.get_k_term(),seed,int(MurrayCoeff*100)+1), False)
+        cco_2df.collect_radii_along_bifurcations(tree, "./Results/radii_Nt%i_s%i_M%i_PS"%(tree.get_k_term(),seed,int(MurrayCoeff*100)+1))
+        pickle.dump(tree, open("./Results/treetNt%i_s%i_M%i_PS.p"%(tree.get_k_term(),seed,int(MurrayCoeff*100)+1), "wb"))
     
     
     if store_data:

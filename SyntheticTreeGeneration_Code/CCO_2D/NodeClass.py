@@ -93,7 +93,7 @@ class Tree:
     "a_perf: total perfusion area of the final tree"
     "r_f: real radius (mm) of the total perfusion area"
 
-    def __init__(self, nodes, n_term, q_perf, p_drop, visc, a_perf, r_f):
+    def __init__(self, nodes, n_term, q_perf, p_drop, visc, a_perf, r_f, gamma):
         self.nodes = nodes
         self.n_term = n_term
         self.final_q_perf = q_perf
@@ -105,9 +105,9 @@ class Tree:
         self.r_supp = np.sqrt(a_perf / (n_term * np.pi)) #microbox radius: average radius of terminal segment perfusion territory when reaching final tree growth
         self.final_perf_radius = r_f #real size of the perfusion territory radius when plotting result
         self.length_factor = 1 # not a const, is updated during tree growth after each added bifurcation
-
+        self.gamma = gamma
     def __deepcopy__(self, tree):
-        return Tree(copy.deepcopy(self.nodes), self.n_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius)    		
+        return Tree(copy.deepcopy(self.nodes), self.n_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius, self.gamma)    		
             
     def nodes(self):
         return self.nodes
@@ -396,7 +396,7 @@ class Tree:
                 sibling_ratio = np.power(current_node.flow * resistance_current_child / (sibling.flow * resistance_sibling), 1./4)                            
             else :
                 sibling_ratio = np.power(sibling.flow * resistance_sibling / (current_node.flow * resistance_current_child), 1./4)                      
-            betas = cco_2df.calculate_betas(sibling_ratio, 3.)        
+            betas = cco_2df.calculate_betas(sibling_ratio, self.gamma)        
             return betas
         else:
             #print "beta of root point, no need to calculate"
@@ -449,7 +449,7 @@ class Tree:
         initial_tree_vol = self.volume() * 10.
         while (iterat < iter_max):
             #call Kamiya : local optimization of the single bifurcation
-            conv, x_c, y_c, r_c, l = kami.kamiya_loop_r2(x, y, c0, c1, c2, f, r, self.length_factor, self.nu)
+            conv, x_c, y_c, r_c, l = kami.kamiya_loop_r2(x, y, c0, c1, c2, f, r, self.length_factor, self.nu,self.gamma)
             result = [[0.,0.], [0.,0.]]
             if conv ==  False:
                 print "kamyia doesnt converge"
@@ -463,7 +463,7 @@ class Tree:
             tree_copy.update_length_factor()
             tree_copy.depthfirst_resistances(0)
             tree_copy.update_flow()
-            estimate_betas = cco_2df.calculate_betas(r_c[1]/r_c[2], 3.) 
+            estimate_betas = cco_2df.calculate_betas(r_c[1]/r_c[2], self.gamma) 
             #we call it "estimate" because it's calculated with segment radii 
             #(not using flow nor resistance, which is the strict method)
             #the "correct" beta comes from balancing_ratio (resistance update)

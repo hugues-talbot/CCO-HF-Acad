@@ -7,5 +7,5 @@ Created on Mon Sep 26 11:26:54 2016
 
 import CCO_2D as cco
 
-for i in range (43,142):
-    cco.CCO_2D(250, i, False)
+for i in range (33,34):
+    cco.CCO_2D(250, i, False,float(2.55))
