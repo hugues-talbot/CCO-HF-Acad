@@ -1,51 +1,82 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue May 24 11:26:13 2016
+Created on Thu May 19 16:18:32 2016
 
 @author: cjaquet
 """
+
 import numpy as np
 import sys
+import copy
+from skimage.segmentation import random_walker
+import matplotlib.pyplot as plt
+#from pyamg import *
 
+###########################################Non convex functions####################
+## creating a potential grid using random walker
+#inner surface and concavity potential value is 1
+#outer surface potential value is 0
+def potential_image(center, ext_radius_f, int_radius_f):
+    #initialization
+    cx,cy,cz = int(center[0]), int(center[1]),int(center[2])
+    ext_radius = int(ext_radius_f)
+    int_radius =int(int_radius_f)
+    im = np.zeros((cx+ext_radius*3, cy+ext_radius*3,cz+ext_radius*3)).astype('uint8')
+    markers = np.zeros((cx+ext_radius*3, cy+ext_radius*3, cz+ext_radius*3)).astype('uint8')
+    margin = int(np.ceil(ext_radius/10.))
+    # grids of index   
+    z,y,x = np.ogrid[-ext_radius-margin: ext_radius+margin, -ext_radius-margin: ext_radius+margin, -ext_radius-margin:ext_radius+margin]  
+    z_i, y_i, x_i = np.ogrid[-int_radius: int_radius, -int_radius: int_radius,-int_radius: int_radius]
+    
+    #mask creation
+    index = x**2 + y**2 + z**2 <= ext_radius**2
+    im[cz-ext_radius-margin:cz+ext_radius+margin, cy-ext_radius-margin:cy+ext_radius+margin, cx-ext_radius-margin:cx+ext_radius+margin][index] = 1
+    index_int = x_i**2 + y_i**2 + z_i**2<= int_radius**2
+    im[cz-int_radius:cz+int_radius, cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 0
 
+    #marker creation
+    #external
+    index = x**2 + y**2 +z**2 > ext_radius**2
+    markers[cz-ext_radius-margin:cz+ext_radius+margin, cy-ext_radius-margin:cy+ext_radius+margin, cx-ext_radius-margin:cx+ext_radius+margin][index] = 2
+    #internal
+    index_int = x_i**2 + y_i**2 +z_i**2 < int_radius**2
+    markers[cz-int_radius:cz+int_radius, cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 3
+
+    #random_walker    
+    
+    result = random_walker(im, markers, copy =True, return_full_prob = True)   
+    print "rdm walker shape",result.shape
+    print markers.shape
+    return result[1]
+    
+    
+### Newton Raphson algorithm : 
+#looking for the location reaching the potential target_w along a line (defined by target line vector)
+#considering the local gradient at point
+#iterating until find a potential respecting epsilon tolerance
+
+def length(vect):
+    return np.sqrt(np.sum(vect**2))
+    
 #########################################################
 
 ## distance criteria
 # n_term is the final number of terminal segment
-# k_term is the current number of terminal segment (atg the current growth step)
+# k_term is the current number of terminal segment (at the current growth step)
 
-#v_perf is the total perfused volume    
-def calculate_r_supp_3D(v_perf, n_term):
-    return np.power(v_perf*3./(n_term*4.*np.pi), 1./3.)
-     
-def calculate_d_tresh_3D(r_supp, k_term):    
-    return np.power(np.pi*4.*np.power(r_supp,3)/(3.*k_term),1./3.)
-    
-def get_d_tresh(v_perf, n_term, k_term):
-    return calculate_d_tresh_3D(calculate_r_supp_3D(v_perf, n_term), k_term)
+#v_perf is the total perfused volume     
+def calculate_d_tresh_3D(r_supp, k_term): 
+    r_pk = np.power((k_term + 1)* r_supp**3,3)
+    return np.power(np.pi*4.*np.power(r_pk,3)/(3.*k_term),1./3.),r_pk
     
 ## random location generation
-def random_location():
-    return np.random.rand(3)*200
-    
-## test if new location is over d_tresh distance from existing segments
-def test_dist_criteria(tree, location, d_tresh, area):
-    if (belongs_to_volume(location, area)):    
-        for sgmt in tree.nodes:
-            if (sgmt.parent() >= 0):
-                dist = segment_distance(sgmt.coord, (tree.get_node(sgmt.parent())).coord, location)
-                if (dist < d_tresh):
-                    #print "point too close of existing segments"
-                    #print "dist", dist, "d_tresh", d_tresh
-                    #print "location", location
-                    return False
-    else:
-        #print "point out of area"
-        #print "location", location
-        return False
-    print "point inside area and over distance threshold"
-    return True  
-    
+def random_location(center, radius):
+    max_border = np.max(center+radius)+3
+    #print "mqx border", max_border
+    position = np.random.rand(3)*max_border
+    #print "rdm position", position
+    return position
+       
     
 # area is defined by two descriptors: [0] = center coord(x,y) and [1] = radius
 def belongs_to_area(coords, area):
@@ -55,53 +86,29 @@ def belongs_to_area(coords, area):
     else:
         return False
 
-#volume is defined by two descriptors: [0] = center of sphere coord (x,y,z) and [1] = radius
-def belongs_to_volume(coords, volume):
-    vector = coords-volume[0]
-    if np.sqrt(np.sum(vector**2)) <= volume[1] :
-        return True
-    else:
-        return False
-
-
-def first_segmt_end(volume):
+# the location of the first segment end is not constrained by the distance criterion, only by the perfusion territory
+def first_segmt_end(area, area_descptr):
     inside_area = False
     while inside_area == False :    
         position = random_location()
-        #position[2]=50
-        if (belongs_to_volume(position, volume)):
+        if (belongs_to_area(position, area_descptr)):
             return position
-            
-def get_new_location(tree, volume_descpt, n_term):   
-    v_perf = (volume_descpt[1]**3) * np.pi*4./3
-    k_term = tree.get_k_term()
-    print "k_term", k_term
-    d_tresh = get_d_tresh(v_perf, n_term, k_term)
-    print "d_tresh", d_tresh
-    meet_criteria = False
-    ind = 0
-    while (meet_criteria == False and ind < 1000):
-        point = random_location()
-        #point[2]=50
-        if (test_dist_criteria(tree, point, d_tresh, volume_descpt)):
-            print "location found"
-            return True, point, d_tresh
-        ind = ind + 1
-        if ind == 1000:
-            print "impossible to find new location with current d_tresh"
-            d_tresh = 0.9*d_tresh
-            print "using new value: ", d_tresh
-            ind = 0
-    return False, np.array([0.,0.]), d_tresh
-    
-    
+
+
+#######################################################
+
+def test_connection_list(list_input):
+    copy_tree = copy.deepcopy(list_input[0])
+    return copy_tree.test_connection(list_input[1], list_input[2])
+
+
 #########################################################
 
 #sibling ratio is r_child_0 / r_child_1
 def calculate_betas(sibling_ratio, gamma):
     beta_child_0 = np.power(1 + sibling_ratio**-gamma, -1./gamma)
     beta_child_1 = np.power(1 + sibling_ratio**gamma, -1./gamma)
-    print "beta child_0", beta_child_0, "beta child_1", beta_child_1
+    #print "beta child_0", beta_child_0, "beta child_1", beta_child_1
     return np.array([beta_child_0, beta_child_1])
     
 #return distance between point and segment
@@ -109,9 +116,8 @@ def segment_distance(seg_pt_a, seg_pt_b, point):
     vect_ab = seg_pt_b - seg_pt_a
     vect_ap = point - seg_pt_a
     vect_bp = point - seg_pt_b
-    squared_length_ab = np.sum(vect_ab**2)
+    squared_length_ab = float(np.sum(vect_ab**2))
     if (squared_length_ab == 0.): 
-        print 1
         return np.sqrt(np.sum(vect_ap**2))
     
     relative_position = (np.sum(vect_ap*vect_ab)) / squared_length_ab
@@ -123,22 +129,7 @@ def segment_distance(seg_pt_a, seg_pt_b, point):
     projected_point = seg_pt_a + relative_position * vect_ab
     vect_projp = point - projected_point
     return np.sqrt(np.sum(vect_projp**2))
-    
-def cross(vec_a, vec_b):
-    res = np.zeros(3)
-    res[0] = (vec_a[1] * vec_b[2]) - (vec_a[2] * vec_b[1])
-    res[1] = (vec_a[2] * vec_b[0]) - (vec_a[0] * vec_b[2])
-    res[2] = (vec_a[0] * vec_b[1]) - (vec_a[1] * vec_b[0])
-    return res
-
-def float_comparison(vec_a, vec_b):
-    diff = np.abs(vec_a - vec_b)
-    if (diff[0] < sys.float_info.epsilon) and  (diff[1] < sys.float_info.epsilon) and (diff[2] < sys.float_info.epsilon):
-        return True
-    return False
-
-
-
+  
 #return distance between line and point  
 def line_distance(seg_pt_a, seg_pt_b, point):
     vec_ab = seg_pt_b - seg_pt_a
@@ -157,29 +148,26 @@ def line_distance(seg_pt_a, seg_pt_b, point):
     return np.sqrt(np.sum(normal_vec**2))
 
 #test if any of the 3 segments has a length close to 0 (the bifurcation has degenerated into 2 segments)  
-def degenerating_test(c0, c1, c2, branching_location, radii):
-    seg_parent_length = np.sqrt(np.sum((c0 - branching_location)**2))
-    seg_old_child_length = np.sqrt(np.sum((c1 - branching_location)**2))
-    seg_new_child_length = np.sqrt(np.sum((c2 - branching_location)**2))
-    #print "branching location", branching_location
-    #print "parent length", seg_parent_length, "2*radius", 2.*radii[0]
+def degenerating_test(c0, c1, c2, branching_location, radii, length_factor):
+    seg_parent_length = np.sqrt(np.sum((c0 - branching_location)**2)) * length_factor
+    seg_old_child_length = np.sqrt(np.sum((c1 - branching_location)**2)) * length_factor
+    seg_new_child_length = np.sqrt(np.sum((c2 - branching_location)**2)) * length_factor
+
     if (seg_parent_length < 2.*radii[0]):
-        print "parent seg degenerate"            
+        #print "parent seg degenerate"            
         return False
 
-    #print "old child length", seg_old_child_length, "2*radius", 2.*radii[1]    
     if (seg_old_child_length < 2.*radii[1]):
-        print "old child seg degenerate"
+        #print "old child seg degenerate"
         return False
-    
-    #print "new child length", seg_new_child_length, "2*radius", 2.*radii[2]   
+ 
     if (seg_new_child_length < 2.*radii[2]):
-        print "new child seg degenerate"
+        #print "new child seg degenerate"
         return False
     
     return True
-    
-    
+
+
     
 def closestDistanceBetweenLines(a0,a1,b0,b1,clampAll=False,clampA0=False,clampA1=False,clampB0=False,clampB1=False):
     ''' Given two line segments defined by numpy.array pairs (a0,a1,b0,b1)
@@ -269,5 +257,25 @@ def no_overlap(point_a, point_b, point_c, point_d, width_ab, width_cd):
     else :
         return True
         
-
+    
+def normalize(vector):
+    length = np.sqrt(np.sum(vector**2, axis = 0))
+    if length != 0:
+        return vector/length
+    else:
+        return vector
         
+def dot(vec_a, vec_b):
+    return vec_a[0]*vec_b[0] + vec_a[1]*vec_b[1]    
+    
+    
+def determinant(pt_a, pt_b,pt_c,pt_d):
+    denom = (pt_a[0] - pt_b[0])*(pt_c[1] - pt_d[1]) - (pt_a[1] - pt_b[1])*(pt_c[0] - pt_d[0])
+    if (denom == 0.):
+        return False, np.empty(2)
+    x = ( (pt_a[0]*pt_b[1] - pt_a[1]*pt_b[0])*(pt_c[0]-pt_d[0]) - (pt_a[0] - pt_b[0])*(pt_c[0]*pt_d[1] - pt_c[1]*pt_d[0]) ) / denom 
+    y = ( (pt_a[0]*pt_b[1] - pt_a[1]*pt_b[0])*(pt_c[1]-pt_d[1]) - (pt_a[1] - pt_b[1])*(pt_c[0]*pt_d[1] - pt_c[1]*pt_d[0]) ) / denom
+    return True, np.array([x,y])
+    
+
+
