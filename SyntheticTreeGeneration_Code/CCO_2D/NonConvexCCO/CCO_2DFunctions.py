@@ -106,7 +106,7 @@ def random_location(center, radius):
     max_border = np.max(center+radius)+10
     #print "mqx border", max_border
     position = np.random.rand(2)*max_border
-    #print "position", position
+    #print "rdm position", position
     return position
        
     

@@ -94,7 +94,7 @@ class Tree:
     "a_perf: total perfusion area of the final tree"
     "r_f: real radius (mm) of the total perfusion area"
 
-    def __init__(self, nodes, n_term, q_perf, p_drop, visc, a_perf, r_f, w, max_curv_radius,center,real_radius):
+    def __init__(self, nodes, n_term, q_perf, p_drop, visc, a_perf, r_f, w, max_curv_radius,center,real_radius, gamma):
         self.nodes = nodes
         self.n_term = n_term
         self.final_q_perf = q_perf
@@ -114,9 +114,9 @@ class Tree:
         self.max_curv_rad = max_curv_radius
         self.center = center
         self.real_final_radius = real_radius #real size of the final cercle (includes the concavity)
-        
+        self.gamma = gamma
     def __deepcopy__(self, tree):
-        return Tree(copy.deepcopy(self.nodes), self.n_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius, self.w_pot, self.max_curv_rad,self.center, self.real_final_radius)    		
+        return Tree(copy.deepcopy(self.nodes), self.n_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius, self.w_pot, self.max_curv_rad,self.center, self.real_final_radius, self.gamma)    		
             
     def nodes(self):
         return self.nodes
@@ -263,7 +263,7 @@ class Tree:
         return vol_final       
     
     ## test if new location is over d_tresh distance from existing tree segments
-    def test_dist_criteria(self, location, d_tresh, area):
+    def test_dist_criteria(self, location, d_tresh):
         if (self.inside_perf_territory(location) == True):    
             for sgmt in self.nodes:
                 if (sgmt.parent() >= 0):
@@ -276,21 +276,22 @@ class Tree:
         return True      
     
     # a new location is a random location constrained by perfusion territory and distance criterion            
-    def get_new_location(self, area_descrpt, n_term):   
+    def get_new_location(self, n_term, d_tresh_factor):   
         k_term = self.get_k_term()
         d_tresh, r_pk = cco_2df.calculate_d_tresh_2D(self.r_supp, k_term)
         length_factor = r_pk /  self.final_perf_radius
-        d_tresh_factorized = d_tresh / length_factor #d_tresh is calculated in the current k_world dimensions
+        d_tresh_factorized = d_tresh / length_factor * d_tresh_factor#d_tresh is calculated in the current k_world dimensions
         meet_criteria = False
         ind = 0
-        while (meet_criteria == False and ind < 1000):
+        max_it = 100
+        while (meet_criteria == False and ind < max_it):
             point = cco_2df.random_location(self.center, self.real_final_radius)
-            if (self.test_dist_criteria(point, d_tresh_factorized, area_descrpt)):
+            if (self.test_dist_criteria(point, d_tresh_factorized)):
                 print "location found"
                 print point
                 return True, point, d_tresh_factorized
             ind = ind + 1
-            if ind == 1000:
+            if ind == max_it:
                 d_tresh_factorized = 0.9*d_tresh_factorized
                 print "using new value: ", d_tresh_factorized
                 ind = 0
@@ -315,7 +316,7 @@ class Tree:
             #print "pot val ", pot_val
             #print "round 10", round(self.get_w(location),10)
             #print "round 20", round(self.get_w(location),20)
-            if (pot_val> 0.) and (pot_val < 1.0):                
+            if (pot_val> 0.) and (pot_val < 1.0): 
                 return True
         return False
         
@@ -479,7 +480,7 @@ class Tree:
         wp1 = self.get_w(seg_1)
         wp2 = self.get_w(seg_2)
         gdt_p1 = np.array([self.get_gx(seg_1), self.get_gy(seg_1)])
-        gdt_p2 = np.array([self.get_gx(seg_1), self.get_gy(seg_2)])
+        gdt_p2 = np.array([self.get_gx(seg_2), self.get_gy(seg_2)])
         p1p2_vec = seg_2 - seg_1
         # wp / dot product
         l1 = - wp1 * (1. / np.sum(gdt_p1* p1p2_vec))
@@ -622,6 +623,7 @@ class Tree:
         c1 = (self.nodes[old_child_index]).coord
         c2 = new_child_location        
         iterat = 0
+        code= 0 
         #kamiya uses a convex average as starting point
         #schreiner starts from the midpoint of the segment we are connecting with
         #karch uses potential information to get a smart starting point for non convex CCO
@@ -631,23 +633,23 @@ class Tree:
         xy = self.starting_point(c0, c1, c2, eps)
         if self.inside_perf_territory(xy) == False:
             print "branching location starting point out of territory: unplausible location"
-            return False, 0., [[0.,0.], [0.,0.]], old_child_index
+            return code, False, 0., [[0.,0.], [0.,0.]], old_child_index
         
         
         x,y = xy[0], xy[1]
-        code= 0     
+            
         #calculate original tree volume or take a bigger approximation (easier because no need of adding segment)
         initial_tree_vol = self.volume() * 10.
         previous_result = [[0.,0.], [0.,0.]]            
         lengths = kami.calculate_segment_lengths(c0,c1,c2,x,y,self.length_factor)
-        length_tol = 0.25*self.max_curv_rad*self.length_factor
+        length_tol = 0.15*self.max_curv_rad*self.length_factor
         if (lengths[0] < length_tol) and (lengths[1] < length_tol) and (lengths[2] < length_tol):
             print "reaching boundary condition for concavity crossing test at node", self.get_k_term(),"with length_tol", length_tol
             code=2            
             #compute Kamiya iterqtion and apply concavity test only at the end
             while (iterat < iter_max):
                 #call Kamiya : local optimization of the single bifurcation
-                conv, x_c, y_c, r_c, l = kami.kamiya_loop_r2(x, y, c0, c1, c2, f, r, self.length_factor, self.nu)
+                conv, x_c, y_c, r_c, l = kami.kamiya_loop_r2(x, y, c0, c1, c2, f, r, self.length_factor, self.nu, self.gamma)
                 result = [[0.,0.], [0.,0.]]
                 if conv ==  False:
                     print "kamyia doesnt converge"
@@ -720,7 +722,7 @@ class Tree:
     
             while (iterat < iter_max):
                 #call Kamiya : local optimization of the single bifurcation
-                conv, x_c, y_c, r_c, l = kami.kamiya_loop_r2(x, y, c0, c1, c2, f, r, self.length_factor, self.nu)
+                conv, x_c, y_c, r_c, l = kami.kamiya_loop_r2(x, y, c0, c1, c2, f, r, self.length_factor, self.nu,self.gamma)
                 result = [[0.,0.], [0.,0.]]
                 if conv ==  False:
                     print "kamyia doesnt converge"
