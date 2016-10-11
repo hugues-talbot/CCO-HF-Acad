@@ -15,7 +15,7 @@ import mpl_toolkits.mplot3d as a3
 import matplotlib.cm as cm
 import matplotlib as mpl
 import time
-from pyamg import *
+#from pyamg import *
 
 
 
@@ -57,14 +57,14 @@ print end - deb, "seconds for a ", im.shape[0]*im.shape[1]*im.shape[2] ,"pixel i
 #print markers.shape
 
 #make it a half sphere
-result[1][:,:,center[2]:im.shape[2]] = 0
+result[1][center[2]:im.shape[2],:,:] = 0
 
 wid=8
 hei=8
 fig = plt.figure(figsize=(wid*2, hei))
 ax = fig.add_subplot(122,projection='3d')#a3.Axes3D()#pl.figure(figsize=(wid, hei))
 #ax.imshow(im[20],20)
-xx, yy = pl.ogrid[0:im.shape[0], 0:im.shape[1]]
+xx, yy = pl.ogrid[0:im.shape[1], 0:im.shape[2]]
 #xx, yy = np.meshgrid(np.linspace(0,1,12), np.linspace(0,1,13))
 # create vertices for a rotated mesh (3D rotation matrix)
 X =  xx 
@@ -90,7 +90,7 @@ colors.extend(plt.cm.jet(np.linspace(0., 1., N)))
 colors.extend([(1.0,1.0,1.0)])
 cmap =mpl.colors.ListedColormap(colors) #plt.cm.jet
 
-maping = ax.plot_surface(X,Z,Y, rstride=1, cstride=1, facecolors=cmap(result[1][:,slicing,:]),shade=False)
+maping = ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(result[1][slicing,:,:]),shade=False)
 #ax.colorbar()#maping,ax=ax#maping, shrink=0.5, aspect=5
 ax.set_xlabel('X axis')
 ax.set_ylabel('Y axis')

@@ -9,14 +9,17 @@ import numpy as np
 import sys
 import copy
 from skimage.segmentation import random_walker
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+import pylab as pl
+
 #from pyamg import *
 
 ###########################################Non convex functions####################
 ## creating a potential grid using random walker
 #inner surface and concavity potential value is 1
 #outer surface potential value is 0
-def potential_image(center, ext_radius_f, int_radius_f):
+def potential_image(center, ext_radius_f, int_radius_f, half):
     #initialization
     cx,cy,cz = int(center[0]), int(center[1]),int(center[2])
     ext_radius = int(ext_radius_f)
@@ -44,9 +47,48 @@ def potential_image(center, ext_radius_f, int_radius_f):
 
     #random_walker    
     
-    result = random_walker(im, markers, copy =True, return_full_prob = True)   
+    result = random_walker(im, markers, copy =True, return_full_prob = True, mode= 'cg_mg')   
     print "rdm walker shape",result.shape
     print markers.shape
+    if half :
+        result[1][0:center[0],:,:] = 0
+    
+#    slicing = center[2]
+#    fig = plt.figure(figsize=(8, 8))
+#    ax = fig.add_subplot(111,projection='3d')#a3.Axes3D()#pl.figure(figsize=(wid, hei))
+#    #ax.imshow(im[20],20)
+#    xx, yy = pl.ogrid[0:im.shape[1], 0:im.shape[2]]
+#    #xx, yy = np.meshgrid(np.linspace(0,1,12), np.linspace(0,1,13))
+#    # create vertices for a rotated mesh (3D rotation matrix)
+#    X =  xx 
+#    Y =  yy
+#    Z =  slicing*np.ones(X.shape)
+#    #fig = plt.figure(projection='3d')
+#    
+#    
+#    #m = cm.ScalarMappable(cmap=cm.jet)
+#    #m.set_array(markers[:,:,slicing])
+#    
+#    #cmap for markers
+#    colors = [(1.0,1.0,1.0)]
+#    colors.extend([(0.0,0.0,1.)])
+#    colors.extend([(1.0,0.72,0.06)])
+#    colors.extend([(1.0,0.0,0.0)])
+#    cmap = mpl.colors.ListedColormap(colors)
+#    
+#    #cmap for random walker
+#    N=50
+#    colors = [(1.0,1.0,1.0)]
+#    colors.extend(plt.cm.jet(np.linspace(0., 1., N)))
+#    colors.extend([(1.0,1.0,1.0)])
+#    cmap =mpl.colors.ListedColormap(colors) #plt.cm.jet
+#    
+#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(result[1][slicing,:,:]),shade=False)
+#    #ax.colorbar()#maping,ax=ax#maping, shrink=0.5, aspect=5
+#    ax.set_xlabel('X axis')
+#    ax.set_ylabel('Y axis')
+#    ax.set_zlabel('Z axis')
+#    plt.show()
     return result[1]
     
     
@@ -78,21 +120,6 @@ def random_location(center, radius):
     return position
        
     
-# area is defined by two descriptors: [0] = center coord(x,y) and [1] = radius
-def belongs_to_area(coords, area):
-    vector = coords-area[0]
-    if np.sqrt(vector[0]**2 + vector[1]**2) <= area[1] :
-        return True
-    else:
-        return False
-
-# the location of the first segment end is not constrained by the distance criterion, only by the perfusion territory
-def first_segmt_end(area, area_descptr):
-    inside_area = False
-    while inside_area == False :    
-        position = random_location()
-        if (belongs_to_area(position, area_descptr)):
-            return position
 
 
 #######################################################

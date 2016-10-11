@@ -138,7 +138,7 @@ class Tree:
     
     # get the number of terminal segments in the current tree            
     def get_k_term(self):
-        self.k_term = len(self.nodes)/2 #because it is a dichotomic tree
+        self.k_term = len(self.nodes)/2 #because it is a dichotomous tree
         return self.k_term    	
     
     #flow at feeding artery, depending on the number of kterm
@@ -309,8 +309,7 @@ class Tree:
                 if self.sample_and_test(position, first_node_coord, n) == True:
                     return position
                 
-    def inside_perf_territory(self, location):
-        
+    def inside_perf_territory(self, location):       
         if location[1] < 0. or location[0] < 0. or location[2] < 0:
             return False
         if location[2] < (self.w_pot.shape[0]-1) and location[1] < (self.w_pot.shape[1]-1) and location[0] < (self.w_pot.shape[2]-1): 
@@ -324,19 +323,19 @@ class Tree:
         return False
         
     def get_w(self, location):
-        return float(self.interp_w(location[::-1]))
+        return float(self.interp_w(location))
         
     def get_nearest_w(self, location):
-        return float(self.nearest_w(location[::-1])) 
+        return float(self.nearest_w(location)) 
         
     def get_gx(self, location):
-        return float(self.interp_gx(location[::-1]))
+        return float(self.interp_gx(location))
     
     def get_gy(self, location):
-        return float(self.interp_gy(location[::-1]))
+        return float(self.interp_gy(location))
         
     def get_gz(self, location):
-        return float(self.interp_gz(location[::-1]))
+        return float(self.interp_gz(location))
 
     # add bifurcation on tree structure, and set the two children new resistances 
     # beta has been calculated with child_0/child_1 radius ratio where child_0 is old_child         
@@ -480,7 +479,7 @@ class Tree:
         # wp / dot product
         l1 = - wp1 * (1. / np.sum(gdt_p1* p1p2_vec))
         l2 = - wp2 * (1. / np.sum(gdt_p2* -p1p2_vec))
-        print "l1", l1, "l2", l2
+        #print "l1", l1, "l2", l2
         lbda = min(l1,l2)    
         splg_n = np.ceil(np.abs(1./lbda))
         print "local n", splg_n
@@ -494,7 +493,10 @@ class Tree:
         #print "gdt vec",gdt_vec
         #find on this line the point p where w(p) = 0.5 * (w(seg_pt1) + w(seg_pt2))
         target_w = 0.5 * (self.get_w(seg_pt1) + self.get_w(seg_pt2))
-        print "test", new_location, gdt_vec, target_w, eps
+        #print "self.get_w(seg_pt1)", self.get_w(seg_pt1)
+        #print "self.get_w(seg_pt2)", self.get_w(seg_pt2)
+        #print "self.get_w(midp)", self.get_w(midp)
+        #print "test", new_location, gdt_vec, target_w, eps
         starting_point = self.newton_algo(midp, gdt_vec, target_w, eps, 0, 100,1.)
         print "starting point", starting_point
         return starting_point
@@ -502,7 +504,7 @@ class Tree:
     def newton_step(self, point, target_line_vect, target_w, fac):
         #print "vec length",self.vec_length(target_line_vect)
         p_gdt = np.array([self.get_gx(point), self.get_gy(point), self.get_gz(point)])
-        #print "gdt", p_gdt
+        print "gdt", p_gdt
         norm_line_vect = target_line_vect * 1./ self.vec_length(target_line_vect)  
         #dot product projected along target line vector
         vect_proj_length = np.sum(p_gdt*target_line_vect) * 1./self.vec_length(target_line_vect) 
@@ -515,8 +517,9 @@ class Tree:
         #print "scal gap", scal_gap
         scal_gap_2 = target_w - self.get_w(point)
         #print "scal_gap_2", scal_gap_2
+        #print "fac", fac
         k = (scal_gap_2 / scal_gap ) 
-        print "k", k
+        #print "k", k
         proj_pt = point + k*vect_proj_length * norm_line_vect * fac
         return proj_pt
 
@@ -534,15 +537,15 @@ class Tree:
                     return self.newton_algo(proj_pt, target_line_vect, target_w, eps, count+1, max_iter, fac)
                 else:
                     print "max iteration reached"
-                    return np.zeros(2) #should be out of perfusion territory
+                    return np.zeros(3) #should be out of perfusion territory
         else:
             #TO DO
             if fac < 1.:
                 print "out of perf territory"
-                return np.zeros(2)
+                return np.zeros(3)
             else:
                 #test again from same initial point but using a smaller walking gap
-                return self.newton_algo(point, target_line_vect, target_w, eps, count+1, max_iter, 0.5)
+                return self.newton_algo(point, target_line_vect, target_w, eps, count+1, max_iter, 0.1)
                 # if goes out again, it means there is no solution
             
             
@@ -626,7 +629,7 @@ class Tree:
         xyz = self.starting_point(c0, c1, c2, eps)
         if self.inside_perf_territory(xyz) == False:
             print "branching location starting point out of territory: unplausible location"
-            return code, False, 0., [np.zeros(2), np.zeros(3)], old_child_index
+            return code, False, 0., np.zeros(2), np.zeros(3), old_child_index
         
             
         #calculate original tree volume or take a bigger approximation (easier because no need of adding segment)
@@ -704,7 +707,7 @@ class Tree:
                         print "no cvgce and intersection test failed, not iterating kamiya"
                         return code, False, 0., result[0],result[1], old_child_index
             print "connection test failed : iter max reached"
-            return code, False, 0., result, old_child_index     
+            return code, False, 0., result[0],result[1], old_child_index     
                 
             
         else:      
