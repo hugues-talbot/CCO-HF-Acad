@@ -49,7 +49,33 @@ def test_connection_list(list_input):
     return copy_tree.test_connection(list_input[1], list_input[2])
 
 
-#########################################################
+#######################################################
+#radius study
+            
+def collect_radii_along_bifurcations(tree, filename):
+    radii = []
+    indexes = [[tree.get_root_index()]]
+    a = 0
+    all_leaves_reached = False
+    while (all_leaves_reached == False):
+        children = []
+        radius_list = []
+        for i in indexes[a]:
+            children_array = tree.nodes[i].children_index
+            if children_array[0] > 0:
+                children.append(children_array[0])
+            if children_array[1] > 0:
+                children.append(children_array[1])
+            radius_list.append(tree.get_radius(i))
+        radii.append(radius_list)
+        if len(children) > 0:
+            indexes.append(children)
+            a = a+1
+        else:
+            all_leaves_reached = True
+    np.save(filename,radii)
+
+#######################################################
 
 #sibling ratio is r_child_0 / r_child_1
 def calculate_betas(sibling_ratio, gamma):

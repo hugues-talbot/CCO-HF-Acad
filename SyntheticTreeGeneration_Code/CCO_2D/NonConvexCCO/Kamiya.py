@@ -58,17 +58,18 @@ def calculate_new_bif_coords(c0,c1,c2,f,l,sqrd_r):
     return new_x, new_y
     
     
-def non_linear_solver(f,l,k,dp1,dp2,r_ori):
+def non_linear_solver(f,l,k,dp1,dp2,r_ori,gamma):
     def func(z):
         r1=z[0]
         r2=z[1]
-        print "z", z
+        #print "z", z
+        zeta= 3+gamma
         r14= r1*r1
-        r16 = r14*r1
+        r16 = r1**(zeta/2.) #r14*r1
         r24= r2*r2
-        r26 = r24*r2
-        ans = ( dp1/k*r14*(np.power(f[0]*(r16/f[1]+r26/f[2]),2./3 )) - f[0]*l[0]*r14 - f[1]*l[1]*np.power(f[0]*(r16/f[1] +r26/f[2]), 2./3),
-                dp2/k*r24*(np.power(f[0]*(r16/f[1]+r26/f[2]),2./3 )) - f[0]*l[0]*r24 - f[2]*l[2]*np.power(f[0]*(r16/f[1] +r26/f[2]), 2./3))         
+        r26 = r2**(zeta/2.)#r24*r2
+        ans = ( dp1/k*r14*(np.power(f[0]*(r16/f[1]+r26/f[2]),4./zeta )) - f[0]*l[0]*r14 - f[1]*l[1]*np.power(f[0]*(r16/f[1] +r26/f[2]), 4./zeta),
+                dp2/k*r24*(np.power(f[0]*(r16/f[1]+r26/f[2]),4./zeta )) - f[0]*l[0]*r24 - f[2]*l[2]*np.power(f[0]*(r16/f[1] +r26/f[2]), 4./zeta))         
         return(ans)
     #print"r_ori",  r_ori
     dict_f={}
@@ -85,13 +86,13 @@ def non_linear_solver(f,l,k,dp1,dp2,r_ori):
     return sol.success, sol.x
     
 #l contains l0, l1, l2
-def calculate_squared_radii(f, l, dp1, dp2, r_ori, visc):
+def calculate_squared_radii(f, l, dp1, dp2, r_ori, visc,gamma):
     k=8*visc/np.pi
-    success, r_1_2 = non_linear_solver(f,l,k,dp1,dp2, r_ori)
+    success, r_1_2 = non_linear_solver(f,l,k,dp1,dp2, r_ori,gamma)
     r1 = r_1_2[0]
     r2 = r_1_2[1]
     if (success == True):
-        r0 = np.power(f[0]*(r1**3/f[1] + r2**3/f[2]) , 1/3.)  
+        r0 = np.power(f[0]*(r1**gamma/f[1] + r2**gamma/f[2]) , 1/gamma)  
         return r0,r1,r2
     else:
         return 0.,0.,0.
@@ -101,15 +102,15 @@ def single_bif_volume(r, l):
     
 #input r : r[0] and r[1] are the radii before connection added (r0 = r1 = r1 = radius of original segment before connection added) 
 #        this estimated r is used to calculate dp, then is updated in the calculate_radii function     
-def kamiya_loop_r2(x_ini,y_ini,c0,c1,c2,f, r, length_factor, visc):
+def kamiya_loop_r2(x_ini,y_ini,c0,c1,c2,f, r, length_factor, visc,gamma):
     l = calculate_segment_lengths(c0,c1,c2,x_ini,y_ini, length_factor)
     dp1, dp2 = calculate_dp_from_Poiseuille(f,l,r, visc)
-    r[0], r[1], r[2] = calculate_squared_radii(f,l,dp1, dp2, np.power(r,2)[1:3], visc)
+    r[0], r[1], r[2] = calculate_squared_radii(f,l,dp1, dp2, np.power(r,2)[1:3], visc,gamma)
     if (r[0] == 0.):
         return False, x_ini, y_ini, np.sqrt(r), l
     else:        
         x_new,y_new = calculate_new_bif_coords(c0,c1,c2,f,l,r)
-        return True, x_new, y_new, np.sqrt(r), l  
+        return True, x_new, y_new, np.sqrt(r), l 
         
 #when calculating segment length, need to consider a factor 
 #because current coordinates are scaled from a bigger perfusion territory

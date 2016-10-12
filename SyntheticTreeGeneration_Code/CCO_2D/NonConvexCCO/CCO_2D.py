@@ -6,8 +6,8 @@ Created on Fri Apr  1 15:35:19 2016
 """
 
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import Kamiya as kami
 import NodeClass as nclass
@@ -20,7 +20,7 @@ import cPickle as pickle
 import sys  # Need to have acces to sys.stdout
 import time
 from multiprocessing import Pool, TimeoutError
-
+import pickle
 
 
 
@@ -31,9 +31,14 @@ def plot_tree(tree, area_descptr, name,w):
     ax = fig.add_subplot(111)
     #colors=['k', 'b', 'g', 'm', 'r']
     # labels for cet ['r','m','g','b']
-    ax.imshow(w)
+    N=500
+    colors = [(1.0,1.0,1.0)]
+    colors.extend(plt.cm.jet(np.linspace(0., 1., N)))
+    colors.extend([(1.0,1.0,1.0)])
+    cmap = mpl.colors.ListedColormap(colors)
+    ax.imshow(w,cmap=cmap, vmin=0., vmax=1.)
     ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[1], color = 'r', fill = False))
-    #ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[2], color = 'w', alpha = 0.5))
+    ax.add_patch(plt.Circle(area_descptr[0], radius=area_descptr[2], color = 'b', fill = False))
     all_radii = []
     leaves_radii = []
     inv_length_fac = 1. / tree.length_factor
@@ -45,7 +50,7 @@ def plot_tree(tree, area_descptr, name,w):
             all_radii.append(radius)
             if sgmt.is_leaf():
                 leaves_radii.append(radius)               
-            ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius, color = 'k'))#colors[sgmt.label]
+            ax.add_line(Line2D([distal[0], proximal[0]],[distal[1], proximal[1]], linewidth = radius*2., color = 'k'))#colors[sgmt.label]
 
     ax.set_xlim(area_descptr[0][0] - area_descptr[1]*1.5,area_descptr[0][0]+ area_descptr[1]*1.5)
     ax.set_ylim(area_descptr[0][1] - area_descptr[1]*1.5,area_descptr[0][1]+ area_descptr[1]*1.5)
@@ -91,14 +96,14 @@ def plot_trees(trees, area_descptr):
 ############# Karch algo : CCO ####################
 
 timing = True
-store_data = True
+store_data = False
 parallelized = False
 
 if timing:
     debut = time.time()
     print debut
 if store_data:
-    fd = open('./Results/CCO_test.txt','w') # open the result file in write mode
+    fd = open('./Results/CCO_debug_t.txt','w') # open the result file in write mode
     old_stdout = sys.stdout   # store the default system handler to be able to restore it    
     sys.stdout = fd # Now your file is used by print as destination 
     
@@ -117,6 +122,7 @@ if True:
     Q_perf = 8.33e3
     N_term = NTerm
     Q_term = Q_perf / N_term
+    gamma = 3.0
 
     P_drop = 1.33e4 - 7.98e3 # when Nterm = 4 000, the P_drop is 1.33e7 -7.98e6 #when =Nterm=250 :1.33e7 - 8.38e6
     viscosity = 3.6e-3 # 3.6cp = 3.6mPa = 3.6 kg mm-1 s-2 =3.6e-3 Pa.s = 3.6e-9 MPa.s 
@@ -129,24 +135,23 @@ if True:
     N_con_max = 40
     
     # About  convexe perfusion surface : defines a disc surface 
-    area_center = np.array([100.,80.])
-    area_ext_radius = 50.
-    area_int_radius = 15.
+    area_center = np.array([120.,130.])#np.array([100.,80.])#
+    area_ext_radius =100.#50.#
+    area_int_radius =30.#15.#
     area_descptr = [area_center, area_ext_radius, area_int_radius]
     area = np.pi*(area_ext_radius**2 - area_int_radius**2)     
     potential = cco_2df.potential_image(area_center, area_ext_radius,area_int_radius)
     
     #### initialization ##    
     store_cet = []
-    tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, area, np.sqrt(area_ext_radius**2 - area_int_radius**2), potential, area_int_radius)
+    tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, area, np.sqrt(area_ext_radius**2 - area_int_radius**2), potential, area_int_radius, area_center,area_ext_radius, gamma)
      
     # source point : define the root position
-    root_position = np.array([100,130])
+    root_position = np.array([area_center[0],area_center[1]+area_ext_radius])
     root_node = nclass.Node(0,root_position, Q_perf, -1)
     root_node.set_child_0_index(1)
     root_node.set_label(0)
     tree.add_node(root_node)    
-    
     #first segment end: randomly picked inside perfusion surface
     tree.update_length_factor()
     first_node_position = tree.first_segmt_end()
@@ -156,10 +161,13 @@ if True:
     tree.update_flow()
     tree.update_length_factor()
     tree.depthfirst_resistances(0)        
-    
+
+    count_extend_neighb_research = np.zeros(3)
+    counter = np.zeros(6)
+    dead_end_counter = 0
+    d_tresh_factor = 1
     while tree.get_k_term() < N_term: 
-        
-        success, new_child_location, d_tresh = tree.get_new_location(area_descptr, N_term)
+        success, new_child_location, d_tresh = tree.get_new_location( N_term, d_tresh_factor)
         if (success == False):
             print "impossible to satisfy distance criteria", "d_tresh", d_tresh
             break   
@@ -179,19 +187,48 @@ if True:
         args = [[tree, neighbors[i],new_child_location] for i in range (len(neighbors))]
 
         #process all neighbors connection test batch by batch
+        count_extend_neighb_research[0] = count_extend_neighb_research[0] + 1
+
         if parallelized == True:
             while (len(cet) < N_con) and (len(cet) < len(neighbors)):           
                 end_lim = len(cet) + process_nb if (len(cet) + process_nb < len(neighbors)) else len(neighbors)            
                 pool = Pool(processes =  process_nb)               
-                res = pool.map(cco_2df.test_connection_list,args[len(cet): end_lim])            
-                cet = cet + res
+                res = pool.map(cco_2df.test_connection_list,args[len(cet): end_lim])    
+                cet = cet + [res[0][1:]]
+                code= res[0][0]
+                counter[0]= counter[0]+1
+                if code>0:
+                    if code>2:
+                        counter[1] = counter[1]+1
+                        counter[2] = counter[2]+ code
+                    if code==2:
+                        counter[3] = counter[3]+1
+                    if code==1:
+                        counter[3] = counter[3]+1
+                        counter[4] = counter[4]+1
+                else:
+                    counter[5]=counter[5]+1
                 pool.close()
         else:
             for n_index in range(len(neighbors)):
                 tree_copy = copy.deepcopy(tree)
-                cet[n_index] = tree_copy.test_connection(neighbors[n_index], new_child_location)
+                res= tree_copy.test_connection(neighbors[n_index], new_child_location)
+                cet[n_index] = res[1:]
+                counter[0]= counter[0]+1
+                if res[0]>0:
+                    if res[0]>2:
+                        counter[1] = counter[1]+1
+                        counter[2] = counter[2]+ res[0]
+                    if res[0]==2:
+                        counter[3] = counter[3]+1
+                    if res[0]==1:
+                        counter[3] = counter[3]+1
+                        counter[4] = counter[4]+1
+                else:
+                    counter[5]=counter[5]+1
 
         cet_filtered = filter(None,cet)
+        #print "cet_filtered", cet_filtered
         cet_values = np.array(cet_filtered, dtype_r)
         
         #if there is a candidate that converges
@@ -202,35 +239,7 @@ if True:
             adding_location = True
             added_location.append(cet_final.tolist()[1:])
 
-        # test extra neighbors if no connection candidate has fullfilled constraints
-        else: 
-            if len(tree.nodes) > N_con:  # if there are at least N_con neighbors there might be extra neighbors to test with
-            	   #print "testing extra"
-                test_N_con_max = False
-                neighbors = tree.find_neighbors(new_child_location, N_con_max)
-                extra_neighbs = neighbors[N_con:N_con_max]
-                argsb = [[tree, extra_neighbs[i],new_child_location] for i in range (len(extra_neighbs))]
-                #process all neighbors connection test batch by batch
-                if parallelized == True:
-                    while (len(cet) < N_con_max) and (len(cet) < N_con + len(extra_neighbs)):
-                        end_lim = (len(cet) + process_nb - N_con) if (len(cet) + process_nb - N_con < len(extra_neighbs)) else len(extra_neighbs)  
-                        poolb = Pool(processes =  process_nb)               
-                        res = poolb.map(cco_2df.test_connection_list,argsb[len(cet) - N_con: end_lim]) 
-                        cet = cet + res 
-                        poolb.close()
-                else: 
-                    for n_index in range(len(extra_neighbs)):
-                        tree_copy = copy.deepcopy(tree)
-                        cet[N_con + n_index] = tree_copy.test_connection(extra_neighbs[n_index], new_child_location)
-                cet_filtered = filter(None,cet)
-                cet_values = np.array(cet_filtered, dtype_r)
-                if (np.sum(cet_values['convgce']) > 1) or (np.sum(cet_values['convgce']) > 0 and tree.get_k_term() == 1):
-                    cet_values = np.array(cet_filtered, dtype_r)
-                    cet_sel = cet_values[cet_values['convgce']>0]
-                    cet_sorted = np.sort(cet_sel, order = "volume")
-                    cet_final=cet_sorted[0]
-                    adding_location = True
-                    added_location.append(cet_final.tolist()[1:])
+
                     
         if (adding_location): # optimal connection found!
             store_cet.append(filter(None,cet))
@@ -238,23 +247,43 @@ if True:
             ante_tree = copy.deepcopy(tree)
             
             if (tree.add_connection(opt[2], new_child_location, opt[1][1], opt[1][0])):
-                print "k termmmmmmmmmmmmmmmmmmmmmmmmmm is now ", tree.get_k_term()
+                print "k termmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm is now ", tree.get_k_term()
                 kterm=tree.get_k_term()
 
-                if tree.get_k_term() ==50:
-#                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_f%i_s%i_30" %(NTerm,kterm,fac,seed),fac)
-                    break          
+#                if kterm % 10 == 0:
+#                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_s%i_41d" %(NTerm,kterm,seed),potential)
+                #if kterm >600:
+                if kterm%500 == 0:
+                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_s%i_t" %(NTerm,kterm,seed),potential) 
+#                if kterm == 600:
+#                    print "over 600"
+                if kterm == 5:
+                    break  
+
             else:
                 print "failed to add connection on tree"
         else:
 
-            print "ktemmmmmmmmmmmmmmmmmmmmmmmmmmmmmm", tree.get_k_term()
+            print "ktemmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm", tree.get_k_term()
             print "location doesn't provide an optimal connection, testing new location"
+            dead_end_counter = dead_end_counter + 1
+            if dead_end_counter == 50:
+                dead_end_counter = 0
+                d_tresh_factor = 0.8
+                print "dead end: decrease d_tresh of 20% to look for new location"
 
         #keep going until reach Nterm!
 
-    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_31" %(tree.get_k_term(),seed), potential)
-
+    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_t" %(tree.get_k_term(),seed), potential)
+    pickle.dump(tree, open("./Results/treetNt%i_s%i_t.p"%(tree.get_k_term(),seed), "wb"))
+    #print "number of total neighbor research", count_extend_neighb_research[0]
+    #print "number of extended neihbor research",count_extend_neighb_research[1], "successfull ones", count_extend_neighb_research[2]
+    print "number of connection tested", counter[0] 
+    print "number of connection tested with crossing test iterativ sucessfull", counter[1]
+    print "number of connection tested with crossing test iterativ failing", counter[5]
+    print "total number of crossing test for successfull tests in iterativ method", counter[2]
+    print "number of connection tested at the end with concavity", counter[3]
+    print "number of connection testedat the end with concavity positiv", counter[4]
 
 
 if store_data:
