@@ -642,7 +642,7 @@ class Tree:
         initial_tree_vol = self.volume() * 10.
         previous_result = [[0.,0.], [0.,0.]]            
         lengths = kami.calculate_segment_lengths(c0,c1,c2,x,y,self.length_factor)
-        length_tol = 0.15*self.max_curv_rad*self.length_factor
+        length_tol = 0.20*self.max_curv_rad*self.length_factor
         if (lengths[0] < length_tol) and (lengths[1] < length_tol) and (lengths[2] < length_tol):
             print "reaching boundary condition for concavity crossing test at node", self.get_k_term(),"with length_tol", length_tol
             code=2            
