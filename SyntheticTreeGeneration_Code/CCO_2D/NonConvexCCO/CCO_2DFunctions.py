@@ -130,8 +130,8 @@ def first_segmt_end(area, area_descptr):
 #######################################################
 
 def test_connection_list(list_input):
-    copy_tree = copy.deepcopy(list_input[0])
-    return copy_tree.test_connection(list_input[1], list_input[2])
+    #copy_tree = copy.deepcopy(list_input[0])
+    return list_input[0].test_connection(list_input[1], list_input[2])
 
 
 #########################################################

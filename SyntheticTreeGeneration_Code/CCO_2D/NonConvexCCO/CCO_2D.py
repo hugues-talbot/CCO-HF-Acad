@@ -97,7 +97,7 @@ def plot_trees(trees, area_descptr):
 
 timing = True
 store_data = False
-parallelized = False
+parallelized = True
 
 if timing:
     debut = time.time()
@@ -211,8 +211,8 @@ if True:
                 pool.close()
         else:
             for n_index in range(len(neighbors)):
-                tree_copy = copy.deepcopy(tree)
-                res= tree_copy.test_connection(neighbors[n_index], new_child_location)
+                #tree_copy = copy.deepcopy(tree)
+                res= tree.test_connection(neighbors[n_index], new_child_location)
                 cet[n_index] = res[1:]
                 counter[0]= counter[0]+1
                 if res[0]>0:
@@ -254,11 +254,11 @@ if True:
 #                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_s%i_41d" %(NTerm,kterm,seed),potential)
                 #if kterm >600:
                 if kterm%500 == 0:
-                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_s%i_t" %(NTerm,kterm,seed),potential) 
+                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_s%i_bound020" %(NTerm,kterm,seed),potential) 
 #                if kterm == 600:
 #                    print "over 600"
-                if kterm == 5:
-                    break  
+#                if kterm == 5:
+#                    break  
 
             else:
                 print "failed to add connection on tree"
@@ -274,10 +274,20 @@ if True:
 
         #keep going until reach Nterm!
 
-    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_t" %(tree.get_k_term(),seed), potential)
-    pickle.dump(tree, open("./Results/treetNt%i_s%i_t.p"%(tree.get_k_term(),seed), "wb"))
+    plot_tree(tree, area_descptr, "./Results/tree_Nt%i_s%i_bound020" %(tree.get_k_term(),seed), potential)
+    pickle.dump(tree, open("./Results/treetNt%i_s%i__bound020.p"%(tree.get_k_term(),seed), "wb"))
     #print "number of total neighbor research", count_extend_neighb_research[0]
     #print "number of extended neihbor research",count_extend_neighb_research[1], "successfull ones", count_extend_neighb_research[2]
+    outfilepath = "./Results/StatsNt%i_s%i_bound020.txt"%(tree.get_k_term(),seed)
+    outfile = open(outfilepath,"w")
+    outfile.write("tree of crossing test bound 0.20")
+    outfile.write( "number of connection tested "+ str(counter[0])  + "\n")
+    outfile.write( "number of connection tested with crossing test iterativ sucessfull "+ str(counter[1])  + "\n")
+    outfile.write( "number of connection tested with crossing test iterativ failing "+ str(counter[5])  + "\n")
+    outfile.write( "total number of crossing test for successfull tests in iterativ method "+ str(counter[2])  + "\n")
+    outfile.write( "number of connection tested at the end with concavity "+ str(counter[3])  + "\n")
+    outfile.write("number of connection testedat the end with concavity positiv" + str(counter[4]))
+    outfile.close()
     print "number of connection tested", counter[0] 
     print "number of connection tested with crossing test iterativ sucessfull", counter[1]
     print "number of connection tested with crossing test iterativ failing", counter[5]
