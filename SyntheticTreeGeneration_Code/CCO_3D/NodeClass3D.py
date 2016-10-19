@@ -282,6 +282,7 @@ class Tree:
         d_tresh, r_pk = cco_3df.calculate_d_tresh_3D(self.r_supp, k_term)
         length_factor = r_pk /  self.final_perf_radius
         d_tresh_factorized = d_tresh / length_factor *d_tresh_factor#d_tresh is calculated in the current k_world dimensions
+        initial_d_tresh = d_tresh_factorized     
         meet_criteria = False
         ind = 0
         max_itr= 50
@@ -294,7 +295,7 @@ class Tree:
             ind = ind + 1
             if ind == max_itr:
                 d_tresh_factorized = 0.9*d_tresh_factorized
-                print "using new value: ", d_tresh_factorized
+                print "using new value d_tresh: ", d_tresh_factorized, "initial one is", initial_d_tresh
                 ind = 0
         return False, np.array([0.,0.]), d_tresh_factorized
         
@@ -304,7 +305,9 @@ class Tree:
         first_node_coord = self.nodes[0].coord
         while inside_area == False :    
             position = cco_3df.random_location(self.center, self.real_final_radius)
+            #print "position",position
             if (self.inside_perf_territory(position)):
+                #print "insid perf"
                 n = self.calculate_sampling(self.max_curv_rad, position, first_node_coord)
                 if self.sample_and_test(position, first_node_coord, n) == True:
                     return position
@@ -504,7 +507,7 @@ class Tree:
     def newton_step(self, point, target_line_vect, target_w, fac):
         #print "vec length",self.vec_length(target_line_vect)
         p_gdt = np.array([self.get_gx(point), self.get_gy(point), self.get_gz(point)])
-        print "gdt", p_gdt
+        #print "gdt", p_gdt
         norm_line_vect = target_line_vect * 1./ self.vec_length(target_line_vect)  
         #dot product projected along target line vector
         vect_proj_length = np.sum(p_gdt*target_line_vect) * 1./self.vec_length(target_line_vect) 
@@ -525,10 +528,10 @@ class Tree:
 
     def newton_algo(self, point, target_line_vect, target_w, eps, count, max_iter, fac):
         proj_pt = self.newton_step(point, target_line_vect, target_w, fac)
-        print "proj point", proj_pt
+        #print "proj point", proj_pt
         if self.inside_perf_territory(proj_pt):            
             w_proj = self.get_w(proj_pt)
-            print "w_proj", w_proj, "target", target_w
+            #print "w_proj", w_proj, "target", target_w
             if w_proj < target_w + eps and w_proj > target_w - eps:
                 print "success", proj_pt
                 return proj_pt

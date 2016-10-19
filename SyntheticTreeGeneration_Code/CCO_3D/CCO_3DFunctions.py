@@ -115,6 +115,7 @@ def calculate_d_tresh_3D(r_supp, k_term):
 def random_location(center, radius):
     max_border = np.max(center+radius)+3
     #print "mqx border", max_border
+    #print "max border", max_border
     position = np.random.rand(3)*max_border
     #print "rdm position", position
     return position
