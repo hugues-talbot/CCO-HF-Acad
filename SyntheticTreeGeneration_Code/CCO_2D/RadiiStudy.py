@@ -68,7 +68,7 @@ if False:
     plt.savefig("./Results/DiamAlongBif_Nt250_over10trees_M211_PS_seeds%ito%i.png" %(seed_start,seed_end))
     plt.show()
     
-if False:
+if True:
     #one plot of one model
     seed_index= 35
     radii_along_bif = np.load("./Results/radii_Nt250_s%i_M301_PK.npy" %(seed_index))
@@ -84,12 +84,12 @@ if False:
     plt.title("Diameter along bifurcation levels (mm) in a single generated tree with 250Nterm")
     plt.xlabel("Bifurcation level")
     plt.ylabel("Diameter (mm)")
-    plt.xlim(-1, max_level +1 )
+    plt.xlim(-1, len(radii_along_bif) +1 )
     plt.ylim(0,3)
-    plt.savefig("./Results/DiamAlongBif_Nt250_over10trees_M255_PK_seeds%ionly.png" %(seed_index))
+    plt.savefig("./Results/DiamAlongBif_Nt250_over10trees_M300_PK_seeds%ionly.png" %(seed_index))
     plt.show()
 
-if True:
+if False:
     # several plots with mean over 10 models, gamma varying
     seed_start = 33
     seed_end = 43
