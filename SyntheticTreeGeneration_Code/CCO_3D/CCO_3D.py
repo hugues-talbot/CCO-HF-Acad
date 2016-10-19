@@ -165,9 +165,11 @@ if True:
     N_con = 20
 
     # About  convexe perfusion surface : defines a disc surface 
-    v_center = np.array([80.,80.,80.])#np.array([14.,14., 14.])#np.array([80.,80.,80.])#
-    v_ext_radius =50.#10.#50#
-    v_int_radius =15.#4.#15#
+    v_center = np.array([55.,55.,55.])#np.array([14.,14., 14.])#np.array([80.,80.,80.])#np.array([80.,80.,80.])#
+    v_ext_radius =45#10.#50.#50#
+    v_int_radius =15#4.#15.#15#
+    #in schreiner non convex cco: the total ellispoid volume is 48cm3
+    #to use a similar volume in sphere we should take: r_ext = 45mm and r_int =35mm (so center = 55,55,55) 
     v_descptr = [v_center, v_ext_radius, v_int_radius]
     vperf = (4./3.) * np.pi*(v_ext_radius**3 - v_int_radius**3)
     filename = "potential_rext%i_rint_%i" %(int(v_ext_radius), int(v_int_radius))
@@ -176,6 +178,7 @@ if True:
         filename = "potential_half_rext%i_rint_%i" %(int(v_ext_radius), int(v_int_radius))
     filepath = "./Results/"+filename+".npy"
     if os.path.isfile(filepath):
+        print "loading potential from numpy file %s" %filepath
         potential = np.load(filepath)
     else:
         potential = cco_3df.potential_image(v_center, v_ext_radius,v_int_radius,half)
@@ -186,13 +189,13 @@ if True:
     store_cet = []
     tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, vperf, np.power((v_ext_radius**3 - v_int_radius**3),1/3.), potential, v_int_radius, v_center, v_ext_radius, gamma)
     if half:      
-        tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, vperf, np.power((v_ext_radius**3 - v_int_radius**3)/2.,1/3.), potential, v_int_radius, v_center, v_ext_radius/2., gamma)
+        tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, vperf, np.power((v_ext_radius**3 - v_int_radius**3)/2.,1/3.), potential, v_int_radius, v_center, v_ext_radius, gamma) #v_ext_radius/2.?
      
     # source point : define the root position
     root_position = np.array([v_center[0]+v_ext_radius,v_center[1], v_center[2]])
     #root_position = np.array([v_center[0]-v_ext_radius+1,v_center[1]-1, v_center[2]-1])
     if half:
-        root_position = np.array([v_center[0]+v_ext_radius,v_center[1], v_center[2]])
+        root_position = np.array([v_center[0],v_center[1], v_center[2]+v_ext_radius])
     print root_position
     if (tree.inside_perf_territory(root_position)==True):
         print "root inside perf"
@@ -215,7 +218,6 @@ if True:
         dead_end_counter = 0
         d_tresh_factor = 1
         while tree.get_k_term() < N_term: 
-            break
             success, new_child_location, d_tresh = tree.get_new_location(N_term, d_tresh_factor)
             if (success == False):
                 print "impossible to satisfy distance criteria", "d_tresh", d_tresh
@@ -296,31 +298,50 @@ if True:
                 opt = added_location[-1]
                
                 if (tree.add_connection(opt[3], new_child_location, opt[2], opt[1])):
-                    print "k termmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm is now ", tree.get_k_term()
+                    print "k termmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm is now ", tree.get_k_term()
                     kterm=tree.get_k_term()
-                    if kterm%100 == 0:
+                    d_tresh_factor = 1.
+                    if kterm%10 == 0:
                         #plot_tree(tree, v_descptr, )
-                        name ="./Results/InterTree_Nt%i_kt%i_s%i" %(NTerm,kterm,seed)
+                        name ="./Results/InterTree_Nt%i_kt%i_s%i_half_thick" %(NTerm,kterm,seed)
                         pickle.dump(tree, open(name + ".p", "wb"))
-                    if kterm == 5:
-                        break
+                    if kterm%50 == 0:
+                        outfilepath = "./Results/StatsNt%i_s%i_thick.txt"%(tree.get_k_term(),seed)
+                        outfile = open(outfilepath,"w")
+                        outfile.write("tree of crossing test bound 0.20")
+                        outfile.write( "number of connection tested "+ str(counter[0])  + "\n")
+                        outfile.write( "number of connection tested with crossing test iterativ sucessfull "+ str(counter[1])  + "\n")
+                        outfile.write( "number of connection tested with crossing test iterativ failing "+ str(counter[5])  + "\n")
+                        outfile.write( "total number of crossing test for successfull tests in iterativ method "+ str(counter[2])  + "\n")
+                        outfile.write( "number of connection tested at the end with concavity "+ str(counter[3])  + "\n")
+                        outfile.write("number of connection testedat the end with concavity positiv" + str(counter[4]))
+                        outfile.close()
+#                    if kterm == 5:
+#                        break
                 else:
                     print "failed to add connection on tree"
             else:              
-                print "ktemmmmmmmmmmmmmmmmmmmmm", tree.get_k_term()
+                print "ktemmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm", tree.get_k_term()
                 print "location doesn't provide an optimal connection, testing new location"
                 dead_end_counter = dead_end_counter +1
-                if dead_end_counter == 50:
+                print "dead_end_counter = ", dead_end_counter
+                if dead_end_counter == 10:
                     dead_end_counter = 0
-                    d_tresh_factor = 0.8
-                    print "dead end: decrease d_tresh of 20% to look for new location"
+                    d_tresh_factor = d_tresh_factor *0.8
+                    print "dead end: decrease d_tresh of 20% to look for new location", d_tresh_factor
 
             #keep going until reach Nterm!
         
         
-        name = "./Results/tree_Nt%i_kt%i_s%i" %(NTerm, tree.get_k_term(),seed)
+        name = "./Results/tree_Nt%i_kt%i_s%i_half_thick" %(NTerm, tree.get_k_term(),seed)
         if half:
-            name = "./Results/tree_Nt%i_kt%i_s%i_half" %(NTerm, tree.get_k_term(),seed)
+            name = "./Results/tree_Nt%i_kt%i_s%i_half_thick" %(NTerm, tree.get_k_term(),seed)
+        print "number of connection tested", counter[0] 
+        print "number of connection tested with crossing test iterativ sucessfull", counter[1]
+        print "number of connection tested with crossing test iterativ failing", counter[5]
+        print "total number of crossing test for successfull tests in iterativ method", counter[2]
+        print "number of connection tested at the end with concavity", counter[3]
+        print "number of connection testedat the end with concavity positiv", counter[4]
         #plot_tree(tree, v_descptr, name)
         pickle.dump(tree, open(name + ".p", "wb"))
 

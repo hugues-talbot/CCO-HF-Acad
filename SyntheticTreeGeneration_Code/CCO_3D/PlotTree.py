@@ -36,7 +36,7 @@ def plot_tree(tree, name, half):
     center = tree.center
     r_ext = tree.real_final_radius
     if half:
-        r_ext = tree.real_final_radius*2.
+        r_ext = tree.real_final_radius#*2. if root at border no need to multiply by 2
     r_int = tree.max_curv_rad
     x = center[0]+ r_ext * np.outer(np.cos(u), np.sin(v))
     y = center[1]+ r_ext * np.outer(np.sin(u), np.sin(v))
@@ -74,9 +74,9 @@ def plot_tree(tree, name, half):
     colors.extend([(1.0,1.0,1.0)])
     cmap =mpl.colors.ListedColormap(colors) #plt.cm.jet
     
-    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]-1,:,:]),shade=False,alpha=0.2)
-    Z =  (center[2]+1)*np.ones(X.shape)
-    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]+1,:,:]),shade=False,alpha=0.2)
+#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]-1,:,:]),shade=False,alpha=0.2)
+#    Z =  (center[2]+1)*np.ones(X.shape)
+#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]+1,:,:]),shade=False,alpha=0.2)
 
     
     #setting figure so that we get linewidth in data unit
@@ -118,11 +118,8 @@ def plot_tree(tree, name, half):
     #plt.savefig(name+".pdf")
     plt.show()
 
-nterm = 10
+nterm = 2000
 seed=42
-v_center = np.array([14.,14., 14.])#np.array([80.,80.,80.])#
-v_ext_radius =10.#50#
-v_int_radius =4.#15#
-v_descptr = [v_center, v_ext_radius, v_int_radius]
-tree = pickle.load( open( "./Results/tree_Nt%i_s%i_half.p"% (nterm, seed), "rb" ) )
+kterm=40
+tree = pickle.load( open( "./Results/InterTree_Nt%i_kt%i_s%i_half_nr.p"% (nterm,kterm, seed), "rb" ) )
 plot_tree(tree,"figname", True)
