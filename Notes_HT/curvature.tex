@@ -12,7 +12,7 @@
 \newcommand{\scal}[2]{\ensuremath{\langle #1 , #2 \rangle}}
 
 \title{Distance, curvature }
-\author{Hugues Talbot}
+\author{Hugues Talbot and Clara Jaquet}
 
 \begin{document}
 \maketitle
@@ -20,7 +20,7 @@
 	
 	\section{Normals and curvature}
 	
-	There is a deep link between the evolution of the normal vector along a curve and its curvature .
+	There is a deep link between the evolution of the normal vector along a curve and the curvature itself.
 	
 	Let $C$ be a planar curve. To define the curvature at a point, we can consider
 	the case of a straight line. We can admit that in this case the curvature is zero along the line. For a portion of a circle, the curvature is defined to be inversely proportional to the radius of the circle:
@@ -35,7 +35,7 @@
 			\caption{The notion of an osculating circle (best local approximation) defines the curvature as the inverse of the radius of the circle.\label{fig:oscul}}
 		\end{figure}
 	
-	More precisely, for any curve, we can locally approximate a sufficiently regular curve (${\cal C}^2$ is enough) at a point by a circle that best approximates it locally (see Fig.~\ref{fig:oscul}. This circle is tangent to $C$ and is called an {\em osculating circle}. The radius of this circle defines the curvature.
+	More precisely, for any curve, we can locally approximate a sufficiently regular curve (${\cal C}^2$ is enough) at a point by a circle that best approximates it locally (see Fig.~\ref{fig:oscul}). This circle is tangent to $C$ and is called an {\em osculating circle}. The radius of this circle defines the curvature.
 	
 
 	
@@ -140,23 +140,23 @@
 Here we assume a non-convex territory with two nested surfaces as borders. Every point $p$ of the territory is associated with a value $\omega(p)$ so that $\omega(p) = 0$ if $p$ belongs to the inner surface, and $\omega(p) = 1$ on the outer surface. Numerically, $\omega$ can for example be computed from solving the electrostatic Poisson equation, i.e. a random walker. Our formulations and illustrations are in 2D but carry over to 3D without significant changes.
 
 
-Let $[p_1p_2]$ be the segment defined by the points $\{p_1, p_2\}$. We want to define how to sample this segment, so that we can conclude with high confidence whether or not the whole segment is located inside a non-convex territory. The number of samples ($n + 1$), shall be optimized in order to avoid too many tests (minimize computation time) but also to guarantee the result within a reasonable tolerance (maximize test accuracy).
+Let $[p_1p_2]$ be the segment defined by the points $\{p_1, p_2\}$. We want to define how to sample this segment, so that we can conclude with high confidence whether or not the whole segment is located inside a non-convex territory. The number of samples ($k + 1$) shall be optimized in order to avoid too many tests (minimize computation time) but also to guarantee the result within a reasonable tolerance (maximize test accuracy).
 
 	\subsection{First approach} \label{firstaproach}
 
-We can estimate $n$, the number of samples along the segment, from:
+We can estimate $k$, the number of samples along the segment, from:
 \begin{equation}
-n \propto \frac{|p_2 - p_1|}{R}
+k \propto \frac{|p_2 - p_1|}{R}
 \end{equation}
 $R$ is an approximation of the local radius of curvature along the segment by estimating the divergence at each point $p_1$ and $p_2$, called $\kappa_1$ and $\kappa_2$ respectively :
 \begin{equation}
 R = \max(|\frac{1}{\kappa_1}|, \frac{1}{|\kappa_2|})
 \end{equation} 
-The figure \ref{example} illustrates the relationship between $D = |p_2 - p_1|$, $R_1= \frac{1}{|\kappa_1|}$, $R_2=\frac{1}{|\kappa_2|}$ and $n$. 
+The figure \ref{example} illustrates the relationship between $D = |p_2 - p_1|$, $R_1= \frac{1}{|\kappa_1|}$, $R_2=\frac{1}{|\kappa_2|}$ and $k$. 
 \begin{figure}[h!]
 \centering
 \includegraphics[width=0.5\textwidth]{Drawings/CurvatureTestExample.png}
-\caption{When $D$ becomes larger relatively to $\max(|R_1, R_2|)$, the value of $n$ is also higher to detect if the segment crosses the perfusion territory.}
+\caption{When $D$ becomes larger relatively to $\max(|R_1, R_2|)$, the value of $k$ is also higher to detect if the segment crosses the perfusion territory.}
 \label{example}
 \end{figure}
 
@@ -198,7 +198,7 @@ Then we select:
 \end{equation}
 to obtain :
 \begin{equation}
-n = \Bigl\lceil \frac{1}{\lambda} \Bigr\rceil,
+k = \Bigl\lceil \frac{1}{\lambda} \Bigr\rceil,
 \end{equation}
 where $\lceil.\rceil$ denotes the ceiling operator, i.e. the function that maps a real number to the smallest integer that is larger or equal to it.
 
@@ -212,35 +212,35 @@ If  $\lambda < 0$ or $\lambda > 1$, it means the line $(p_1p_2)$ crosses the con
 \end{figure}
 Also, this method would fail for any case where the dot product $\scal{\nabla \omega(p_1)}{\overset{\rightarrow}{p_1p_2}} \simeq 0$, and in some specific situations such as the figure \ref{spe issue}. Hence we need to define a global boundary:
 \begin{equation}
-n \geq \frac{||\overset{\rightarrow}{p_1p_2}||}{R_{\text{max}}}
+k \geq \frac{||\overset{\rightarrow}{p_1p_2}||}{R_{\text{max}}}
 \end{equation}
 with $R_{\text{max}}$ the maximal curvature radius of both inner and outer surfaces.
 
-Note: if the segmentation is noisy, we might actually measure non-physical very high curvatures, i.e. $R_{max}$ close to zero, hence it is necessary to consider a tolerance $s$ so that 
+Note: if the segmentation is noisy, we might actually measure non-physical very high curvatures, i.e. $R_{max}$ close to zero, hence it is necessary to consider a tolerance $t$ so that 
 \begin{equation}
-R_{max}^* = R_{max} - s
+R_{max}^* = R_{max} - t
 \end{equation}
 
 \begin{figure}[h!]
 			\centering
 			\includegraphics[width=0.25\textwidth]{Drawings/CurvatureTolerance.png}
-			\caption{The maximally inscribed radius and tolerance s define a semi-cord $c$.}
+			\caption{The maximally inscribed radius and tolerance t define a semi-cord $c$.}
 \end{figure}
 
-The semi-cord $c$ defined by $R_{max}^*$ and $s$ is calculated as:
+The semi-cord $c$ defined by $R_{max}^*$ and $t$ is calculated as:
 \begin{equation}
 c = \sqrt{R_{max}^2 - R_{max}^{*2}}
 \end{equation} 
 That can be simplified as:
 \begin{equation}
-c = \sqrt{R_{max}^2 - (R_{max} - s)^2}
+c = \sqrt{R_{max}^2 - (R_{max} - t)^2}
 \end{equation}
 The global boundary follows this tolerance:
 \begin{equation}
-n \geq \frac{||\overset{\rightarrow}{p_1p_2}||}{c}
+k \geq \frac{||\overset{\rightarrow}{p_1p_2}||}{c}
 \end{equation}
 
-We take the largest $n$ between maximal curvature and gradient method. This provides a robust sampling definition considering both local and global informations, see figure \ref{test sampling}.
+We take the largest $k$ between maximal curvature and gradient method. This provides a robust sampling definition considering both local and global informations, see figure \ref{test sampling}.
 \begin{figure}[h!]
 			\label{test sampling}
 			\centering
@@ -325,7 +325,7 @@ d_{\text{proj}} = \min(M_1,M_2)
 
 This distance $d_{\text{proj}}$ is a geometrically meaningful way to sample the segment, so $n$ can be defined as:
 \begin{equation}
-n = \Bigl\lceil\frac{||\gvec{p_1p_2}||}{d_{\text{proj}}}\Bigr\rceil
+k = \Bigl\lceil\frac{||\gvec{p_1p_2}||}{d_{\text{proj}}}\Bigr\rceil
 \end{equation}
 
 These two last methods are expected to be more accurate than the one defined in section~\ref{firstaproach}, because we consider the potential along the segment as well as local and global curvatures and not solely at the tips. It will be interesting to compare these methods.
