@@ -31,8 +31,10 @@ class Forest:
         self.w_pot = w
 
         
-    def create_tree(self, nterm, source_location, q_perf):
+    def create_tree(self, source_location, q_perf):
         tree_index = len(self.trees)
+        nterm = np.ceil(q_perf / self.q_term)
+        print "tree of index", tree_index, "nterm",nterm
         tree = nclass.Tree(tree_index, [], nterm, q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius, self.w_pot, self.max_curv_rad, self.center,self.real_final_radius, self.gamma)        
         root_node = nclass.Node(0,source_location, q_perf, -1)
         root_node.set_child_0_index(1)
@@ -137,7 +139,7 @@ class Forest:
         for tree in self.trees:
             tree.update_volume()
         
-    def test_forest_connection(self, tree_ind, node_index, new_location, debug):       
+    def test_forest_connection(self, tree_ind, node_index, new_location):       
         current_tree = self.trees[tree_ind]
         print "testing neighbor of tree index", tree_ind
         reslt = current_tree.test_connection(node_index, new_location)
@@ -150,14 +152,7 @@ class Forest:
         old_child_coord = old_child_node.coord
         parent_coord = (current_tree.nodes[old_child_node.parent()]).coord
         #need : volume and inputs for intersection test
-        if debug:
-            print "reslt[0]",reslt[0]
-            print "reslt[1]",reslt[1]
-            print "parent_coord", parent_coord
-            print "current_tree_vbolume", current_tree_volume
-            print "new_radii_rescaled",new_radii_rescaled
-            print "beta_and_bif_location", beta_and_bif_location
-            #return False, 0.,[np.zeros(2), np.zeros(2)], tree_ind, node_index, current_tree_volume
+
         if reslt[1]== True:
             no_intersection = True
             for tree in self.trees:

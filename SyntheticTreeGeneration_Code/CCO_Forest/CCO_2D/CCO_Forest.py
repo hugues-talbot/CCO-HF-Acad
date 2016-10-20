@@ -76,7 +76,7 @@ def test_connection_list(list_input):
 
 timing = True
 store_data = False
-parallelized = False
+parallelized = True
 
 if timing:
     debut = time.time()
@@ -125,11 +125,11 @@ if True:
     # source points : define the root positions
     #first tree
     root_position = np.array([area_center[0],area_center[1]+area_ext_radius])
-    first_tree = forest.create_tree(NTerm,root_position, Q_perf*1.5)
+    first_tree = forest.create_tree(root_position, Q_perf*1.5)
     forest.add_tree(first_tree)
     #second tree
     root_position_2 = np.array([area_center[0],area_center[1]-area_ext_radius])
-    second_tree = forest.create_tree(NTerm,root_position_2, Q_perf*0.5)
+    second_tree = forest.create_tree(root_position_2, Q_perf*0.5)
     forest.add_tree(second_tree)
     #first segment
     
@@ -170,45 +170,18 @@ if True:
                 end_lim = len(cet) + process_nb if (len(cet) + process_nb < len(neighbors)) else len(neighbors)            
                 pool = Pool(processes =  process_nb)               
                 res = pool.map(test_connection_list,args[len(cet): end_lim])    
-                cet = cet + [res[0][1:]]
-                code= res[0][0]
-                counter[0]= counter[0]+1
-                if code>0:
-                    if code>2:
-                        counter[1] = counter[1]+1
-                        counter[2] = counter[2]+ code
-                    if code==2:
-                        counter[3] = counter[3]+1
-                    if code==1:
-                        counter[3] = counter[3]+1
-                        counter[4] = counter[4]+1
-                else:
-                    counter[5]=counter[5]+1
+                cet = cet + [res[0]]
+
                 pool.close()
         else:
-            debug = False
+
             for n_index in range(len(neighbors)): 
                 print "testing neighbor ", n_index, " ", neighbors[n_index]
-                if kterm == 4:
-                    debug = True
                     #break
-                res= forest.test_forest_connection(neighbors[n_index][0], neighbors[n_index][1], new_child_location, debug)
+                res= forest.test_forest_connection(neighbors[n_index][0], neighbors[n_index][1], new_child_location)
                 print "res", res  , " kterm ", kterm
                 cet[n_index] = res
 
-
-#                counter[0]= counter[0]+1
-#                if res[0]>0:
-#                    if res[0]>2:
-#                        counter[1] = counter[1]+1
-#                        counter[2] = counter[2]+ res[0]
-#                    if res[0]==2:
-#                        counter[3] = counter[3]+1
-#                    if res[0]==1:
-#                        counter[3] = counter[3]+1
-#                        counter[4] = counter[4]+1
-#                else:
-#                    counter[5]=counter[5]+1
           
         cet_filtered = filter(None,cet)
         #print "cet_filtered", cet_filtered
@@ -235,9 +208,9 @@ if True:
 #                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_s%i_41d" %(NTerm,kterm,seed),potential)
                 #if kterm >600:
                 if kterm%50 == 0:
-                    plot_forest(forest, area_descptr, "./Results/InterForest_Nt%i_kt%i_s%i_qspe" %(forest.n_term,kterm,seed),potential) 
+                    plot_forest(forest, area_descptr, "./Results/InterForest_Nt%i_kt%i_s%i_qspe_corr" %(forest.n_term,kterm,seed),potential) 
                 if kterm%100 == 0:                    
-                    pickle.dump(forest, open("./Results/InterForest_Nt%i_kt_%i_s%i_qspe.p"%(forest.n_term,kterm,seed), "wb"))
+                    pickle.dump(forest, open("./Results/InterForest_Nt%i_kt_%i_s%i_qspe_corr.p"%(forest.n_term,kterm,seed), "wb"))
 #                if kterm == 600:
 #                    print "over 600"
                 if kterm == forest.n_term:
@@ -257,16 +230,9 @@ if True:
 
         #keep going until reach Nterm!
 
-    plot_forest(forest, area_descptr, "./Results/Forest_Nt%i_s%i_qspe" %(forest.get_fk_term(),seed), potential)
-    pickle.dump(forest, open("./Results/Forest_Nt%i_s%i_qspe.p"%(forest.get_fk_term(),seed), "wb"))
-    #print "number of total neighbor research", count_extend_neighb_research[0]
-    #print "number of extended neihbor research",count_extend_neighb_research[1], "successfull ones", count_extend_neighb_research[2]
-#    print "number of connection tested", counter[0] 
-#    print "number of connection tested with crossing test iterativ sucessfull", counter[1]
-#    print "number of connection tested with crossing test iterativ failing", counter[5]
-#    print "total number of crossing test for successfull tests in iterativ method", counter[2]
-#    print "number of connection tested at the end with concavity", counter[3]
-#    print "number of connection testedat the end with concavity positiv", counter[4]
+    plot_forest(forest, area_descptr, "./Results/Forest_Nt%i_s%i_qspe_corr" %(forest.get_fk_term(),seed), potential)
+    pickle.dump(forest, open("./Results/Forest_Nt%i_s%i_qspe_corr.p"%(forest.get_fk_term(),seed), "wb"))
+
 
 
 if store_data:
