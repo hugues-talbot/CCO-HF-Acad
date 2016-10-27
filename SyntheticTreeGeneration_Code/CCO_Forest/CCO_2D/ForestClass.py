@@ -74,22 +74,7 @@ class Forest:
         (self.trees[first_added]).depthfirst_resistances(0)
         (self.trees[first_added]).update_volume()
         self.node_nber = self.node_nber +1        
-        
-#        for tree in self.trees: #actually should better iterate along decreasing tree flow (because d_tresh will decrease with each added segment)
-#            current_index = tree.tree_index            
-#            if current_index != first_added:            
-#                location_found = False
-#                while location_found == False:          
-#                    result = self.get_new_location(1.,True) #1 is dtreshfactor
-#                    location_found = result[0]
-#                secund_node = nclass.Node(1, result[1], (self.trees[current_index]).final_q_perf, 0)
-#                (self.trees[current_index]).add_node(secund_node)
-#                (self.trees[current_index]).update_flow()
-#                self.update_forest_length_factor()
-#                self.update_forest_tree_resistances(indexes, True)
-#                self.update_forest_tree_volumes(indexes, True)
-#                self.node_nber = self.node_nber +1
-#                indexes.append(current_index)               
+                   
                 
         for tree in self.trees:
             current_index = tree.tree_index            
@@ -105,17 +90,25 @@ class Forest:
                 self.update_forest_tree_resistances(indexes, True)
                 self.update_forest_tree_volumes(indexes, True)
                 self.node_nber = self.node_nber +1
-                indexes.append(current_index)               
+                indexes.append(current_index)  
                 
+        self.update_activation()
+                
+                
+    def update_activation(self):
+        #collect biggest tree flow 
+        first_added = 0
+        biggest_flow = self.trees[first_added].final_q_perf
+        current_flow = self.trees[first_added].get_q_perf_k()
+        for tree in self.trees:
+            if tree.activ == False:
+                ratio = biggest_flow / tree.final_q_perf
+                print "tree index",tree.tree_index
+                print "currentflow", current_flow, "ratio",ratio, "tree.get_q_perf_k", tree.get_q_perf_k() 
+                if tree.get_q_perf_k() == current_flow / ratio:
+                    tree.set_activity(True)
         
-#    tree.depthfirst_resistances(0)        
-#        for tree in self.trees:
-#             end = tree.first_segmt_end
-#             for other_tree in self.trees:
-#                 if other_tree.tree_index != tree.tree_index:
-#                     if other_tree
-#                     if (cco_2df.no_overlap(i.coord, parent_i.coord, old_child_location, branching_location, radius_i_rescaled, new_branches_radii_rescaled[1]) ==  False):
-     
+    
     def new_pos_inside_sqr(self,source_loc, dist_max):
             inf_dist_max = False
             new_pos =np.zeros(2)
@@ -244,7 +237,8 @@ class Forest:
         distances=[]
         dist_type = [("distance", float), ("tree_index", int), ("node_index", int)]
         for j in range(len(self.trees)):
-            distances = distances + (self.trees[j]).find_neighbors(location, n)          
+            if self.trees[j].activ: #look only for neighbors of activ trees
+                distances = distances + (self.trees[j]).find_neighbors(location, n)          
         threshold = n if (self.node_nber - len(self.trees)> n) else len(distances)
         print "node_nber", self.node_nber, "Ncon ", n, "len(distances) ", len(distances)
         print "threshold", threshold
@@ -260,7 +254,7 @@ class Forest:
     def update_forest_length_factor(self):       
         r_pk = np.sqrt((self.get_fk_term() + 1)* self.r_supp**2) #correspond to the plain perfusion territory (excluding concavity surface)
         print "traditional r_pk",r_pk
-        sum_microboxes = self.r_supp**2 #use forest r_supp: average value to get homogeneous distribution        
+#        sum_microboxes = self.r_supp**2 #use forest r_supp: average value to get homogeneous distribution        
 #        for tree in self.trees:
 #            sum_microboxes = sum_microboxes + tree.get_k_term() * tree.r_supp            
 #        new_r_pk = np.sqrt(sum_microboxes)
@@ -332,11 +326,12 @@ class Forest:
             self.update_forest_tree_resistances(useless,False) 
             self.update_forest_tree_volumes(useless,False)
             self.node_nber = self.node_nber +2
+            self.update_activation()
             return True
         else:
             return False
             
     def printing(self):
         for tree in self.trees:
-            print "tree index", tree.tree_index
+            print "tree index", tree.tree_index, "activity", tree.activ
             tree.printing_full()

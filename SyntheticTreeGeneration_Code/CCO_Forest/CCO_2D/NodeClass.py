@@ -283,6 +283,16 @@ class Tree:
                 dist = cco_2df.segment_distance(sgmt.coord, (self.get_node(sgmt.parent())).coord, location)
                 if (dist < d_tresh):
                     return False
+            else:
+                if sources == False: #when looking for first segment of each source, we don't need to consider this because there is already the max_dist criterion
+                    if self.activ == False:
+                        if sgmt.parent() == -1:
+                            dist = self.vec_length(sgmt.coord-location)
+                            print "dist to other source", dist
+                            if (dist < d_tresh):
+                                print "too close of source location"
+                                return False
+                        
 #                if sources:
 #                    if sgmt.index == 0:
 #                        dist = self.vec_length(sgmt.coord-location)
