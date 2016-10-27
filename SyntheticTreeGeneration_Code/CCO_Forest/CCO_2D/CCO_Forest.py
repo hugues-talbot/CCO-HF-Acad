@@ -17,7 +17,8 @@ import sys  # Need to have acces to sys.stdout
 import time
 from multiprocessing import Pool#, TimeoutError
 import pickle
-
+import os
+import os.path
 
 
 ############# Visualisation tools ####################
@@ -112,35 +113,53 @@ if True:
     # About  convexe perfusion surface : defines a disc surface 
     area_center = np.array([120.,130.])#np.array([100.,80.])#
     area_ext_radius =100.#50.#
-    area_int_radius =30.#15.#
+    area_int_radius =25#15.#
     area_descptr = [area_center, area_ext_radius, area_int_radius]
     area = np.pi*(area_ext_radius**2 - area_int_radius**2)     
-    potential = cco_2df.potential_image(area_center, area_ext_radius,area_int_radius)
+    #potential = cco_2df.potential_image(area_center, area_ext_radius,area_int_radius)
+
+
+    filename = "potential_rext%i_rint_%i" %(int(area_ext_radius), int(area_int_radius))
+    filepath = "./Results/"+filename+".npy"
+    if os.path.isfile(filepath):
+        print "loading potential from numpy file %s" %filepath
+        potential = np.load(filepath)
+    else:
+        potential = cco_2df.potential_image(area_center, area_ext_radius,area_int_radius)
+        np.save("./Results/"+filename, potential)    
+    
+    
     
     #### initialization ##    
     store_cet = []
     #forest
     forest = fclass.Forest([],NTerm*2,Q_perf*2,P_drop,viscosity,area,np.sqrt(area_ext_radius**2 - area_int_radius**2),potential,area_int_radius,area_center,area_ext_radius,gamma)
-    
+    print "forest created"
     # source points : define the root positions
     #first tree
     root_position = np.array([area_center[0],area_center[1]+area_ext_radius])
-    first_tree = forest.create_tree(root_position, Q_perf*1.5)
+    first_tree = forest.create_tree(root_position, forest.final_q_perf  * 0.75)#)
     forest.add_tree(first_tree)
     #second tree
     root_position_2 = np.array([area_center[0],area_center[1]-area_ext_radius])
-    second_tree = forest.create_tree(root_position_2, Q_perf*0.5)
+    second_tree = forest.create_tree(root_position_2, forest.final_q_perf  * 0.25)#2. / 3.)
     forest.add_tree(second_tree)
-    #first segment
+    #third tree
+#    root_position_3 = np.array([area_center[0]-area_ext_radius,area_center[1]])
+#    third_tree = forest.create_tree(root_position_3,forest.final_q_perf * 2. / 3.)
+#    forest.add_tree(third_tree)
+    #first segment of each source
     
+    print "sources added"
     forest.first_segment_end()
-    
+    print "first segmt added"    
 
     count_extend_neighb_research = np.zeros(3)
     counter = np.zeros(6)
     dead_end_counter = 0
     d_tresh_factor = 1
     while forest.get_fk_term() < N_term*2:
+
         kterm = forest.get_fk_term()
         success, new_child_location, d_tresh = forest.get_new_location( d_tresh_factor)
         if (success == False):
@@ -195,7 +214,7 @@ if True:
             adding_location = True
             added_location.append(cet_final.tolist())
             print "connection to add is", cet_final.tolist()
-                    
+           
         if (adding_location): # optimal connection found!
             store_cet.append(filter(None,cet))
             opt = added_location[-1]
@@ -207,14 +226,15 @@ if True:
 #                if kterm % 10 == 0:
 #                    plot_tree(tree, area_descptr, "./Results/InterTree_Nt%i_kt%i_s%i_41d" %(NTerm,kterm,seed),potential)
                 #if kterm >600:
+
                 if kterm%50 == 0:
-                    plot_forest(forest, area_descptr, "./Results/InterForest_Nt%i_kt%i_s%i_qspe_corr" %(forest.n_term,kterm,seed),potential) 
+                    plot_forest(forest, area_descptr, "./Results/InterForest_Nt%i_kt%i_s%i_polytree%i_ntunlimited" %(forest.n_term,kterm,seed,len(forest.trees)),potential) 
                 if kterm%100 == 0:                    
-                    pickle.dump(forest, open("./Results/InterForest_Nt%i_kt_%i_s%i_qspe_corr.p"%(forest.n_term,kterm,seed), "wb"))
+                    pickle.dump(forest, open("./Results/InterForest_Nt%i_kt_%i_s%i_polytree%i_ntunlimited.p"%(forest.n_term,kterm,seed,len(forest.trees)), "wb"))
 #                if kterm == 600:
 #                    print "over 600"
-                if kterm == forest.n_term:
-                    break  
+#                if kterm == 50:
+#                    break  
 
             else:
                 print "failed to add connection on tree"
@@ -230,8 +250,8 @@ if True:
 
         #keep going until reach Nterm!
 
-    plot_forest(forest, area_descptr, "./Results/Forest_Nt%i_s%i_qspe_corr" %(forest.get_fk_term(),seed), potential)
-    pickle.dump(forest, open("./Results/Forest_Nt%i_s%i_qspe_corr.p"%(forest.get_fk_term(),seed), "wb"))
+    plot_forest(forest, area_descptr, "./Results/Forest_Nt%i_s%i_polytree%i_ntunlimited" %(forest.get_fk_term(),seed,len(forest.trees)), potential)
+    pickle.dump(forest, open("./Results/Forest_Nt%i_s%i_polytree%i_ntunlimited.p"%(forest.get_fk_term(),seed,len(forest.trees)), "wb"))
 
 
 

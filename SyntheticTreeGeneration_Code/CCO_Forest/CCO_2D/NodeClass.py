@@ -94,17 +94,19 @@ class Tree:
     "a_perf: total perfusion area of the final tree"
     "r_f: real radius (mm) of the total perfusion area"
 
-    def __init__(self, tree_index, nodes, n_term, q_perf, p_drop, visc, a_perf, r_f, w, max_curv_radius,center,real_radius, gamma):
+    def __init__(self, tree_index, nodes, q_term, q_perf, p_drop, visc, a_perf, r_f, w, max_curv_radius,center,real_radius, gamma):
+        self.activ = False
         self.tree_index = tree_index        
         self.nodes = nodes
-        self.n_term = n_term
+        #self.n_term = n_term
+        self.q_term = q_term #q_perf / float(n_term)
         self.final_q_perf = q_perf
-        self.q_term = q_perf / float(n_term)
+        
         self.p_drop = p_drop
         self.node_index = 0 #index of the next added node
         self.nu = visc
         self.a_perf = a_perf
-        self.r_supp = np.sqrt(a_perf / (n_term * np.pi)) #microbox radius: average radius of terminal segment perfusion territory when reaching final tree growth
+        self.r_supp = 0.#np.sqrt(a_perf / (n_term * np.pi)) #microbox radius: average radius of terminal segment perfusion territory when reaching final tree growth
         self.final_perf_radius = r_f #real size of the estimated plain perfusion territory radius (excluding concavity surface)
         self.length_factor = 1 # not a const, is updated during tree growth after each added bifurcation
         self.w_pot = w
@@ -119,10 +121,13 @@ class Tree:
         self.tree_volume = 0.
         
     def __deepcopy__(self, tree):
-        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.n_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius, self.w_pot, self.max_curv_rad,self.center, self.real_final_radius, self.gamma)    		
+        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius, self.w_pot, self.max_curv_rad,self.center, self.real_final_radius, self.gamma)    		
             
     def nodes(self):
         return self.nodes
+        
+    def set_activity(self,activity):
+        self.activ = activity
     
     #counting the nodes in list to update set the node_index for next added segment    
     def update_node_index(self):
@@ -149,14 +154,14 @@ class Tree:
     
     #when adding node on tree need to update the node_index
     def add_node(self, node):		
-        if len(self.nodes) < 2*self.n_term:
-            self.nodes.append(node)
-            self.node_index = self.node_index + 1
-            print "node added on tree %i , total of nodes" %(self.tree_index), self.node_index
-            return True
-        else:
-            print "can't add node, Nterm reached"	
-            return False
+#        if len(self.nodes) < 2*self.n_term:
+        self.nodes.append(node)
+        self.node_index = self.node_index + 1
+        print "node added on tree %i , total of nodes" %(self.tree_index), self.node_index
+        return True
+#        else:
+#            print "can't add node, Nterm reached"	
+#            return False
     		
     def get_node(self, i):
         if (i < len(self.nodes)):		
@@ -271,15 +276,22 @@ class Tree:
         self.tree_volume = self.volume()
     
     ## test if new location is over d_tresh distance from existing tree segments
-    def test_dist_criteria(self, location, d_tresh):
-        if (self.inside_perf_territory(location) == True):    
-            for sgmt in self.nodes:
-                if (sgmt.parent() >= 0):
-                    dist = cco_2df.segment_distance(sgmt.coord, (self.get_node(sgmt.parent())).coord, location)
-                    if (dist < d_tresh):
-                        return False
-        else:
-            return False
+    def test_dist_criteria(self, location, d_tresh,sources):
+        #if (self.inside_perf_territory(location) == True):    
+        for sgmt in self.nodes:
+            if (sgmt.parent() >= 0):
+                dist = cco_2df.segment_distance(sgmt.coord, (self.get_node(sgmt.parent())).coord, location)
+                if (dist < d_tresh):
+                    return False
+#                if sources:
+#                    if sgmt.index == 0:
+#                        dist = self.vec_length(sgmt.coord-location)
+#                        #print "dist to other source", dist
+#                        if (dist < d_tresh):
+#                            #print "too close of source location"
+#                            return False
+        #else:
+        #    return False
         return True      
     
         
