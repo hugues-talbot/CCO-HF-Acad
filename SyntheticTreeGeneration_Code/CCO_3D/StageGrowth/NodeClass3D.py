@@ -597,8 +597,11 @@ class Tree:
             
     
     def newton_step_corr(self, point, gdt, target,fac):
-        proj = point + (target - self.get_w(point)) * gdt * fac / self.vec_length(gdt)
-        print "target - self.get_w(point)",target - self.get_w(point), "fac", fac
+        gap = self.get_w(point + gdt) - self.get_w(point)
+        proj = point + (target - self.get_w(point)) * gdt * fac / gap
+        print "w(point + gdt)",self.get_w(point + gdt),"w(point)",self.get_w(point)
+        print "target - self.get_w(point)",target - self.get_w(point), "gap",gap,"fac", fac
+        print "proj", proj#, "w(proj)", self.get_w(proj)
         return proj
         
             
@@ -836,7 +839,7 @@ class Tree:
                                 #gdt_vec = np.array([self.get_gx(branching_location), self.get_gy(branching_location), self.get_gz(branching_location)])                               
                                 #result[1] =  self.newton_algo(branching_location, gdt_vec, 0.1, eps, 0, 100,1.)
                                 max_iter = 100
-                                result[1] = self.newton_algo_corrected(self, branching_location, 0.1, eps, 0, max_iter, 1)
+                                result[1] = self.newton_algo_corrected(branching_location, 0.1, eps, 0, max_iter, 1)
                                 print "new position projected on surface:", result[1]
                             return nbr, True, tree_vol, result[0],result[1], old_child_index                                
                         else:

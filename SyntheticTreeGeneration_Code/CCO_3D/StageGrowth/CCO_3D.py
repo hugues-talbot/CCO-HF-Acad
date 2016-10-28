@@ -126,14 +126,14 @@ def plot_tree(tree, vol_descptr, name):
 
 timing = True
 store_data = False
-parallelized = False
+parallelized = True
 half = True
 
 if timing:
     debut = time.time()
     print debut
 if store_data:
-    fd = open('./Results/CCO3D_t30.txt','w') # open the result file in write mode
+    fd = open('./Results/CCO3D_ncorr.txt','w') # open the result file in write mode
     old_stdout = sys.stdout   # store the default system handler to be able to restore it    
     sys.stdout = fd # Now your file is used by print as destination 
     
@@ -300,8 +300,8 @@ if True:
                         name ="./Results/InterTree_Nt%i_kt%i_s%i" %(NTerm,kterm,seed)
                         pickle.dump(tree, open(name + ".p", "wb"))
 ##
-                    if kterm == 16 :
-                        break
+#                    if kterm == 16 :
+#                        break
                 else:
                     print "failed to add connection on tree"
             else:              
