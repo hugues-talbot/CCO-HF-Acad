@@ -105,7 +105,7 @@ class Forest:
                 ratio = biggest_flow / tree.final_q_perf
                 print "tree index",tree.tree_index
                 print "currentflow", current_flow, "ratio",ratio, "tree.get_q_perf_k", tree.get_q_perf_k() 
-                if tree.get_q_perf_k() * ratio >= current_flow :
+                if tree.get_q_perf_k() * ratio <= current_flow :
                     tree.set_activity(True)
         
     

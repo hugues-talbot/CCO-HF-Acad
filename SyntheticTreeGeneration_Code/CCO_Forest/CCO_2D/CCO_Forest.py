@@ -138,11 +138,11 @@ if True:
     # source points : define the root positions
     #first tree
     root_position = np.array([area_center[0],area_center[1]+area_ext_radius])
-    first_tree = forest.create_tree(root_position, forest.final_q_perf  * 0.9)#)
+    first_tree = forest.create_tree(root_position, forest.final_q_perf  * 0.75)#)
     forest.add_tree(first_tree)
     #second tree
     root_position_2 = np.array([area_center[0],area_center[1]-area_ext_radius])
-    second_tree = forest.create_tree(root_position_2, forest.final_q_perf  * 0.1)#2. / 3.)
+    second_tree = forest.create_tree(root_position_2, forest.final_q_perf  * 0.25)#2. / 3.)
     forest.add_tree(second_tree)
     #third tree
 #    root_position_3 = np.array([area_center[0]-area_ext_radius,area_center[1]])
@@ -228,12 +228,12 @@ if True:
                 #if kterm >600:
 
                 if kterm%50 == 0:
-                    plot_forest(forest, area_descptr, "./Results/InterForest_Nt%i_kt%i_s%i_polytree%i_dl90" %(forest.n_term,kterm,seed,len(forest.trees)),potential) 
+                    plot_forest(forest, area_descptr, "./Results/InterForest_Nt%i_kt%i_s%i_polytree%i_dl75" %(forest.n_term,kterm,seed,len(forest.trees)),potential) 
                 if kterm%100 == 0:                    
-                    pickle.dump(forest, open("./Results/InterForest_Nt%i_kt_%i_s%i_polytree%i_dl90.p"%(forest.n_term,kterm,seed,len(forest.trees)), "wb"))
+                    pickle.dump(forest, open("./Results/InterForest_Nt%i_kt_%i_s%i_polytree%i_dl75.p"%(forest.n_term,kterm,seed,len(forest.trees)), "wb"))
 #                if kterm == 600:
 #                    print "over 600"
-#                if kterm == 20:
+#                if kterm == 4:
 #                    break  
 
             else:
@@ -250,8 +250,8 @@ if True:
 
         #keep going until reach Nterm!
 
-    plot_forest(forest, area_descptr, "./Results/Forest_Nt%i_s%i_polytree%i_dl90" %(forest.get_fk_term(),seed,len(forest.trees)), potential)
-    pickle.dump(forest, open("./Results/Forest_Nt%i_s%i_polytree%i_dl90.p"%(forest.get_fk_term(),seed,len(forest.trees)), "wb"))
+    plot_forest(forest, area_descptr, "./Results/Forest_Nt%i_s%i_polytree%i_dl75" %(forest.get_fk_term(),seed,len(forest.trees)), potential)
+    pickle.dump(forest, open("./Results/Forest_Nt%i_s%i_polytree%i_dl75.p"%(forest.get_fk_term(),seed,len(forest.trees)), "wb"))
 
 
 
