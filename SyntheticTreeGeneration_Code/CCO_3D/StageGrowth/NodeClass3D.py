@@ -26,7 +26,7 @@ GLOBAL_INCREMENT = True
 
 EPS = 0.001 #parameter of tolerance related to the target w value to reach for Newton Algo
 MAX_ITER_NEWTON = 100 #max number of iteration for Newton algo
-
+TARGET_SURFACE = 0.02
 class Node:
     "Class defining attributes of each segment during synthetic tree generation"
     def __init__(self, index, coord, flow, parent_index):
@@ -274,7 +274,7 @@ class Tree:
                 print "original_position of new location",location
                 #gdt_vec = np.array([self.get_gx(location), self.get_gy(location), self.get_gz(location)])
                 #location =  self.newton_algo(location, gdt_vec, 0.1, EPS, 0, MAX_ITER_NEWTON,1.)
-                location = self.newton_algo_corrected(location, 0.1, EPS, 0, MAX_ITER_NEWTON, 1.)
+                location = self.newton_algo_corrected(location, TARGET_SURFACE, EPS, 0, MAX_ITER_NEWTON, 1.)
                 print "new position projected on surface:", location
             for sgmt in self.nodes:
                 if (sgmt.parent() >= 0):
@@ -322,7 +322,7 @@ class Tree:
                 print "position has potential of", self.get_w(position)
                 #gdt_vec = np.array([self.get_gx(position), self.get_gy(position), self.get_gz(position)])
                 #position =  self.newton_algo(position, gdt_vec, 0.1, EPS, 0, MAX_ITER_NEWTON,1.)
-                position = self.newton_algo_corrected(position,0.1, EPS, 0, MAX_ITER_NEWTON, 1.)
+                position = self.newton_algo_corrected(position,TARGET_SURFACE, EPS, 0, MAX_ITER_NEWTON, 1.)
                 print "new position projected on surface:", position
                 print "new position has potential of", self.get_w(position)
                 n = self.calculate_sampling(tolerance, position, first_node_coord)
@@ -752,7 +752,7 @@ class Tree:
                                 #gdt_vec = np.array([self.get_gx(branching_location), self.get_gy(branching_location), self.get_gz(branching_location)])
                                 #result[1] =  self.newton_algo(branching_location, gdt_vec, 0.1, eps, 0, 100,1.)
                                 max_iter = 1
-                                result[1] = self.newton_algo_corrected(branching_location, 0.1, eps, 0, max_iter, 1.)
+                                result[1] = self.newton_algo_corrected(branching_location, TARGET_SURFACE, eps, 0, max_iter, 1.)
                                 if result[1][0] == 0. and result[1][1] == 0.:
                                     print "issue unable to find projection"
                                 print "new position projected on surface:", result[1]                                             
@@ -839,7 +839,7 @@ class Tree:
                                 #gdt_vec = np.array([self.get_gx(branching_location), self.get_gy(branching_location), self.get_gz(branching_location)])                               
                                 #result[1] =  self.newton_algo(branching_location, gdt_vec, 0.1, eps, 0, 100,1.)
                                 max_iter = 100
-                                result[1] = self.newton_algo_corrected(branching_location, 0.1, eps, 0, max_iter, 1)
+                                result[1] = self.newton_algo_corrected(branching_location, TARGET_SURFACE, eps, 0, max_iter, 1)
                                 print "new position projected on surface:", result[1]
                             return nbr, True, tree_vol, result[0],result[1], old_child_index                                
                         else:
@@ -868,7 +868,7 @@ class Tree:
                             branching_location = previous_result[1]
                             #gdt_vec = np.array([self.get_gx(branching_location), self.get_gy(branching_location), self.get_gz(branching_location)])
                             #previous_result[1] =  self.newton_algo(branching_location, gdt_vec, 0.1, eps, 0, 100,1.)
-                            previous_result[1] = self.newton_algo_corrected(branching_location,0.1,eps, 0,100,1.)
+                            previous_result[1] = self.newton_algo_corrected(branching_location,TARGET_SURFACE,eps, 0,100,1.)
                             print "new position projected on surface:", previous_result[1]
                         return nbr, True, initial_tree_vol, previous_result[0], previous_result[1], old_child_index
                     else: 

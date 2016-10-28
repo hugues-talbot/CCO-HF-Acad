@@ -99,7 +99,7 @@ def plot_tree(tree, name, half):
         if (sgmt.parent() >= 0):
             distal = sgmt.coord
             proximal = tree.get_node(sgmt.parent()).coord
-            radius = tree.get_radius(sgmt.index) #*inv_length_fac
+            radius = tree.get_radius(sgmt.index) *inv_length_fac
             print "radius", radius
             verts = [zip([distal[0], proximal[0]],[distal[1], proximal[1]],[distal[2], proximal[2]])]
             tri = a3.art3d.Poly3DCollection(verts)
@@ -121,5 +121,8 @@ def plot_tree(tree, name, half):
 nterm = 2000
 seed=42
 kterm=290
-tree = pickle.load( open( "./Results/InterTree_Nt%i_kt%i_s%i_half_nr.p"% (nterm,kterm, seed), "rb" ) )
+#tree = pickle.load( open( "./Results/InterTree_Nt%i_kt%i_s%i_half_nr.p"% (nterm,kterm, seed), "rb" ) )
+tree = pickle.load( open( "./Results/InterTree_Nt250_kt10_s42.p", "rb" ) )
+
+
 plot_tree(tree,"figname", True)
