@@ -120,6 +120,6 @@ def plot_tree(tree, name, half):
 
 nterm = 2000
 seed=42
-kterm=40
-tree = pickle.load( open( "./Results/InterTree_Nt%i_kt%i_s%i_half_nr.p"% (nterm,kterm, seed), "rb" ) )
+kterm=70
+tree = pickle.load( open( "./Results/InterTree_Nt%i_kt%i_s%i_half_thick.p"% (nterm,kterm, seed), "rb" ) )
 plot_tree(tree,"figname", True)

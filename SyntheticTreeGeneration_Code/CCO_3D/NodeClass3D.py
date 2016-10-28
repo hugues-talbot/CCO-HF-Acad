@@ -186,7 +186,7 @@ class Tree:
     #from the final coordinates world (dimensions of the final perfusion territory)
     #to the current k world (whose perfusion territory size is increased before each added bifurcation)
     def update_length_factor(self):
-        r_pk = np.power((self.get_k_term() + 1)* self.r_supp**3,3) #correspond to the plain perfusion territory (excluding concavity volume)
+        r_pk = np.power((self.get_k_term() + 1)* self.r_supp**3,1./3) #correspond to the plain perfusion territory (excluding concavity volume)
         self.length_factor =  r_pk / self.final_perf_radius
 
     

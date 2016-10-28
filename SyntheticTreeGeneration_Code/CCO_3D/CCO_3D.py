@@ -101,7 +101,7 @@ def plot_tree(tree, vol_descptr, name):
         if (sgmt.parent() >= 0):
             distal = sgmt.coord
             proximal = tree.get_node(sgmt.parent()).coord
-            radius = tree.get_radius(sgmt.index) #*inv_length_fac
+            radius = tree.get_radius(sgmt.index) *inv_length_fac
             print "radius", radius
             verts = [zip([distal[0], proximal[0]],[distal[1], proximal[1]],[distal[2], proximal[2]])]
             tri = a3.art3d.Poly3DCollection(verts)
@@ -126,7 +126,7 @@ def plot_tree(tree, vol_descptr, name):
 
 timing = True
 store_data = False
-parallelized = False
+parallelized = True
 half = True
 
 if timing:
@@ -301,12 +301,12 @@ if True:
                     print "k termmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm is now ", tree.get_k_term()
                     kterm=tree.get_k_term()
                     d_tresh_factor = 1.
-                    if kterm%10 == 0:
+                    if kterm%20 == 0:
                         #plot_tree(tree, v_descptr, )
-                        name ="./Results/InterTree_Nt%i_kt%i_s%i_half_thick" %(NTerm,kterm,seed)
+                        name ="./Results/InterTree_Nt%i_kt%i_s%i_half_thickvol" %(NTerm,kterm,seed)
                         pickle.dump(tree, open(name + ".p", "wb"))
-                    if kterm%50 == 0:
-                        outfilepath = "./Results/StatsNt%i_s%i_thick.txt"%(tree.get_k_term(),seed)
+                    if kterm%100 == 0:
+                        outfilepath = "./Results/StatsNt%i_s%i_thickvol.txt"%(tree.get_k_term(),seed)
                         outfile = open(outfilepath,"w")
                         outfile.write("tree of crossing test bound 0.20")
                         outfile.write( "number of connection tested "+ str(counter[0])  + "\n")
@@ -316,7 +316,7 @@ if True:
                         outfile.write( "number of connection tested at the end with concavity "+ str(counter[3])  + "\n")
                         outfile.write("number of connection testedat the end with concavity positiv" + str(counter[4]))
                         outfile.close()
-#                    if kterm == 5:
+#                    if kterm == 3:
 #                        break
                 else:
                     print "failed to add connection on tree"
@@ -325,24 +325,25 @@ if True:
                 print "location doesn't provide an optimal connection, testing new location"
                 dead_end_counter = dead_end_counter +1
                 print "dead_end_counter = ", dead_end_counter
-                if dead_end_counter == 10:
+                if dead_end_counter == 10: #if too small doesn't produce homogeneous tree?
                     dead_end_counter = 0
-                    d_tresh_factor = d_tresh_factor *0.8
+                    d_tresh_factor = d_tresh_factor *0.85
                     print "dead end: decrease d_tresh of 20% to look for new location", d_tresh_factor
 
             #keep going until reach Nterm!
         
         
-        name = "./Results/tree_Nt%i_kt%i_s%i_half_thick" %(NTerm, tree.get_k_term(),seed)
+        name = "./Results/tree_Nt%i_kt%i_s%i_half_thickvol" %(NTerm, tree.get_k_term(),seed)
         if half:
-            name = "./Results/tree_Nt%i_kt%i_s%i_half_thick" %(NTerm, tree.get_k_term(),seed)
-        print "number of connection tested", counter[0] 
-        print "number of connection tested with crossing test iterativ sucessfull", counter[1]
-        print "number of connection tested with crossing test iterativ failing", counter[5]
-        print "total number of crossing test for successfull tests in iterativ method", counter[2]
-        print "number of connection tested at the end with concavity", counter[3]
-        print "number of connection testedat the end with concavity positiv", counter[4]
+            name = "./Results/tree_Nt%i_kt%i_s%i_half_thickvol" %(NTerm, tree.get_k_term(),seed)
+#        print "number of connection tested", counter[0] 
+#        print "number of connection tested with crossing test iterativ sucessfull", counter[1]
+#        print "number of connection tested with crossing test iterativ failing", counter[5]
+#        print "total number of crossing test for successfull tests in iterativ method", counter[2]
+#        print "number of connection tested at the end with concavity", counter[3]
+#        print "number of connection testedat the end with concavity positiv", counter[4]
         #plot_tree(tree, v_descptr, name)
+        print "length factor",tree.length_factor
         pickle.dump(tree, open(name + ".p", "wb"))
 
 
