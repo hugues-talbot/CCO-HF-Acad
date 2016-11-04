@@ -25,7 +25,11 @@ GLOBAL_INCREMENT = True
 
 
 EPS = 0.001 #parameter of tolerance related to the target w value to reach for Newton Algo
-MAX_ITER_NEWTON = 100 #max number of iteration for Newton algo
+MAX_ITER_NEWTON = 200 #max number of iteration for Newton algo
+INITIAL_FAC = 0.5
+UPDATED_FAC = 0.01
+UPDATED_DOUBLE_FAC = UPDATED_FAC *0.5
+
 TARGET_SURFACE = 0.02
 class Node:
     "Class defining attributes of each segment during synthetic tree generation"
@@ -112,9 +116,9 @@ class Tree:
         self.w_pot = w
         self.interp_w  = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1),np.arange(0,w.shape[2],1)),w)
         self.nearest_w = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1),np.arange(0,w.shape[2],1)),w, method = "nearest")
-        self.interp_gx = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1),np.arange(0,w.shape[2],1)),np.gradient(w)[2])
+        self.interp_gx = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1),np.arange(0,w.shape[2],1)),np.gradient(w)[0])
         self.interp_gy = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1),np.arange(0,w.shape[2],1)),np.gradient(w)[1])
-        self.interp_gz = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1),np.arange(0,w.shape[2],1)),np.gradient(w)[0])       
+        self.interp_gz = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1),np.arange(0,w.shape[2],1)),np.gradient(w)[2])       
         self.max_curv_rad = max_curv_radius
         self.center = center
         self.real_final_radius = real_radius #real size of the final cercle (includes the concavity)
@@ -268,23 +272,27 @@ class Tree:
     
     ## test if new location is over d_tresh distance from existing tree segments
     def test_dist_criteria(self, location, d_tresh,surface):
-        if (self.inside_perf_territory(location) == True): 
+        if (self.inside_perf_terr_exact(location) == True): 
             if surface:
                 #project on surface
                 print "original_position of new location",location
                 #gdt_vec = np.array([self.get_gx(location), self.get_gy(location), self.get_gz(location)])
                 #location =  self.newton_algo(location, gdt_vec, 0.1, EPS, 0, MAX_ITER_NEWTON,1.)
-                location = self.newton_algo_corrected(location, TARGET_SURFACE, EPS, 0, MAX_ITER_NEWTON, 1.)
+                location = self.newton_algo_corrected(location, TARGET_SURFACE, EPS, 0, MAX_ITER_NEWTON, INITIAL_FAC)
                 print "new position projected on surface:", location
+                if location[0] == 0. and location[1]==0. and location[2]==0.:
+                    print "no good location found"
+                    return False, location
             for sgmt in self.nodes:
                 if (sgmt.parent() >= 0):
                     dist = cco_3df.segment_distance(sgmt.coord, (self.get_node(sgmt.parent())).coord, location)
                     if (dist < d_tresh):
-                        return False
+                        return False, location
         else:
-            return False
-        print "test inside perf",self.inside_perf_territory(location)
-        return True      
+            return False, location
+        print "test inside perf terr",self.inside_perf_territory(location)
+        print "test inside perf terr exact",self.inside_perf_terr_exact(location)
+        return True, location      
     
     # a new location is a random location constrained by perfusion territory and distance criterion            
     def get_new_location(self, d_tresh_factor,surface):   
@@ -298,7 +306,8 @@ class Tree:
         max_itr= 50
         while (meet_criteria == False and ind < max_itr):
             point = cco_3df.random_location(self.center, self.real_final_radius)
-            if (self.test_dist_criteria(point, d_tresh_factorized,surface)):
+            respected, point = self.test_dist_criteria(point, d_tresh_factorized,surface)
+            if (respected ==  True):
                 print "location found"
                 print point
                 return True, point, d_tresh_factorized
@@ -310,21 +319,17 @@ class Tree:
         return False, np.array([0.,0.]), d_tresh_factorized
         
     # the location of the first segment end is not constrained by the distance criterion, only by the perfusion territory
-    def first_segmt_end(self, tolerance):
+    def first_segmt_end(self, tolerance, surface):
         inside_area = False
         first_node_coord = self.nodes[0].coord
         while inside_area == False :    
             position = cco_3df.random_location(self.center, self.real_final_radius)
             #print "position",position
             if (self.inside_perf_territory(position)):
-                #print "insid perf"
-                print "original_position first end",position
-                print "position has potential of", self.get_w(position)
-                #gdt_vec = np.array([self.get_gx(position), self.get_gy(position), self.get_gz(position)])
-                #position =  self.newton_algo(position, gdt_vec, 0.1, EPS, 0, MAX_ITER_NEWTON,1.)
-                position = self.newton_algo_corrected(position,TARGET_SURFACE, EPS, 0, MAX_ITER_NEWTON, 1.)
-                print "new position projected on surface:", position
-                print "new position has potential of", self.get_w(position)
+                if surface:
+                    position = self.newton_algo_corrected(position,TARGET_SURFACE, EPS, 0, MAX_ITER_NEWTON, INITIAL_FAC)
+                    if position[0] == 0. and position[1]==0.:
+                        break
                 n = self.calculate_sampling(tolerance, position, first_node_coord)
                 if self.sample_and_test(position, first_node_coord, n) == True:
                     return position
@@ -342,8 +347,28 @@ class Tree:
             #print "location", location
         return False
         
+    def inside_perf_terr_exact(self, location):
+        if location[1] < 0. or location[0] < 0. or location[2] < 0:
+            return False
+        if location[2] < (self.w_pot.shape[0]-1) and location[1] < (self.w_pot.shape[1]-1) and location[0] < (self.w_pot.shape[2]-1): 
+            pot_val = round(self.get_w(location),3)
+            #print "pot val ", pot_val
+            #print "round 10", round(self.get_w(location),10)
+            #print "round 20", round(self.get_w(location),20)
+            if (pot_val> 0.) and (pot_val < 1.0): 
+                return True
+            #print "location", location
+        return False
+        
     def get_w(self, location):
-        return float(self.interp_w(location))
+        if location[1] < 0. or location[0] < 0. or location[2] < 0:
+            print "out image"
+            return 0.
+        if location[2] < (self.w_pot.shape[0]-1) and location[1] < (self.w_pot.shape[1]-1) and location[0] < (self.w_pot.shape[2]-1):
+            return float(self.interp_w(location))
+        else:
+            print "out image"
+            return 0.
         
     def get_nearest_w(self, location):
         return float(self.nearest_w(location)) 
@@ -360,6 +385,7 @@ class Tree:
     # add bifurcation on tree structure, and set the two children new resistances 
     # beta has been calculated with child_0/child_1 radius ratio where child_0 is old_child         
     def make_connection(self, old_child_index, new_child_location, branching_location, f, beta):
+        print "connecting new location", new_child_location, "to node", old_child_index, "with bifurcation", branching_location
         #creating new nodes
         self.update_node_index()
         parent_index = (self.nodes[old_child_index]).parent()       
@@ -509,7 +535,7 @@ class Tree:
         #mid point of seg
         midp = (seg_pt1 + seg_pt2)*0.5
         #find gdt of w at mid point
-        gdt_vec = np.array([self.get_gx(midp), self.get_gy(midp), self.get_gz(midp)])
+        #gdt_vec = np.array([self.get_gx(midp), self.get_gy(midp), self.get_gz(midp)])
         #print "gdt vec",gdt_vec
         #find on this line the point p where w(p) = 0.5 * (w(seg_pt1) + w(seg_pt2))
         target_w = 0.5 * (self.get_w(seg_pt1) + self.get_w(seg_pt2))
@@ -518,7 +544,7 @@ class Tree:
         #print "self.get_w(midp)", self.get_w(midp)
         #print "test", new_location, gdt_vec, target_w, eps
         #starting_point = self.newton_algo(midp, gdt_vec, target_w, EPS, 0, MAX_ITER_NEWTON,1.)
-        starting_point = self.newton_algo_corrected(midp, target_w,eps,0,MAX_ITER_NEWTON,1.)
+        starting_point = self.newton_algo_corrected(midp, target_w,EPS,0,MAX_ITER_NEWTON,INITIAL_FAC)
         print "starting point", starting_point
         return starting_point
         
@@ -574,35 +600,52 @@ class Tree:
     def newton_algo_corrected(self, point, target, eps, count, max_iter, fac):
         gdt = np.array([self.get_gx(point), self.get_gy(point), self.get_gz(point)])
         projpt = self.newton_step_corr(point,gdt,target,fac)
-        print "projpt", projpt,"gdt", gdt, "gdt length", self.vec_length(gdt)
-        if self.inside_perf_territory(projpt):           
+        #print "projpt", projpt,"gdt", gdt, "gdt length", self.vec_length(gdt)
+        if self.inside_perf_terr_exact(projpt):           
             #print "wproj",self.get_w(projpt)
             w_proj = self.get_w(projpt)
-            print "w_proj", w_proj, "target", target
+            #print "w_proj", w_proj, "target", target
             if w_proj < target + eps and w_proj > target - eps:
-                print "success", projpt, "wproj", w_proj
+                print "success","factor", fac, "projection",projpt, "w(projection)", w_proj, "nber of iterations", count
                 return projpt
             else:
                 if count < max_iter:
                     return self.newton_algo_corrected(projpt,target,eps,count +1, max_iter,fac)
                 else:
-                    print "fail"
+                    print "failed because over number of iterations", count
                     return np.zeros(3)
         else:
-            if fac < 1.:
-                print "out of perf territory"
+            if count > max_iter:
+                print "dead end"
                 return np.zeros(3)
-            else:  
-                return self.newton_algo_corrected(point, target, eps, count, max_iter,0.1)
+            print "decreasing the gap to", fac*0.5
+            return self.newton_algo_corrected(point, target, eps, count+1, max_iter,fac * 0.5)
+#            if fac < INITIAL_FAC:
+#                if fac < UPDATED_DOUBLE_FAC:
+#                    print "projection out of perf territory after ", count, "iteration with factor", fac
+#                    return np.zeros(3)
+#                else:
+#                    print "using updated factor"
+#                    return self.newton_algo_corrected(point, target, eps, count, max_iter,UPDATED_DOUBLE_FAC)
+#            else:  
+#                return self.newton_algo_corrected(point, target, eps, count, max_iter,UPDATED_FAC)
             
     
     def newton_step_corr(self, point, gdt, target,fac):
-        gap = self.get_w(point + gdt) - self.get_w(point)
-        proj = point + (target - self.get_w(point)) * gdt * fac / gap
-        print "w(point + gdt)",self.get_w(point + gdt),"w(point)",self.get_w(point)
-        print "target - self.get_w(point)",target - self.get_w(point), "gap",gap,"fac", fac
-        print "proj", proj#, "w(proj)", self.get_w(proj)
-        return proj
+        #gap = self.get_w(point + gdt) - self.get_w(point)
+        #proj = point + (target - self.get_w(point)) * gdt * fac / gap
+        #print "w(point + gdt)",self.get_w(point + gdt),"w(point)",self.get_w(point), "fac", fac
+        #print "target - self.get_w(point)",target - self.get_w(point), "gap",gap,"fac", fac
+        #print "gdt", gdt, "ori point", point
+        #print "proj", proj#, "w(proj)", self.get_w(proj)
+        proj_pt = point + (target -self.get_w(point)) / gdt *fac
+        print "orginal point",point , "w(point)",self.get_w(point) 
+        print "target w", target, "gradient vector", gdt
+        print "projection", proj_pt, "w(projection)", self.get_w(proj_pt), "factor",fac
+        #print "(target -self.get_w(point)) ", (target -self.get_w(point)) 
+        #print "(target -self.get_w(point)) / gdt", (target -self.get_w(point)) / gdt
+
+        return proj_pt
         
             
             
@@ -752,9 +795,10 @@ class Tree:
                                 #gdt_vec = np.array([self.get_gx(branching_location), self.get_gy(branching_location), self.get_gz(branching_location)])
                                 #result[1] =  self.newton_algo(branching_location, gdt_vec, 0.1, eps, 0, 100,1.)
                                 max_iter = 1
-                                result[1] = self.newton_algo_corrected(branching_location, TARGET_SURFACE, eps, 0, max_iter, 1.)
+                                result[1] = self.newton_algo_corrected(branching_location, TARGET_SURFACE, EPS, 0, MAX_ITER_NEWTON, INITIAL_FAC)
                                 if result[1][0] == 0. and result[1][1] == 0.:
                                     print "issue unable to find projection"
+                                    return code, False, tree_vol, result[0],result[1], old_child_index
                                 print "new position projected on surface:", result[1]                                             
                             return 1, True, tree_vol, result[0],result[1], old_child_index  
                         else:
@@ -839,8 +883,11 @@ class Tree:
                                 #gdt_vec = np.array([self.get_gx(branching_location), self.get_gy(branching_location), self.get_gz(branching_location)])                               
                                 #result[1] =  self.newton_algo(branching_location, gdt_vec, 0.1, eps, 0, 100,1.)
                                 max_iter = 100
-                                result[1] = self.newton_algo_corrected(branching_location, TARGET_SURFACE, eps, 0, max_iter, 1)
+                                result[1] = self.newton_algo_corrected(branching_location, TARGET_SURFACE, EPS, 0, MAX_ITER_NEWTON, INITIAL_FAC)
                                 print "new position projected on surface:", result[1]
+                                if result[1][0] == 0. and result[1][0] == 0.:
+                                    print "dead end for projecting on surface"
+                                    return nbr, False, tree_vol, result[0], result[1], old_child_index
                             return nbr, True, tree_vol, result[0],result[1], old_child_index                                
                         else:
                             print "intersection test failed"
@@ -868,8 +915,10 @@ class Tree:
                             branching_location = previous_result[1]
                             #gdt_vec = np.array([self.get_gx(branching_location), self.get_gy(branching_location), self.get_gz(branching_location)])
                             #previous_result[1] =  self.newton_algo(branching_location, gdt_vec, 0.1, eps, 0, 100,1.)
-                            previous_result[1] = self.newton_algo_corrected(branching_location,TARGET_SURFACE,eps, 0,100,1.)
+                            previous_result[1] = self.newton_algo_corrected(branching_location,TARGET_SURFACE,EPS, 0,MAX_ITER_NEWTON,INITIAL_FAC)
                             print "new position projected on surface:", previous_result[1]
+                            if previous_result[1][0] ==0. and previous_result[1][1] == 0.:
+                                return nbr, False, initial_tree_vol, previous_result[0], previous_result[1], old_child_index
                         return nbr, True, initial_tree_vol, previous_result[0], previous_result[1], old_child_index
                     else: 
                         print "no previous result,connection test failed "

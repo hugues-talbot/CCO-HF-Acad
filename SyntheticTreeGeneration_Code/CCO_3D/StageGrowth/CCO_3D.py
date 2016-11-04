@@ -126,14 +126,14 @@ def plot_tree(tree, vol_descptr, name):
 
 timing = True
 store_data = False
-parallelized = False
+parallelized = True
 half = True
 
 if timing:
     debut = time.time()
     print debut
 if store_data:
-    fd = open('./Results/CCO3D_ncorr.txt','w') # open the result file in write mode
+    fd = open('./Results/CCO3D_newton_negpot_corrautowithmax.txt','w') # open the result file in write mode
     old_stdout = sys.stdout   # store the default system handler to be able to restore it    
     sys.stdout = fd # Now your file is used by print as destination 
     
@@ -176,7 +176,7 @@ if True:
     filename = "potential_rext%i_rint_%i" %(int(v_ext_radius), int(v_int_radius))
     if half:
         vperf = (4./3.) * np.pi*(v_ext_radius**3 - v_int_radius**3) /2.
-        filename = "potential_half_rext%i_rint_%i" %(int(v_ext_radius), int(v_int_radius))
+        filename = "potential_half_rext%i_rint_%i_neg" %(int(v_ext_radius), int(v_int_radius))
     filepath = "./Results/"+filename+".npy"
     if os.path.isfile(filepath):
         print "loading potential from numpy file %s" %filepath
@@ -205,10 +205,17 @@ if True:
         root_node.set_child_0_index(1)
         root_node.set_label(0)
         tree.add_node(root_node)    
+        
         #first segment end: randomly picked inside perfusion surface
-        curvature_tolerance = v_int_radius
+        if InterTerm >0:          
+                surface = True
+                curvature_tolerance = v_int_radius
+        else: 
+                curvature_tolerance =0.05*tree.max_curv_rad
+                surface = False
+        
         tree.update_length_factor()
-        first_node_position = tree.first_segmt_end(curvature_tolerance)
+        first_node_position = tree.first_segmt_end(curvature_tolerance, surface)
         first_node = nclass.Node(1, first_node_position, Q_perf,0)
         first_node.set_label(0)
         tree.add_node(first_node)
@@ -271,6 +278,9 @@ if True:
                     res= tree_copy.test_connection(neighbors[n_index], new_child_location,curvature_tolerance,surface)                    
                     cet[n_index] = res[1:]
                     print "res[1:]", res[1:]
+                    if tree.get_k_term() == 5:
+                        if n_index == 0:
+                            break
                     #getting stat
 
                     
@@ -300,8 +310,8 @@ if True:
                         name ="./Results/InterTree_Nt%i_kt%i_s%i" %(NTerm,kterm,seed)
                         pickle.dump(tree, open(name + ".p", "wb"))
 ##
-                    if kterm == 5 :
-                        break
+#                    if kterm == 20 :
+#                        break
                 else:
                     print "failed to add connection on tree"
             else:              

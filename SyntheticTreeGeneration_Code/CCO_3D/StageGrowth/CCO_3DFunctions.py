@@ -50,8 +50,10 @@ def potential_image(center, ext_radius_f, int_radius_f, half):
     result = random_walker(im, markers, copy =True, return_full_prob = True, mode= 'cg_mg')   
     print "rdm walker shape",result.shape
     print markers.shape
+    result[1][np.where(result[1] == 0.)] = -1
     if half :
-        result[1][0:center[0],:,:] = 0
+        result[1][0:center[0],:,:] = -1
+        
     
 #    slicing = center[2]
 #    fig = plt.figure(figsize=(8, 8))

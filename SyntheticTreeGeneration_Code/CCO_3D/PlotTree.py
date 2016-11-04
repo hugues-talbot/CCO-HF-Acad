@@ -92,7 +92,7 @@ def plot_tree(tree, name, half):
     point_hei=hei*72 
     # For the calculation below, you have to adjust width by 0.8
     # because the top and bottom 10% of the figure are labels & axis
-    pointlinewid_factor = point_hei * 0.8 /yrange # corresponding width in pts ( /yrange ?)
+    pointlinewid_factor = point_hei * 0.8 #/yrange # corresponding width in pts ( /yrange ?)
     
     inv_length_fac = 1. / tree.length_factor
     for sgmt in tree.nodes:
@@ -120,6 +120,6 @@ def plot_tree(tree, name, half):
 
 nterm = 2000
 seed=42
-kterm=70
-tree = pickle.load( open( "./Results/InterTree_Nt%i_kt%i_s%i_half_thick.p"% (nterm,kterm, seed), "rb" ) )
+kterm=1000
+tree = pickle.load( open( "./Results/InterTree_Nt%i_kt%i_s%i_half_realvol.p"% (nterm,kterm, seed), "rb" ) )
 plot_tree(tree,"figname", True)
