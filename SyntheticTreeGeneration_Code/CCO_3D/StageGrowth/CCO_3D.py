@@ -168,7 +168,7 @@ if True:
     # About  convexe perfusion surface : defines a disc surface 
     v_center = np.array([55.,55.,55.])#np.array([14.,14., 14.])#np.array([80.,80.,80.])#np.array([80.,80.,80.])#
     v_ext_radius =45#10.#50.#50#
-    v_int_radius =15#4.#15.#15#
+    v_int_radius =35#4.#15.#15#
     #in schreiner non convex cco: the total ellispoid volume is 48cm3
     #to use a similar volume in sphere we should take: r_ext = 45mm and r_int =35mm (so center = 55,55,55) 
     v_descptr = [v_center, v_ext_radius, v_int_radius]
@@ -307,10 +307,10 @@ if True:
                     d_tresh_factor = 1.
                     if kterm%10 == 0:
                         #plot_tree(tree, v_descptr, )
-                        name ="./Results/InterTree_Nt%i_kt%i_s%i" %(NTerm,kterm,seed)
+                        name ="./Results/InterTree_Nt%i_kt%i_s%i_real" %(NTerm,kterm,seed)
                         pickle.dump(tree, open(name + ".p", "wb"))
 ##
-#                    if kterm == 20 :
+#                    if kterm == 10 :
 #                        break
                 else:
                     print "failed to add connection on tree"
@@ -329,7 +329,7 @@ if True:
         
         name = "./Results/tree_Nt%i_kt%i_s%i" %(NTerm, tree.get_k_term(),seed)
         if half:
-            name = "./Results/tree_Nt%i_kt%i_s%i" %(NTerm, tree.get_k_term(),seed)
+            name = "./Results/tree_Nt%i_kt%i_s%i_real" %(NTerm, tree.get_k_term(),seed)
 
         plot_tree(tree, v_descptr, name)
         pickle.dump(tree, open(name + ".p", "wb"))
