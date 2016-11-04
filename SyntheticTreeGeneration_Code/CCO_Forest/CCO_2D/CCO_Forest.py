@@ -78,6 +78,7 @@ def test_connection_list(list_input):
 timing = True
 store_data = False
 parallelized = True
+suffix = "surfback"
 
 if timing:
     debut = time.time()
@@ -112,8 +113,8 @@ if True:
     
     # About  convexe perfusion surface : defines a disc surface 
     area_center = np.array([120.,130.])#np.array([100.,80.])#
-    area_ext_radius =80#100.#50.#
-    area_int_radius =37#25#15.#
+    area_ext_radius =100#80#100.#50.#
+    area_int_radius =30#37#25#15.#
     area_descptr = [area_center, area_ext_radius, area_int_radius]
     area = np.pi*(area_ext_radius**2 - area_int_radius**2)     
     #potential = cco_2df.potential_image(area_center, area_ext_radius,area_int_radius)
@@ -138,17 +139,17 @@ if True:
     # source points : define the root positions
     #first tree
     root_position = np.array([area_center[0],area_center[1]+area_ext_radius])
-    first_tree = forest.create_tree(root_position, forest.final_q_perf  * 0.75)#)
+    first_tree = forest.create_tree(root_position, forest.final_q_perf  * 0.5)#)
     forest.add_tree(first_tree)
     #second tree
     root_position_2 = np.array([area_center[0],area_center[1]-area_ext_radius])
-    second_tree = forest.create_tree(root_position_2, forest.final_q_perf  * 0.25)#2. / 3.)
+    second_tree = forest.create_tree(root_position_2, forest.final_q_perf  * 0.5)#2. / 3.)
     forest.add_tree(second_tree)
     #third tree
-#    root_position_3 = np.array([area_center[0]-area_ext_radius,area_center[1]])
-#    third_tree = forest.create_tree(root_position_3,forest.final_q_perf * 2. / 3.)
-#    forest.add_tree(third_tree)
-    #first segment of each source
+    #root_position_3 = np.array([area_center[0]-area_ext_radius,area_center[1]])
+    #third_tree = forest.create_tree(root_position_3,forest.final_q_perf * 1. / 3.)
+    #forest.add_tree(third_tree)
+    #first segment of each sources
     
     print "sources added"
     forest.first_segment_end()
@@ -228,9 +229,9 @@ if True:
                 #if kterm >600:
 
                 if kterm%50 == 0:
-                    plot_forest(forest, area_descptr, "./Results/InterForest_Nt%i_kt%i_s%i_polytree%i_dl75" %(forest.n_term,kterm,seed,len(forest.trees)),potential) 
+                    plot_forest(forest, area_descptr, "./Results/InterForest_Nt%i_kt%i_s%i_polytree%i_%s"%(forest.n_term,kterm,seed,len(forest.trees),suffix),potential) 
                 if kterm%100 == 0:                    
-                    pickle.dump(forest, open("./Results/InterForest_Nt%i_kt_%i_s%i_polytree%i_dl75.p"%(forest.n_term,kterm,seed,len(forest.trees)), "wb"))
+                    pickle.dump(forest, open("./Results/InterForest_Nt%i_kt_%i_s%i_polytree%i_%s"%(forest.n_term,kterm,seed,len(forest.trees),suffix), "wb"))
 #                if kterm == 600:
 #                    print "over 600"
 #                if kterm == 4:
@@ -250,8 +251,8 @@ if True:
 
         #keep going until reach Nterm!
 
-    plot_forest(forest, area_descptr, "./Results/Forest_Nt%i_s%i_polytree%i_dl75" %(forest.get_fk_term(),seed,len(forest.trees)), potential)
-    pickle.dump(forest, open("./Results/Forest_Nt%i_s%i_polytree%i_dl75.p"%(forest.get_fk_term(),seed,len(forest.trees)), "wb"))
+    plot_forest(forest, area_descptr, "./Results/Forest_Nt%i_s%i_polytree%i_%s" %(forest.get_fk_term(),seed,len(forest.trees),suffix), potential)
+    pickle.dump(forest, open("./Results/Forest_Nt%i_s%i_polytree%i_%s.p"%(forest.get_fk_term(),seed,len(forest.trees),suffix), "wb"))
 
 
 
