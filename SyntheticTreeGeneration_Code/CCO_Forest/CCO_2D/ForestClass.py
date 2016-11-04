@@ -101,13 +101,14 @@ class Forest:
         biggest_flow = self.trees[first_added].final_q_perf
         current_flow = self.trees[first_added].get_q_perf_k()
         for tree in self.trees:
-            if tree.activ == False:
-                ratio = biggest_flow / tree.final_q_perf
-                print "tree index",tree.tree_index
-                print "currentflow", current_flow, "ratio",ratio, "tree.get_q_perf_k", tree.get_q_perf_k() 
-                if tree.get_q_perf_k() * ratio <= current_flow :
-                    tree.set_activity(True)
-        
+            ratio = biggest_flow / tree.final_q_perf
+            print "tree index",tree.tree_index
+            print "currentflow", current_flow, "ratio",ratio, "tree.get_q_perf_k", tree.get_q_perf_k() 
+            if tree.get_q_perf_k() * ratio <= current_flow :
+                tree.set_activity(True)
+	    else:
+		tree.set_activity(False)
+		 
     
     def new_pos_inside_sqr(self,source_loc, dist_max):
             inf_dist_max = False

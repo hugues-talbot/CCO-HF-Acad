@@ -78,7 +78,7 @@ def test_connection_list(list_input):
 timing = True
 store_data = False
 parallelized = True
-suffix = "surfback"
+suffix = "smallconcavalternate"
 
 if timing:
     debut = time.time()
@@ -113,8 +113,8 @@ if True:
     
     # About  convexe perfusion surface : defines a disc surface 
     area_center = np.array([120.,130.])#np.array([100.,80.])#
-    area_ext_radius =100#80#100.#50.#
-    area_int_radius =30#37#25#15.#
+    area_ext_radius =75#100#80#100.#50.#
+    area_int_radius =3#30#37#25#15.#
     area_descptr = [area_center, area_ext_radius, area_int_radius]
     area = np.pi*(area_ext_radius**2 - area_int_radius**2)     
     #potential = cco_2df.potential_image(area_center, area_ext_radius,area_int_radius)
@@ -139,11 +139,11 @@ if True:
     # source points : define the root positions
     #first tree
     root_position = np.array([area_center[0],area_center[1]+area_ext_radius])
-    first_tree = forest.create_tree(root_position, forest.final_q_perf  * 0.5)#)
+    first_tree = forest.create_tree(root_position, forest.final_q_perf  * 0.75)#)
     forest.add_tree(first_tree)
     #second tree
     root_position_2 = np.array([area_center[0],area_center[1]-area_ext_radius])
-    second_tree = forest.create_tree(root_position_2, forest.final_q_perf  * 0.5)#2. / 3.)
+    second_tree = forest.create_tree(root_position_2, forest.final_q_perf  * 0.25)#2. / 3.)
     forest.add_tree(second_tree)
     #third tree
     #root_position_3 = np.array([area_center[0]-area_ext_radius,area_center[1]])
