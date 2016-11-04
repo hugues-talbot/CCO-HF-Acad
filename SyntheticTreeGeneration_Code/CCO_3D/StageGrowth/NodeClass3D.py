@@ -330,7 +330,7 @@ class Tree:
                     position = self.newton_algo_corrected(position,TARGET_SURFACE, EPS, 0, MAX_ITER_NEWTON, INITIAL_FAC)
                     if position[0] == 0. and position[1]==0.:
                         break
-                n = self.calculate_sampling(tolerance, position, first_node_coord)
+                n = self.calculate_sampling(tolerance, position, first_node_coord,surface)
                 if self.sample_and_test(position, first_node_coord, n) == True:
                     return position
                 
@@ -531,6 +531,10 @@ class Tree:
         print "local n", splg_n
         return splg_n
         
+    def local_n_surface(self, seg_1, seg_2):
+        return int(self.vec_length(seg_1- seg_2) / 50.) + 1
+        
+        
     def starting_point(self, seg_pt1, seg_pt2, new_location, eps):
         #mid point of seg
         midp = (seg_pt1 + seg_pt2)*0.5
@@ -632,26 +636,20 @@ class Tree:
             
     
     def newton_step_corr(self, point, gdt, target,fac):
-        #gap = self.get_w(point + gdt) - self.get_w(point)
-        #proj = point + (target - self.get_w(point)) * gdt * fac / gap
-        #print "w(point + gdt)",self.get_w(point + gdt),"w(point)",self.get_w(point), "fac", fac
-        #print "target - self.get_w(point)",target - self.get_w(point), "gap",gap,"fac", fac
-        #print "gdt", gdt, "ori point", point
-        #print "proj", proj#, "w(proj)", self.get_w(proj)
         proj_pt = point + (target -self.get_w(point)) / gdt *fac
-        print "orginal point",point , "w(point)",self.get_w(point) 
-        print "target w", target, "gradient vector", gdt
-        print "projection", proj_pt, "w(projection)", self.get_w(proj_pt), "factor",fac
-        #print "(target -self.get_w(point)) ", (target -self.get_w(point)) 
-        #print "(target -self.get_w(point)) / gdt", (target -self.get_w(point)) / gdt
-
+#        print "orginal point",point , "w(point)",self.get_w(point) 
+#        print "target w", target, "gradient vector", gdt
+#        print "projection", proj_pt, "w(projection)", self.get_w(proj_pt), "factor",fac
         return proj_pt
         
             
             
-    def calculate_sampling(self, tolerance, seg_1, seg_2):
+    def calculate_sampling(self, tolerance, seg_1, seg_2,surface):
         #tolerance = 0.05*max_curv_radius
-        loc_n = self.local_n(seg_1, seg_2)
+        if surface:
+            loc_n = self.local_n_surface(seg_1,seg_2)
+        else:
+            loc_n = self.local_n(seg_1, seg_2)
         c= np.sqrt(self.max_curv_rad**2 - (self.max_curv_rad-tolerance)**2)
         print "tolerance", tolerance, "c", c
         global_n = np.ceil(cco_3df.length(seg_2-seg_1) / c)
@@ -678,6 +676,7 @@ class Tree:
             
     def concavity_test_for_segments(self, branching_location, c0, c1, c2,sampling_n):
         inside_territory = True
+        print "sampling test", sampling_n
         if self.sample_and_test(branching_location, c0, sampling_n) == False:
             inside_territory = False
         if self.sample_and_test(branching_location, c1, sampling_n) == False:
@@ -686,10 +685,10 @@ class Tree:
             inside_territory = False
         return inside_territory 
         
-    def calculate_official_sampling(self, c0, c1, c2, xy, curvature_tolerance):
-        sampling_n1 = self.calculate_sampling(curvature_tolerance, c0, xy)
-        sampling_n2 = self.calculate_sampling(curvature_tolerance, xy, c1)
-        sampling_n3 = self.calculate_sampling(curvature_tolerance, xy, c2)
+    def calculate_official_sampling(self, c0, c1, c2, xy, curvature_tolerance, surface):
+        sampling_n1 = self.calculate_sampling(curvature_tolerance, c0, xy, surface)
+        sampling_n2 = self.calculate_sampling(curvature_tolerance, xy, c1, surface)
+        sampling_n3 = self.calculate_sampling(curvature_tolerance, xy, c2, surface)
         sampling_n = max(sampling_n1, sampling_n2, sampling_n3)
         print "official smapling n", sampling_n
         return sampling_n
@@ -751,7 +750,13 @@ class Tree:
                     return code, False, 0., result[0],result[1], old_child_index
     
                 branching_location = xyz_c
-                
+                if surface:#project on outer surface
+                    print "original_position of branching location",result[1] 
+                    branching_location = self.newton_algo_corrected(branching_location, TARGET_SURFACE, EPS, 0, MAX_ITER_NEWTON, INITIAL_FAC)
+                    if branching_location[0] == 0. and branching_location[1] == 0.:
+                        print "issue unable to find projection"
+                        return code, False, 0., result[0],result[1], old_child_index
+                    print "new position projected on surface:", result[1]                             
                 #create copy of tree and connect new branch given Kamyia's results
                 tree_copy = copy.deepcopy(self)
                 tree_copy.update_length_factor()
@@ -780,26 +785,14 @@ class Tree:
                         result=[correct_beta, branching_location]  
                         print "connection test reaching concavity test" 
                         #compute concavity crossing test:
-                        sampling_n = self.calculate_official_sampling(c0,c1,c2,xyz,curvature_tolerance)
+                        sampling_n = self.calculate_official_sampling(c0,c1,c2,xyz,curvature_tolerance, surface)
                         inside_territory = False
                         if self.inside_perf_territory(branching_location) ==  False:
                             print "kmiya result is out territory",round(self.get_nearest_w(branching_location),3)# self.get_w(branching_location)
                             return code, False, 0., result[0],result[1], old_child_index
                         inside_territory = self.concavity_test_for_segments(branching_location, c0,c1,c2, sampling_n)
                         if (inside_territory == True): 
-                            print "connection test succeeed and bifurcation inside territory"  
-                            if surface:
-                                #project on outer surface
-                                print "original_position of branching location",result[1] 
-                                branching_location = result[1]
-                                #gdt_vec = np.array([self.get_gx(branching_location), self.get_gy(branching_location), self.get_gz(branching_location)])
-                                #result[1] =  self.newton_algo(branching_location, gdt_vec, 0.1, eps, 0, 100,1.)
-                                max_iter = 1
-                                result[1] = self.newton_algo_corrected(branching_location, TARGET_SURFACE, EPS, 0, MAX_ITER_NEWTON, INITIAL_FAC)
-                                if result[1][0] == 0. and result[1][1] == 0.:
-                                    print "issue unable to find projection"
-                                    return code, False, tree_vol, result[0],result[1], old_child_index
-                                print "new position projected on surface:", result[1]                                             
+                            print "connection test succeeed and bifurcation inside territory"                
                             return 1, True, tree_vol, result[0],result[1], old_child_index  
                         else:
                             print "bifurcation outside territory"
@@ -825,7 +818,7 @@ class Tree:
             
         else:      
             #calculate n = number of sampling for concavity test during process
-            sampling_n = self.calculate_official_sampling(c0,c1,c2,xyz,curvature_tolerance)
+            sampling_n = self.calculate_official_sampling(c0,c1,c2,xyz,curvature_tolerance, surface)
     
             while (iterat < iter_max):
                 #call Kamiya : local optimization of the single bifurcation
@@ -842,7 +835,14 @@ class Tree:
                 print "branching location",branching_location,  self.get_w(branching_location)
                 if self.inside_perf_territory(branching_location) ==  False:
                     print "kmiya result is out territory",round(self.get_nearest_w(branching_location),3)#self.get_w(branching_location)
-                    return code, False, 0., result[0],result[1], old_child_index                   
+                    return code, False, 0., result[0],result[1], old_child_index 
+                if surface:#project on outer surface
+                    print "original_position of branching location",branching_location 
+                    branching_location = self.newton_algo_corrected(branching_location, TARGET_SURFACE, EPS, 0, MAX_ITER_NEWTON, INITIAL_FAC)
+                    print "new position projected on surface:", branching_location
+                    if branching_location[0] == 0. and branching_location[1] == 0.:
+                        print "dead end for projecting on surface"
+                        return code, False, 0., result[0], result[1], old_child_index
                 inside_territory = self.concavity_test_for_segments(branching_location, c0,c1,c2, sampling_n)
                 
                 #create copy of tree and connect new branch given Kamyia's results
@@ -875,19 +875,7 @@ class Tree:
                             print "connection test succeed!" 
                             nbr = iterat*sampling_n*3
                             if nbr <3:
-                                nbr=3
-                            if surface:
-                                #project on outer surface
-                                print "original_position of branching location",result[1] 
-                                branching_location = result[1]
-                                #gdt_vec = np.array([self.get_gx(branching_location), self.get_gy(branching_location), self.get_gz(branching_location)])                               
-                                #result[1] =  self.newton_algo(branching_location, gdt_vec, 0.1, eps, 0, 100,1.)
-                                max_iter = 100
-                                result[1] = self.newton_algo_corrected(branching_location, TARGET_SURFACE, EPS, 0, MAX_ITER_NEWTON, INITIAL_FAC)
-                                print "new position projected on surface:", result[1]
-                                if result[1][0] == 0. and result[1][0] == 0.:
-                                    print "dead end for projecting on surface"
-                                    return nbr, False, tree_vol, result[0], result[1], old_child_index
+                                nbr=3                          
                             return nbr, True, tree_vol, result[0],result[1], old_child_index                                
                         else:
                             print "intersection test failed"
@@ -909,16 +897,17 @@ class Tree:
                         nbr = iterat*sampling_n*3
                         if nbr <3:
                             nbr=3
-                        if surface:
-                            #project on outer surface
-                            print "original_position of branching location",previous_result[1] 
-                            branching_location = previous_result[1]
-                            #gdt_vec = np.array([self.get_gx(branching_location), self.get_gy(branching_location), self.get_gz(branching_location)])
-                            #previous_result[1] =  self.newton_algo(branching_location, gdt_vec, 0.1, eps, 0, 100,1.)
-                            previous_result[1] = self.newton_algo_corrected(branching_location,TARGET_SURFACE,EPS, 0,MAX_ITER_NEWTON,INITIAL_FAC)
-                            print "new position projected on surface:", previous_result[1]
-                            if previous_result[1][0] ==0. and previous_result[1][1] == 0.:
-                                return nbr, False, initial_tree_vol, previous_result[0], previous_result[1], old_child_index
+                        #no need to do the surface check because it was done for the previous result
+#                        if surface: 
+#                            #project on outer surface
+#                            print "original_position of branching location",previous_result[1] 
+#                            branching_location = previous_result[1]
+#                            #gdt_vec = np.array([self.get_gx(branching_location), self.get_gy(branching_location), self.get_gz(branching_location)])
+#                            #previous_result[1] =  self.newton_algo(branching_location, gdt_vec, 0.1, eps, 0, 100,1.)
+#                            previous_result[1] = self.newton_algo_corrected(branching_location,TARGET_SURFACE,EPS, 0,MAX_ITER_NEWTON,INITIAL_FAC)
+#                            print "new position projected on surface:", previous_result[1]
+#                            if previous_result[1][0] ==0. and previous_result[1][1] == 0.:
+#                                return nbr, False, initial_tree_vol, previous_result[0], previous_result[1], old_child_index
                         return nbr, True, initial_tree_vol, previous_result[0], previous_result[1], old_child_index
                     else: 
                         print "no previous result,connection test failed "
