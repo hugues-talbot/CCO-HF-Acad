@@ -123,7 +123,7 @@ seed=42
 kterm=290
 
 #tree = pickle.load( open( "./Results/InterTree_Nt%i_kt%i_s%i_half_nr.p"% (nterm,kterm, seed), "rb" ) )
-tree = pickle.load( open( "./Results/InterTree_Nt250_kt10_s42.p", "rb" ) )
+tree = pickle.load( open( "./Results/tree_Nt250_kt250_s42_real.p", "rb" ) )
 
 
 plot_tree(tree,"figname", True)

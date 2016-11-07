@@ -128,6 +128,7 @@ timing = True
 store_data = False
 parallelized = True
 half = True
+cutof = True
 
 if timing:
     debut = time.time()
@@ -176,13 +177,13 @@ if True:
     filename = "potential_rext%i_rint_%i" %(int(v_ext_radius), int(v_int_radius))
     if half:
         vperf = (4./3.) * np.pi*(v_ext_radius**3 - v_int_radius**3) /2.
-        filename = "potential_half_rext%i_rint_%i_neg" %(int(v_ext_radius), int(v_int_radius))
+        filename = "potential_half_rext%i_rint_%i_negcut" %(int(v_ext_radius), int(v_int_radius))
     filepath = "./Results/"+filename+".npy"
     if os.path.isfile(filepath):
         print "loading potential from numpy file %s" %filepath
         potential = np.load(filepath)
     else:
-        potential = cco_3df.potential_image(v_center, v_ext_radius,v_int_radius,half)
+        potential = cco_3df.potential_image(v_center, v_ext_radius,v_int_radius,half,cutof)
         np.save("./Results/"+filename, potential)
     
     
@@ -193,10 +194,18 @@ if True:
         tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, vperf, np.power((v_ext_radius**3 - v_int_radius**3)/2.,1/3.), potential, v_int_radius, v_center, v_ext_radius, gamma) #v_ext_radius/2.?
      
     # source point : define the root position
-    root_position = np.array([v_center[0]+v_ext_radius,v_center[1], v_center[2]])
+     
+    
+    #root_position = np.array([v_center[0]+v_ext_radius,v_center[1], v_center[2]])
     #root_position = np.array([v_center[0]-v_ext_radius+1,v_center[1]-1, v_center[2]-1])
     if half:
         root_position = np.array([v_center[0],v_center[1], v_center[2]+v_ext_radius])
+    if cutof:
+        cutof_radius = np.sqrt(v_ext_radius**2 - (v_ext_radius - 20)**2)
+        y_coord_add = 15
+        x_coord_add = np.sqrt(cutof_radius**2 - y_coord_add**2)
+        root_position = np.array([v_center[0]+v_ext_radius-20,v_center[1] + y_coord_add, v_center[2] + x_coord_add])
+        #root_position = np.array([v_center[0]+v_ext_radius-20,v_center[1], v_center[2] + x_inter])
     print root_position
     if (tree.inside_perf_territory(root_position)==True):
         print "root inside perf"
@@ -229,7 +238,7 @@ if True:
               
         
         while tree.get_k_term() < N_term:
-            
+            break         
             kterm = tree.get_k_term()
             if kterm == 29:
                 parallelized = False

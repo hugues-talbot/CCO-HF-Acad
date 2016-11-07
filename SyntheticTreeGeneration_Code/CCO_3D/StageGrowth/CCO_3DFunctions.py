@@ -19,7 +19,7 @@ import pylab as pl
 ## creating a potential grid using random walker
 #inner surface and concavity potential value is 1
 #outer surface potential value is 0
-def potential_image(center, ext_radius_f, int_radius_f, half):
+def potential_image(center, ext_radius_f, int_radius_f, half,cut_top):
     #initialization
     cx,cy,cz = int(center[0]), int(center[1]),int(center[2])
     ext_radius = int(ext_radius_f)
@@ -53,45 +53,129 @@ def potential_image(center, ext_radius_f, int_radius_f, half):
     result[1][np.where(result[1] == 0.)] = -1
     if half :
         result[1][0:center[0],:,:] = -1
-        
+    if cut_top:
+        thresh = center[2]+ext_radius - 20
+        result[1][:,thresh:result[1].shape[2],:] = -1
     
-#    slicing = center[2]
-#    fig = plt.figure(figsize=(8, 8))
-#    ax = fig.add_subplot(111,projection='3d')#a3.Axes3D()#pl.figure(figsize=(wid, hei))
-#    #ax.imshow(im[20],20)
-#    xx, yy = pl.ogrid[0:im.shape[1], 0:im.shape[2]]
-#    #xx, yy = np.meshgrid(np.linspace(0,1,12), np.linspace(0,1,13))
-#    # create vertices for a rotated mesh (3D rotation matrix)
-#    X =  xx 
-#    Y =  yy
-#    Z =  slicing*np.ones(X.shape)
-#    #fig = plt.figure(projection='3d')
-#    
-#    
-#    #m = cm.ScalarMappable(cmap=cm.jet)
-#    #m.set_array(markers[:,:,slicing])
-#    
-#    #cmap for markers
-#    colors = [(1.0,1.0,1.0)]
-#    colors.extend([(0.0,0.0,1.)])
-#    colors.extend([(1.0,0.72,0.06)])
-#    colors.extend([(1.0,0.0,0.0)])
-#    cmap = mpl.colors.ListedColormap(colors)
-#    
-#    #cmap for random walker
-#    N=50
-#    colors = [(1.0,1.0,1.0)]
-#    colors.extend(plt.cm.jet(np.linspace(0., 1., N)))
-#    colors.extend([(1.0,1.0,1.0)])
-#    cmap =mpl.colors.ListedColormap(colors) #plt.cm.jet
-#    
-#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(result[1][slicing,:,:]),shade=False)
-#    #ax.colorbar()#maping,ax=ax#maping, shrink=0.5, aspect=5
-#    ax.set_xlabel('X axis')
-#    ax.set_ylabel('Y axis')
-#    ax.set_zlabel('Z axis')
-#    plt.show()
+    slicing = center[2]
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111,projection='3d')#a3.Axes3D()#pl.figure(figsize=(wid, hei))
+    #ax.imshow(im[20],20)
+    xx, yy = pl.ogrid[0:im.shape[1], 0:im.shape[2]]
+    #xx, yy = np.meshgrid(np.linspace(0,1,12), np.linspace(0,1,13))
+    # create vertices for a rotated mesh (3D rotation matrix)
+    X =  xx 
+    Y =  yy
+    Z =  slicing*np.ones(X.shape)
+    #fig = plt.figure(projection='3d')
+    
+    
+    #m = cm.ScalarMappable(cmap=cm.jet)
+    #m.set_array(markers[:,:,slicing])
+    
+    #cmap for markers
+    colors = [(1.0,1.0,1.0)]
+    colors.extend([(0.0,0.0,1.)])
+    colors.extend([(1.0,0.72,0.06)])
+    colors.extend([(1.0,0.0,0.0)])
+    cmap = mpl.colors.ListedColormap(colors)
+    
+    #cmap for random walker
+    N=50
+    colors = [(1.0,1.0,1.0)]
+    colors.extend(plt.cm.jet(np.linspace(0., 1., N)))
+    colors.extend([(1.0,1.0,1.0)])
+    cmap =mpl.colors.ListedColormap(colors) #plt.cm.jet
+    
+    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(result[1][slicing,:,:]),shade=False)
+    #ax.colorbar()#maping,ax=ax#maping, shrink=0.5, aspect=5
+    ax.set_xlabel('X axis')
+    ax.set_ylabel('Y axis')
+    ax.set_zlabel('Z axis')
+    plt.show()
     return result[1]
+    
+if False:
+    cut_top = True
+    surface = True
+    half = True
+    center =np.array([55.,55.,55.])
+    ext_radius_f = 45
+    int_radius_f = 35
+    
+    #initialization
+    cx,cy,cz = int(center[0]), int(center[1]),int(center[2])
+    ext_radius = int(ext_radius_f)
+    int_radius =int(int_radius_f)
+    im = np.zeros((cx+ext_radius*3, cy+ext_radius*3,cz+ext_radius*3)).astype('uint8')
+    markers = np.zeros((cx+ext_radius*3, cy+ext_radius*3, cz+ext_radius*3)).astype('uint8')
+    margin = int(np.ceil(ext_radius/10.))
+    # grids of index   
+    z,y,x = np.ogrid[-ext_radius-margin: ext_radius+margin, -ext_radius-margin: ext_radius+margin, -ext_radius-margin:ext_radius+margin]  
+    z_i, y_i, x_i = np.ogrid[-int_radius: int_radius, -int_radius: int_radius,-int_radius: int_radius]
+    
+    #mask creation
+    index = x**2 + y**2 + z**2 <= ext_radius**2
+    im[cz-ext_radius-margin:cz+ext_radius+margin, cy-ext_radius-margin:cy+ext_radius+margin, cx-ext_radius-margin:cx+ext_radius+margin][index] = 1
+    index_int = x_i**2 + y_i**2 + z_i**2<= int_radius**2
+    im[cz-int_radius:cz+int_radius, cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 0
+
+    #marker creation
+    #external
+    index = x**2 + y**2 +z**2 > ext_radius**2
+    markers[cz-ext_radius-margin:cz+ext_radius+margin, cy-ext_radius-margin:cy+ext_radius+margin, cx-ext_radius-margin:cx+ext_radius+margin][index] = 2
+    #internal
+    index_int = x_i**2 + y_i**2 +z_i**2 < int_radius**2
+    markers[cz-int_radius:cz+int_radius, cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 3
+
+    #random_walker    
+    
+    result = random_walker(im, markers, copy =True, return_full_prob = True, mode= 'cg_mg')   
+    print "rdm walker shape",result.shape
+    print markers.shape
+    result[1][np.where(result[1] == 0.)] = -1
+    if half :
+        result[1][0:center[0],:,:] = -1
+    if cut_top:
+        thresh = center[2]+ext_radius - 20
+        result[1][:,thresh:result[1].shape[2],:] = -1
+    
+    slicing = center[2]+10
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111,projection='3d')#a3.Axes3D()#pl.figure(figsize=(wid, hei))
+    #ax.imshow(im[20],20)
+    xx, yy = pl.ogrid[0:im.shape[1], 0:im.shape[2]]
+    #xx, yy = np.meshgrid(np.linspace(0,1,12), np.linspace(0,1,13))
+    # create vertices for a rotated mesh (3D rotation matrix)
+    X =  xx 
+    Y =  yy
+    Z =  slicing*np.ones(X.shape)
+    #fig = plt.figure(projection='3d')
+    
+    
+    #m = cm.ScalarMappable(cmap=cm.jet)
+    #m.set_array(markers[:,:,slicing])
+    
+    #cmap for markers
+    colors = [(1.0,1.0,1.0)]
+    colors.extend([(0.0,0.0,1.)])
+    colors.extend([(1.0,0.72,0.06)])
+    colors.extend([(1.0,0.0,0.0)])
+    cmap = mpl.colors.ListedColormap(colors)
+    
+    #cmap for random walker
+    N=50
+    colors = [(1.0,1.0,1.0)]
+    colors.extend(plt.cm.jet(np.linspace(0., 1., N)))
+    colors.extend([(1.0,1.0,1.0)])
+    cmap =mpl.colors.ListedColormap(colors) #plt.cm.jet
+    
+    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(result[1][slicing,:,:]),shade=False)
+    #ax.colorbar()#maping,ax=ax#maping, shrink=0.5, aspect=5
+    ax.set_xlabel('X axis')
+    ax.set_ylabel('Y axis')
+    ax.set_zlabel('Z axis')
+    plt.show()
     
     
 ### Newton Raphson algorithm : 
