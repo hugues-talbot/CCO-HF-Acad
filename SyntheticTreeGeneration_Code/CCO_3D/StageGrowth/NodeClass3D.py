@@ -325,11 +325,12 @@ class Tree:
         while inside_area == False :    
             position = cco_3df.random_location(self.center, self.real_final_radius)
             #print "position",position
-            if (self.inside_perf_territory(position)):
+            if (self.inside_perf_terr_exact(position)):
                 if surface:
                     position = self.newton_algo_corrected(position,TARGET_SURFACE, EPS, 0, MAX_ITER_NEWTON, INITIAL_FAC)
                     if position[0] == 0. and position[1]==0.:
-                        break
+                        print "projection failed look for a new one"
+                        continue
                 n = self.calculate_sampling(tolerance, position, first_node_coord,surface)
                 if self.sample_and_test(position, first_node_coord, n) == True:
                     return position
@@ -546,7 +547,7 @@ class Tree:
         #print "self.get_w(seg_pt1)", self.get_w(seg_pt1)
         #print "self.get_w(seg_pt2)", self.get_w(seg_pt2)
         #print "self.get_w(midp)", self.get_w(midp)
-        #print "test", new_location, gdt_vec, target_w, eps
+        print "test", midp, target_w, EPS
         #starting_point = self.newton_algo(midp, gdt_vec, target_w, EPS, 0, MAX_ITER_NEWTON,1.)
         starting_point = self.newton_algo_corrected(midp, target_w,EPS,0,MAX_ITER_NEWTON,INITIAL_FAC)
         print "starting point", starting_point
@@ -637,7 +638,7 @@ class Tree:
     
     def newton_step_corr(self, point, gdt, target,fac):
         proj_pt = point + (target -self.get_w(point)) / gdt *fac
-#        print "orginal point",point , "w(point)",self.get_w(point) 
+        print "orginal point",point , "w(point)",self.get_w(point) 
 #        print "target w", target, "gradient vector", gdt
 #        print "projection", proj_pt, "w(projection)", self.get_w(proj_pt), "factor",fac
         return proj_pt
@@ -669,7 +670,7 @@ class Tree:
         for i in range (1,int(n)):
             loc = seg_pt1 + (i / n) * p1p2_vec
             #print "location test",loc
-            if (self.inside_perf_territory(loc)) == False:
+            if (self.inside_perf_terr_exact(loc)) == False:
                 print "segment outside of perfusion territory"
                 return False
         return True 
@@ -727,7 +728,7 @@ class Tree:
         print "tesing with node index", old_child_index, "coord", self.nodes[old_child_index].coord
         print "new_child_location",new_child_location
         xyz = self.starting_point(c0, c1, c2, eps)
-        if self.inside_perf_territory(xyz) == False:
+        if self.inside_perf_terr_exact(xyz) == False:
             print "branching location starting point out of territory: unplausible location"
             return code, False, 0., np.zeros(2), np.zeros(3), old_child_index
         
@@ -787,7 +788,7 @@ class Tree:
                         #compute concavity crossing test:
                         sampling_n = self.calculate_official_sampling(c0,c1,c2,xyz,curvature_tolerance, surface)
                         inside_territory = False
-                        if self.inside_perf_territory(branching_location) ==  False:
+                        if self.inside_perf_terr_exact(branching_location) ==  False:
                             print "kmiya result is out territory",round(self.get_nearest_w(branching_location),3)# self.get_w(branching_location)
                             return code, False, 0., result[0],result[1], old_child_index
                         inside_territory = self.concavity_test_for_segments(branching_location, c0,c1,c2, sampling_n)
@@ -833,7 +834,7 @@ class Tree:
                 inside_territory = True
                 # test intersection with concavity along the n samplings
                 print "branching location",branching_location,  self.get_w(branching_location)
-                if self.inside_perf_territory(branching_location) ==  False:
+                if self.inside_perf_terr_exact(branching_location) ==  False:
                     print "kmiya result is out territory",round(self.get_nearest_w(branching_location),3)#self.get_w(branching_location)
                     return code, False, 0., result[0],result[1], old_child_index 
                 if surface:#project on outer surface

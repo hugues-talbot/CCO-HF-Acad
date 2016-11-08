@@ -79,7 +79,7 @@ def plot_tree(tree, vol_descptr, name):
 #    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[vol_descptr[0][2]-1,:,:]),shade=False,alpha=0.2)
 #    Z =  (vol_descptr[0][2]+1)*np.ones(X.shape)
 #    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[vol_descptr[0][2]+1,:,:]),shade=False,alpha=0.2)
-#
+##
 #    
     #setting figure so that we get linewidth in data unit
     bound = vol_descptr[1]*1.5
@@ -201,13 +201,13 @@ if True:
     if half:
         root_position = np.array([v_center[0],v_center[1], v_center[2]+v_ext_radius])
     if cutof:
-        cutof_radius = np.sqrt(v_ext_radius**2 - (v_ext_radius - 20)**2)
+        cutof_radius = np.sqrt(v_ext_radius**2 - (v_ext_radius - 21)**2)
         y_coord_add = 15
         x_coord_add = np.sqrt(cutof_radius**2 - y_coord_add**2)
-        root_position = np.array([v_center[0]+v_ext_radius-20,v_center[1] + y_coord_add, v_center[2] + x_coord_add])
+        root_position = np.array([v_center[0]+v_ext_radius-21,v_center[1] + y_coord_add -0.72, v_center[2] + x_coord_add-0.72])
         #root_position = np.array([v_center[0]+v_ext_radius-20,v_center[1], v_center[2] + x_inter])
     print root_position
-    if (tree.inside_perf_territory(root_position)==True):
+    if (tree.inside_perf_terr_exact(root_position)==True):
         print "root inside perf"
             
         root_node = nclass.Node(0,root_position, Q_perf, -1)
@@ -224,7 +224,7 @@ if True:
                 surface = False
         
         tree.update_length_factor()
-        first_node_position = tree.first_segmt_end(curvature_tolerance, surface)
+        first_node_position = tree.first_segmt_end(curvature_tolerance, False)
         first_node = nclass.Node(1, first_node_position, Q_perf,0)
         first_node.set_label(0)
         tree.add_node(first_node)
@@ -238,7 +238,7 @@ if True:
               
         
         while tree.get_k_term() < N_term:
-            break         
+
             kterm = tree.get_k_term()
             if kterm == 29:
                 parallelized = False
@@ -316,11 +316,11 @@ if True:
                     d_tresh_factor = 1.
                     if kterm%10 == 0:
                         #plot_tree(tree, v_descptr, )
-                        name ="./Results/InterTree_Nt%i_kt%i_s%i_real" %(NTerm,kterm,seed)
+                        name ="./Results/InterTree_Nt%i_kt%i_s%i_realcutof" %(NTerm,kterm,seed)
                         pickle.dump(tree, open(name + ".p", "wb"))
 ##
-#                    if kterm == 10 :
-#                        break
+                    if kterm == 5 :
+                        break
                 else:
                     print "failed to add connection on tree"
             else:              
@@ -338,7 +338,7 @@ if True:
         
         name = "./Results/tree_Nt%i_kt%i_s%i" %(NTerm, tree.get_k_term(),seed)
         if half:
-            name = "./Results/tree_Nt%i_kt%i_s%i_real" %(NTerm, tree.get_k_term(),seed)
+            name = "./Results/tree_Nt%i_kt%i_s%i_realcutof" %(NTerm, tree.get_k_term(),seed)
 
         plot_tree(tree, v_descptr, name)
         pickle.dump(tree, open(name + ".p", "wb"))
