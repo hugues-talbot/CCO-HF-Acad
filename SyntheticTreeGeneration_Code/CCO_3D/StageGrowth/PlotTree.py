@@ -74,10 +74,17 @@ def plot_tree(tree, name, half):
     colors.extend([(1.0,1.0,1.0)])
     cmap =mpl.colors.ListedColormap(colors) #plt.cm.jet
     
-#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]-1,:,:]),shade=False,alpha=0.2)
-#    Z =  (center[2]+1)*np.ones(X.shape)
-#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]+1,:,:]),shade=False,alpha=0.2)
-
+    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]-1,:,:].transpose()),shade=False,alpha=0.2)
+    Z =  (center[2]+1)*np.ones(X.shape)
+    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]+1,:,:].transpose()),shade=False,alpha=0.2)
+#    Z =  (center[2]+10)*np.ones(X.shape)
+#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]+10,:,:]),shade=False,alpha=0.2) 
+#    Z =  (center[2]+20)*np.ones(X.shape)
+#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]+20,:,:]),shade=False,alpha=0.2)
+#    Z =  (center[2]+20)*np.ones(X.shape)
+#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]+20,:,:]),shade=False,alpha=0.2)
+#    
+    
     
     #setting figure so that we get linewidth in data unit
     bound = r_ext*1.5
@@ -92,7 +99,7 @@ def plot_tree(tree, name, half):
     point_hei=hei*72 
     # For the calculation below, you have to adjust width by 0.8
     # because the top and bottom 10% of the figure are labels & axis
-    pointlinewid_factor = point_hei * 0.8 #/yrange # corresponding width in pts ( /yrange ?)
+    pointlinewid_factor = point_hei * 0.8 /(0.5*yrange) # corresponding width in pts ( /yrange ?)
     
     inv_length_fac = 1. / tree.length_factor
     for sgmt in tree.nodes:
@@ -116,6 +123,7 @@ def plot_tree(tree, name, half):
     ax.grid(False)
     #plt.savefig(name+".png")
     #plt.savefig(name+".pdf")
+    print "y_range", yrange
     plt.show()
 
 nterm = 2000
@@ -123,7 +131,7 @@ seed=42
 kterm=290
 
 #tree = pickle.load( open( "./Results/InterTree_Nt%i_kt%i_s%i_half_nr.p"% (nterm,kterm, seed), "rb" ) )
-tree = pickle.load( open( "./Results/tree_Nt250_kt250_s42_real.p", "rb" ) )
+tree = pickle.load( open( "./Results/InterTree_Nt250_kt30_s42_realcutof.p", "rb" ) )
 
 
-plot_tree(tree,"figname", True)
+#plot_tree(tree,"figname", True)

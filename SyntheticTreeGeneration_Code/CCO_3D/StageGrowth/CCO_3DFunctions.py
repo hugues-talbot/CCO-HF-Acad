@@ -19,7 +19,7 @@ import pylab as pl
 ## creating a potential grid using random walker
 #inner surface and concavity potential value is 1
 #outer surface potential value is 0
-def potential_image(center, ext_radius_f, int_radius_f, half,cut_top):
+def potential_image(center, ext_radius_f, int_radius_f, half,cut_top, cutof_z_val):
     #initialization
     cx,cy,cz = int(center[0]), int(center[1]),int(center[2])
     ext_radius = int(ext_radius_f)
@@ -54,8 +54,8 @@ def potential_image(center, ext_radius_f, int_radius_f, half,cut_top):
     if half :
         result[1][0:center[0],:,:] = -1
     if cut_top:
-        thresh = center[2]+ext_radius - 20
-        result[1][:,thresh:result[1].shape[2],:] = -1
+        thresh = center[2]+ext_radius - cutof_z_val
+        result[1][:,:,thresh:result[1].shape[2]] = -1
     
     slicing = center[2]
     fig = plt.figure(figsize=(8, 8))
@@ -138,7 +138,7 @@ if False:
         result[1][0:center[0],:,:] = -1
     if cut_top:
         thresh = center[2]+ext_radius - 20
-        result[1][:,thresh:result[1].shape[2],:] = -1
+        result[1][:,:,thresh:result[1].shape[2]] = -1
     
     slicing = center[2]+10
     fig = plt.figure(figsize=(8, 8))
@@ -170,7 +170,10 @@ if False:
     colors.extend([(1.0,1.0,1.0)])
     cmap =mpl.colors.ListedColormap(colors) #plt.cm.jet
     
-    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(result[1][slicing,:,:]),shade=False)
+    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(result[1][slicing,:,:,].transpose()),shade=False)
+    slicing = center[2] +1
+    Z =  slicing*np.ones(X.shape)
+    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(result[1][slicing,:,:,].transpose()),shade=False)
     #ax.colorbar()#maping,ax=ax#maping, shrink=0.5, aspect=5
     ax.set_xlabel('X axis')
     ax.set_ylabel('Y axis')

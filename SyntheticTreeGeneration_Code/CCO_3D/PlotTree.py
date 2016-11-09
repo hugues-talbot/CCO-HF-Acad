@@ -92,14 +92,14 @@ def plot_tree(tree, name, half):
     point_hei=hei*72 
     # For the calculation below, you have to adjust width by 0.8
     # because the top and bottom 10% of the figure are labels & axis
-    pointlinewid_factor = point_hei * 0.8 #/yrange # corresponding width in pts ( /yrange ?)
+    pointlinewid_factor = point_hei * 0.8 /(0.25*yrange) # corresponding width in pts ( /yrange ?)
     
     inv_length_fac = 1. / tree.length_factor
     for sgmt in tree.nodes:
         if (sgmt.parent() >= 0):
             distal = sgmt.coord
             proximal = tree.get_node(sgmt.parent()).coord
-            radius = tree.get_radius(sgmt.index) #*inv_length_fac
+            radius = tree.get_radius(sgmt.index) *inv_length_fac
             print "radius", radius
             verts = [zip([distal[0], proximal[0]],[distal[1], proximal[1]],[distal[2], proximal[2]])]
             tri = a3.art3d.Poly3DCollection(verts)
@@ -114,12 +114,13 @@ def plot_tree(tree, name, half):
     ax.set_ylabel('Y axis')
     ax.set_zlabel('Z axis')
     ax.grid(False)
+    print "yrange", yrange, "inv_length fac", inv_length_fac
     #plt.savefig(name+".png")
     #plt.savefig(name+".pdf")
     plt.show()
 
 nterm = 2000
 seed=42
-kterm=1000
-tree = pickle.load( open( "./Results/InterTree_Nt%i_kt%i_s%i_half_realvol.p"% (nterm,kterm, seed), "rb" ) )
+kterm=100
+tree = pickle.load( open( "./Results/InterTree_Nt%i_kt%i_s%i.p"% (nterm,kterm, seed), "rb" ) )
 plot_tree(tree,"figname", True)

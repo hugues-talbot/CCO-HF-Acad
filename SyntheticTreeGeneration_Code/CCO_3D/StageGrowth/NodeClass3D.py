@@ -552,55 +552,7 @@ class Tree:
         starting_point = self.newton_algo_corrected(midp, target_w,EPS,0,MAX_ITER_NEWTON,INITIAL_FAC)
         print "starting point", starting_point
         return starting_point
-        
-    def newton_step(self, point, target_line_vect, target_w, fac):
-        #print "vec length",self.vec_length(target_line_vect)
-        p_gdt = np.array([self.get_gx(point), self.get_gy(point), self.get_gz(point)])
-        print "gdt", p_gdt
-        norm_line_vect = target_line_vect * 1./ self.vec_length(target_line_vect)  
-        #dot product projected along target line vector
-        vect_proj_length = np.sum(p_gdt*target_line_vect) * 1./self.vec_length(target_line_vect) 
-        print "vect_proj_length", vect_proj_length
 
-        vect_proj = norm_line_vect * vect_proj_length
-        print "vect_proj", vect_proj
-
-        scal_gap = - self.get_w(point) + self.get_w(point + vect_proj)
-        #print "scal gap", scal_gap
-        scal_gap_2 = target_w - self.get_w(point)
-        #print "scal_gap_2", scal_gap_2
-        print "fac", fac
-        k = (scal_gap_2 / scal_gap ) 
-        #print "k", k
-        proj_pt = point + k*vect_proj_length * norm_line_vect * fac
-        return proj_pt
-
-    def newton_algo(self, point, target_line_vect, target_w, eps, count, max_iter, fac):
-        proj_pt = self.newton_step(point, target_line_vect, target_w, fac)
-        
-        if self.inside_perf_territory(proj_pt): 
-            print "proj point", proj_pt, "w", self.get_w(proj_pt)
-            w_proj = self.get_w(proj_pt)
-            #print "w_proj", w_proj, "target", target_w
-            if w_proj < target_w + eps and w_proj > target_w - eps:
-                print "success", proj_pt
-                return proj_pt
-            else:
-                if count < max_iter :
-                    return self.newton_algo(proj_pt, target_line_vect, target_w, eps, count+1, max_iter, fac)
-                else:
-                    print "max iteration reached"
-                    print "point was at w ", w_proj, "target", w_proj
-                    return np.zeros(3) #should be out of perfusion territory
-        else:
-            #TO DO
-            if fac < 1.:
-                print "out of perf territory"
-                return np.zeros(3)
-            else:
-                #test again from same initial point but using a smaller walking gap
-                return self.newton_algo(point, target_line_vect, target_w, eps, count+1, max_iter, 0.1)
-                # if goes out again, it means there is no solution
                 
     def newton_algo_corrected(self, point, target, eps, count, max_iter, fac):
         gdt = np.array([self.get_gx(point), self.get_gy(point), self.get_gz(point)])
@@ -638,7 +590,7 @@ class Tree:
     
     def newton_step_corr(self, point, gdt, target,fac):
         proj_pt = point + (target -self.get_w(point)) / gdt *fac
-        print "orginal point",point , "w(point)",self.get_w(point) 
+#        print "orginal point",point , "w(point)",self.get_w(point) 
 #        print "target w", target, "gradient vector", gdt
 #        print "projection", proj_pt, "w(projection)", self.get_w(proj_pt), "factor",fac
         return proj_pt

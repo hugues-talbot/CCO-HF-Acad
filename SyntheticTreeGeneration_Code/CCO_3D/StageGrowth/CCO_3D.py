@@ -76,9 +76,9 @@ def plot_tree(tree, vol_descptr, name):
 #    colors.extend([(1.0,1.0,1.0)])
 #    cmap =mpl.colors.ListedColormap(colors) #plt.cm.jet
 #    
-#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[vol_descptr[0][2]-1,:,:]),shade=False,alpha=0.2)
+#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[vol_descptr[0][2]-1,:,:].transpose()),shade=False,alpha=0.2)
 #    Z =  (vol_descptr[0][2]+1)*np.ones(X.shape)
-#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[vol_descptr[0][2]+1,:,:]),shade=False,alpha=0.2)
+#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[vol_descptr[0][2]+1,:,:].transpose()),shade=False,alpha=0.2)
 ##
 #    
     #setting figure so that we get linewidth in data unit
@@ -126,9 +126,10 @@ def plot_tree(tree, vol_descptr, name):
 
 timing = True
 store_data = False
-parallelized = True
+parallelized = False
 half = True
 cutof = True
+cutof_val = 20
 
 if timing:
     debut = time.time()
@@ -177,13 +178,13 @@ if True:
     filename = "potential_rext%i_rint_%i" %(int(v_ext_radius), int(v_int_radius))
     if half:
         vperf = (4./3.) * np.pi*(v_ext_radius**3 - v_int_radius**3) /2.
-        filename = "potential_half_rext%i_rint_%i_negcut" %(int(v_ext_radius), int(v_int_radius))
+        filename = "potential_half_rext%i_rint_%i_negcutcorr" %(int(v_ext_radius), int(v_int_radius))
     filepath = "./Results/"+filename+".npy"
     if os.path.isfile(filepath):
         print "loading potential from numpy file %s" %filepath
         potential = np.load(filepath)
     else:
-        potential = cco_3df.potential_image(v_center, v_ext_radius,v_int_radius,half,cutof)
+        potential = cco_3df.potential_image(v_center, v_ext_radius,v_int_radius,half,cutof, cutof_val)
         np.save("./Results/"+filename, potential)
     
     
@@ -201,12 +202,12 @@ if True:
     if half:
         root_position = np.array([v_center[0],v_center[1], v_center[2]+v_ext_radius])
     if cutof:
-        cutof_radius = np.sqrt(v_ext_radius**2 - (v_ext_radius - 21)**2)
+        cutof_radius = np.sqrt((v_ext_radius)**2 - ((v_ext_radius) - cutof_val)**2)
         y_coord_add = 15
         x_coord_add = np.sqrt(cutof_radius**2 - y_coord_add**2)
-        root_position = np.array([v_center[0]+v_ext_radius-21,v_center[1] + y_coord_add -0.72, v_center[2] + x_coord_add-0.72])
+        root_position = np.array([v_center[2] + x_coord_add -1,v_center[1] + y_coord_add-1, v_center[0]+v_ext_radius-cutof_val-1])
         #root_position = np.array([v_center[0]+v_ext_radius-20,v_center[1], v_center[2] + x_inter])
-    print root_position
+    print "root_position",root_position
     if (tree.inside_perf_terr_exact(root_position)==True):
         print "root inside perf"
             
@@ -319,7 +320,7 @@ if True:
                         name ="./Results/InterTree_Nt%i_kt%i_s%i_realcutof" %(NTerm,kterm,seed)
                         pickle.dump(tree, open(name + ".p", "wb"))
 ##
-                    if kterm == 5 :
+                    if kterm == 30 :
                         break
                 else:
                     print "failed to add connection on tree"
