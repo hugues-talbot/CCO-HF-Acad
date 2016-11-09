@@ -25,7 +25,7 @@ GLOBAL_INCREMENT = True
 
 
 EPS = 0.001 #parameter of tolerance related to the target w value to reach for Newton Algo
-MAX_ITER_NEWTON = 200 #max number of iteration for Newton algo
+MAX_ITER_NEWTON = 100 #max number of iteration for Newton algo
 INITIAL_FAC = 0.5
 UPDATED_FAC = 0.01
 UPDATED_DOUBLE_FAC = UPDATED_FAC *0.5

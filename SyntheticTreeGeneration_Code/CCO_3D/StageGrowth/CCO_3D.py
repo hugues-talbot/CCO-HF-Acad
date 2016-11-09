@@ -126,7 +126,7 @@ def plot_tree(tree, vol_descptr, name):
 
 timing = True
 store_data = False
-parallelized = False
+parallelized = True
 half = True
 cutof = True
 cutof_val = 20
@@ -205,7 +205,7 @@ if True:
         cutof_radius = np.sqrt((v_ext_radius)**2 - ((v_ext_radius) - cutof_val)**2)
         y_coord_add = 15
         x_coord_add = np.sqrt(cutof_radius**2 - y_coord_add**2)
-        root_position = np.array([v_center[2] + x_coord_add -1,v_center[1] + y_coord_add-1, v_center[0]+v_ext_radius-cutof_val-1])
+        root_position = np.array([v_center[2] + x_coord_add,v_center[1] + y_coord_add, v_center[0]+v_ext_radius-cutof_val - 1.7])
         #root_position = np.array([v_center[0]+v_ext_radius-20,v_center[1], v_center[2] + x_inter])
     print "root_position",root_position
     if (tree.inside_perf_terr_exact(root_position)==True):
@@ -239,7 +239,7 @@ if True:
               
         
         while tree.get_k_term() < N_term:
-
+            break
             kterm = tree.get_k_term()
             if kterm == 29:
                 parallelized = False
@@ -317,7 +317,7 @@ if True:
                     d_tresh_factor = 1.
                     if kterm%10 == 0:
                         #plot_tree(tree, v_descptr, )
-                        name ="./Results/InterTree_Nt%i_kt%i_s%i_realcutof" %(NTerm,kterm,seed)
+                        name ="./Results/InterTree_Nt%i_kt%i_s%i_corr" %(NTerm,kterm,seed)
                         pickle.dump(tree, open(name + ".p", "wb"))
 ##
                     if kterm == 30 :
@@ -339,7 +339,7 @@ if True:
         
         name = "./Results/tree_Nt%i_kt%i_s%i" %(NTerm, tree.get_k_term(),seed)
         if half:
-            name = "./Results/tree_Nt%i_kt%i_s%i_realcutof" %(NTerm, tree.get_k_term(),seed)
+            name = "./Results/tree_Nt%i_kt%i_s%i_corr" %(NTerm, tree.get_k_term(),seed)
 
         plot_tree(tree, v_descptr, name)
         pickle.dump(tree, open(name + ".p", "wb"))
