@@ -25,13 +25,14 @@ from scipy import optimize
 #f contains f0,f1,f2
 #returns position of starting point
 def starting_point(c0,c1,c2,f):
-    if (len(c0) != 2) or (len(c1) != 2) or (len(c2) != 2) or (len(f)!=3):
+    if (len(c0) != 3) or (len(c1) != 3) or (len(c2) != 3) or (len(f)!=3):
         print "error in starting point inputs"
-        return 0.,0.
-    x_coord = (c0[0]*f[0] + c1[0]*f[1] + c2[0]*f[2]) / (2* f[0])
-    y_coord = (c0[1]*f[0] + c1[1]*f[1] + c2[1]*f[2]) / (2* f[0])
-    z_coord = (c0[2]*f[0] + c1[2]*f[1] + c2[2]*f[2]) / (2* f[0])
-    return np.array([x_coord, y_coord,z_coord])
+        return 0.,0.,0.
+    coords = np.zeros(3)
+    coords[0] = (c0[0]*f[0] + c1[0]*f[1] + c2[0]*f[2]) / (2* f[0])
+    coords[1] = (c0[1]*f[0] + c1[1]*f[1] + c2[1]*f[2]) / (2* f[0])
+    coords[2] = (c0[2]*f[0] + c1[2]*f[1] + c2[2]*f[2]) / (2* f[0])
+    return coords
     
 def calculate_segment_lengths(c0,c1,c2,coords, length_factor):
     l = np.ones(3)

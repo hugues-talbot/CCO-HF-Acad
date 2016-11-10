@@ -319,7 +319,7 @@ class Tree:
         return False, np.array([0.,0.]), d_tresh_factorized
         
     # the location of the first segment end is not constrained by the distance criterion, only by the perfusion territory
-    def first_segmt_end(self, tolerance, surface):
+    def first_segmt_end(self, tolerance, surface, w_tol):
         inside_area = False
         first_node_coord = self.nodes[0].coord
         while inside_area == False :    
@@ -331,8 +331,8 @@ class Tree:
                     if position[0] == 0. and position[1]==0.:
                         print "projection failed look for a new one"
                         continue
-                n = self.calculate_sampling(tolerance, position, first_node_coord,surface)
-                if self.sample_and_test(position, first_node_coord, n) == True:
+                n = self.calculate_sampling(tolerance, position, first_node_coord)
+                if self.sample_and_test(position, first_node_coord, n,w_tol) == True:
                     return position
                 
     def inside_perf_territory(self, location):       
@@ -362,7 +362,7 @@ class Tree:
         return False
         
     def get_w(self, location):
-        if location[1] < 0. or location[0] < 0. or location[2] < 0:
+        if location[1] < 0. or location[1] < 0. or location[2] < 0:
             print "out image"
             return 0.
         if location[2] < (self.w_pot.shape[0]-1) and location[1] < (self.w_pot.shape[1]-1) and location[0] < (self.w_pot.shape[2]-1):
@@ -532,15 +532,15 @@ class Tree:
         print "local n", splg_n
         return splg_n
         
-    def local_n_surface(self, seg_1, seg_2):
-        return int(self.vec_length(seg_1- seg_2) / 50.) + 1
+    def local_n_surface(self, seg_1, seg_2, surface_tol):
+        return int(self.vec_length(seg_1- seg_2) / surface_tol) + 1
         
         
-    def starting_point(self, seg_pt1, seg_pt2, new_location, eps):
+    def starting_point(self, seg_pt1, seg_pt2, new_location, eps): 
         #mid point of seg
         midp = (seg_pt1 + seg_pt2)*0.5
         #find gdt of w at mid point
-        #gdt_vec = np.array([self.get_gx(midp), self.get_gy(midp), self.get_gz(midp)])
+        #
         #print "gdt vec",gdt_vec
         #find on this line the point p where w(p) = 0.5 * (w(seg_pt1) + w(seg_pt2))
         target_w = 0.5 * (self.get_w(seg_pt1) + self.get_w(seg_pt2))
@@ -553,7 +553,8 @@ class Tree:
         print "starting point", starting_point
         return starting_point
 
-                
+    
+    
     def newton_algo_corrected(self, point, target, eps, count, max_iter, fac):
         gdt = np.array([self.get_gx(point), self.get_gy(point), self.get_gz(point)])
         projpt = self.newton_step_corr(point,gdt,target,fac)
@@ -567,7 +568,10 @@ class Tree:
                 return projpt
             else:
                 if count < max_iter:
-                    return self.newton_algo_corrected(projpt,target,eps,count +1, max_iter,fac)
+                    if fac < 0.01: #if we just escaped a dead end, we need to reset the gdt factor so that to move fast enough
+                        return self.newton_algo_corrected(projpt,target,eps,count +1, max_iter,INITIAL_FAC)
+                    else:
+                        return self.newton_algo_corrected(projpt,target,eps,count +1, max_iter,fac)
                 else:
                     print "failed because over number of iterations", count
                     return np.zeros(3)
@@ -590,19 +594,15 @@ class Tree:
     
     def newton_step_corr(self, point, gdt, target,fac):
         proj_pt = point + (target -self.get_w(point)) / gdt *fac
-#        print "orginal point",point , "w(point)",self.get_w(point) 
-#        print "target w", target, "gradient vector", gdt
-#        print "projection", proj_pt, "w(projection)", self.get_w(proj_pt), "factor",fac
+        #print "orginal point",point , "w(point)",self.get_w(point) 
+        #print "target w", target, "gradient vector", gdt
+        print "projection", proj_pt, "w(projection)", self.get_w(proj_pt), "factor",fac
         return proj_pt
         
             
             
-    def calculate_sampling(self, tolerance, seg_1, seg_2,surface):
-        #tolerance = 0.05*max_curv_radius
-        if surface:
-            loc_n = self.local_n_surface(seg_1,seg_2)
-        else:
-            loc_n = self.local_n(seg_1, seg_2)
+    def calculate_sampling(self, tolerance, seg_1, seg_2):
+        loc_n = self.local_n(seg_1, seg_2)
         c= np.sqrt(self.max_curv_rad**2 - (self.max_curv_rad-tolerance)**2)
         print "tolerance", tolerance, "c", c
         global_n = np.ceil(cco_3df.length(seg_2-seg_1) / c)
@@ -614,7 +614,7 @@ class Tree:
             return global_n
             
     #sample, and test along but not final point (no need to test it because location already tested previously, as a new location)
-    def sample_and_test(self, seg_pt1, seg_pt2, n):
+    def sample_and_test(self, seg_pt1, seg_pt2, n, wtol):
         p1p2_vec = seg_pt2 - seg_pt1
         #print "sampling toward", seg_pt2
         #interval = cco_3df.length(p1p2_vec) / float(n)
@@ -625,30 +625,34 @@ class Tree:
             if (self.inside_perf_terr_exact(loc)) == False:
                 print "segment outside of perfusion territory"
                 return False
+            if wtol > 0.:
+                if self.get_w(loc) > wtol:
+                    print "segment too deep inside perf territory"
+                    return False
         return True 
             
-    def concavity_test_for_segments(self, branching_location, c0, c1, c2,sampling_n):
+    def concavity_test_for_segments(self, branching_location, c0, c1, c2,sampling_n, w_tol):
         inside_territory = True
         print "sampling test", sampling_n
-        if self.sample_and_test(branching_location, c0, sampling_n) == False:
+        if self.sample_and_test(branching_location, c0, sampling_n, w_tol) == False:
             inside_territory = False
-        if self.sample_and_test(branching_location, c1, sampling_n) == False:
+        if self.sample_and_test(branching_location, c1, sampling_n, w_tol) == False:
             inside_territory = False
-        if self.sample_and_test(branching_location, c2, sampling_n) == False:
+        if self.sample_and_test(branching_location, c2, sampling_n, w_tol) == False:
             inside_territory = False
         return inside_territory 
         
-    def calculate_official_sampling(self, c0, c1, c2, xy, curvature_tolerance, surface):
-        sampling_n1 = self.calculate_sampling(curvature_tolerance, c0, xy, surface)
-        sampling_n2 = self.calculate_sampling(curvature_tolerance, xy, c1, surface)
-        sampling_n3 = self.calculate_sampling(curvature_tolerance, xy, c2, surface)
+    def calculate_official_sampling(self, c0, c1, c2, xy, curvature_tolerance):
+        sampling_n1 = self.calculate_sampling(curvature_tolerance, c0, xy)
+        sampling_n2 = self.calculate_sampling(curvature_tolerance, xy, c1)
+        sampling_n3 = self.calculate_sampling(curvature_tolerance, xy, c2)
         sampling_n = max(sampling_n1, sampling_n2, sampling_n3)
         print "official smapling n", sampling_n
         return sampling_n
                     
     
     # testing the connection between the new_child_location and the segment made of "old_child_index" and its parent       
-    def test_connection(self, old_child_index, new_child_location, curvature_tolerance,surface):
+    def test_connection(self, old_child_index, new_child_location, curvature_tolerance,surface, w_tol):
         ##update perfusion territory: add a microcirculatory black box
         # by updating the length factor 
         self.update_length_factor()  
@@ -678,7 +682,7 @@ class Tree:
         eps = 0.001
         code= 0 
         print "tesing with node index", old_child_index, "coord", self.nodes[old_child_index].coord
-        print "new_child_location",new_child_location
+        print "new location tested",new_child_location
         xyz = self.starting_point(c0, c1, c2, eps)
         if self.inside_perf_terr_exact(xyz) == False:
             print "branching location starting point out of territory: unplausible location"
@@ -738,12 +742,12 @@ class Tree:
                         result=[correct_beta, branching_location]  
                         print "connection test reaching concavity test" 
                         #compute concavity crossing test:
-                        sampling_n = self.calculate_official_sampling(c0,c1,c2,xyz,curvature_tolerance, surface)
+                        sampling_n = self.calculate_official_sampling(c0,c1,c2,xyz,curvature_tolerance)
                         inside_territory = False
                         if self.inside_perf_terr_exact(branching_location) ==  False:
                             print "kmiya result is out territory",round(self.get_nearest_w(branching_location),3)# self.get_w(branching_location)
                             return code, False, 0., result[0],result[1], old_child_index
-                        inside_territory = self.concavity_test_for_segments(branching_location, c0,c1,c2, sampling_n)
+                        inside_territory = self.concavity_test_for_segments(branching_location, c0,c1,c2, sampling_n,w_tol)
                         if (inside_territory == True): 
                             print "connection test succeeed and bifurcation inside territory"                
                             return 1, True, tree_vol, result[0],result[1], old_child_index  
@@ -771,7 +775,7 @@ class Tree:
             
         else:      
             #calculate n = number of sampling for concavity test during process
-            sampling_n = self.calculate_official_sampling(c0,c1,c2,xyz,curvature_tolerance, surface)
+            sampling_n = self.calculate_official_sampling(c0,c1,c2,xyz,curvature_tolerance)
     
             while (iterat < iter_max):
                 #call Kamiya : local optimization of the single bifurcation
@@ -796,7 +800,7 @@ class Tree:
                     if branching_location[0] == 0. and branching_location[1] == 0.:
                         print "dead end for projecting on surface"
                         return code, False, 0., result[0], result[1], old_child_index
-                inside_territory = self.concavity_test_for_segments(branching_location, c0,c1,c2, sampling_n)
+                inside_territory = self.concavity_test_for_segments(branching_location, c0,c1,c2, sampling_n,w_tol)
                 
                 #create copy of tree and connect new branch given Kamyia's results
                 tree_copy = copy.deepcopy(self)

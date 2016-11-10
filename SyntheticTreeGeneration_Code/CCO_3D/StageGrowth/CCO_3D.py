@@ -126,7 +126,7 @@ def plot_tree(tree, vol_descptr, name):
 
 timing = True
 store_data = False
-parallelized = True
+parallelized = False
 half = True
 cutof = True
 cutof_val = 20
@@ -135,7 +135,7 @@ if timing:
     debut = time.time()
     print debut
 if store_data:
-    fd = open('./Results/CCO3D_newton_negpot_corrautowithmax.txt','w') # open the result file in write mode
+    fd = open('./Results/CCO3D_newton_negpot_chggdtfactt.txt','w') # open the result file in write mode
     old_stdout = sys.stdout   # store the default system handler to be able to restore it    
     sys.stdout = fd # Now your file is used by print as destination 
     
@@ -203,11 +203,20 @@ if True:
         root_position = np.array([v_center[0],v_center[1], v_center[2]+v_ext_radius])
     if cutof:
         cutof_radius = np.sqrt((v_ext_radius)**2 - ((v_ext_radius) - cutof_val)**2)
-        y_coord_add = 15
+        y_coord_add = 30
         x_coord_add = np.sqrt(cutof_radius**2 - y_coord_add**2)
-        root_position = np.array([v_center[2] + x_coord_add,v_center[1] + y_coord_add, v_center[0]+v_ext_radius-cutof_val - 1.7])
+        root_position = np.array([v_center[2] + x_coord_add,v_center[1] + y_coord_add, v_center[0]+v_ext_radius-cutof_val -0.948]) #(-1.7 if y=15)
         #root_position = np.array([v_center[0]+v_ext_radius-20,v_center[1], v_center[2] + x_inter])
     print "root_position",root_position
+    
+    #when computing surface growth they accept 50mm segments diving below the surface as tolerance, with a 40mm external radius
+    tol_schreiner = 50 #we use the same length
+    tol_dist_c = v_ext_radius - np.sqrt(v_ext_radius**2-(tol_schreiner / 2.)**2)  #and our external diameter  
+    bellybutton = np.array([v_center[0]+v_ext_radius,v_center[1], v_center[2]])
+    bellybutton[0] = bellybutton[0]-tol_dist_c  
+    w_tol = tree.get_w(bellybutton) 
+    print "wtol when surface", w_tol
+    
     if (tree.inside_perf_terr_exact(root_position)==True):
         print "root inside perf"
             
@@ -219,13 +228,14 @@ if True:
         #first segment end: randomly picked inside perfusion surface
         if InterTerm >0:          
                 surface = True
-                curvature_tolerance = v_int_radius
+                surface_tol = w_tol
         else: 
-                curvature_tolerance =0.05*tree.max_curv_rad
                 surface = False
+                surface_tol = 0.
         
         tree.update_length_factor()
-        first_node_position = tree.first_segmt_end(curvature_tolerance, False)
+        curvature_tolerance =0.05*tree.max_curv_rad
+        first_node_position = tree.first_segmt_end(curvature_tolerance, True, surface_tol)
         first_node = nclass.Node(1, first_node_position, Q_perf,0)
         first_node.set_label(0)
         tree.add_node(first_node)
@@ -237,9 +247,8 @@ if True:
         dead_end_counter = 0
         d_tresh_factor = 1
               
-        
+
         while tree.get_k_term() < N_term:
-            break
             kterm = tree.get_k_term()
             if kterm == 29:
                 parallelized = False
@@ -247,8 +256,8 @@ if True:
             if kterm < InterTerm:          
                 surface = True
             else: 
-                curvature_tolerance =0.05*tree.max_curv_rad
                 surface = False
+                surface_tol = 0.
             
             success, new_child_location, d_tresh = tree.get_new_location(d_tresh_factor,surface)
             if (success == False):
@@ -270,7 +279,7 @@ if True:
             
 
                 
-            args = [[tree, neighbors[i],new_child_location,curvature_tolerance,surface] for i in range (len(neighbors))]
+            args = [[tree, neighbors[i],new_child_location,curvature_tolerance,surface, surface_tol] for i in range (len(neighbors))]
     
             #process all neighbors connection test batch by batch
     #        count_extend_neighb_research[0] = count_extend_neighb_research[0] + 1
@@ -285,13 +294,10 @@ if True:
             else:
                 for n_index in range(len(neighbors)):
                     tree_copy = copy.deepcopy(tree)
-                    res= tree_copy.test_connection(neighbors[n_index], new_child_location,curvature_tolerance,surface)                    
+                    res= tree_copy.test_connection(neighbors[n_index], new_child_location,curvature_tolerance,surface,surface_tol)                    
                     cet[n_index] = res[1:]
                     print "res[1:]", res[1:]
-                    if tree.get_k_term() == 5:
-                        if n_index == 0:
-                            break
-                    #getting stat
+
 
                     
     
@@ -320,7 +326,7 @@ if True:
                         name ="./Results/InterTree_Nt%i_kt%i_s%i_corr" %(NTerm,kterm,seed)
                         pickle.dump(tree, open(name + ".p", "wb"))
 ##
-                    if kterm == 30 :
+                    if kterm == 5 :
                         break
                 else:
                     print "failed to add connection on tree"

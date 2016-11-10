@@ -19,7 +19,7 @@ from multiprocessing import Pool#, TimeoutError
 import pickle
 import os
 import os.path
-
+import JsonWriter as JW
 
 ############# Visualisation tools ####################
 
@@ -77,7 +77,7 @@ def test_connection_list(list_input):
 
 timing = True
 store_data = False
-parallelized = True
+parallelized = False
 suffix = "smallconcavalternate"
 
 if timing:
@@ -234,8 +234,8 @@ if True:
                     pickle.dump(forest, open("./Results/InterForest_Nt%i_kt_%i_s%i_polytree%i_%s"%(forest.n_term,kterm,seed,len(forest.trees),suffix), "wb"))
 #                if kterm == 600:
 #                    print "over 600"
-#                if kterm == 4:
-#                    break  
+                if kterm == 4:
+                    break  
 
             else:
                 print "failed to add connection on tree"
@@ -254,7 +254,7 @@ if True:
     plot_forest(forest, area_descptr, "./Results/Forest_Nt%i_s%i_polytree%i_%s" %(forest.get_fk_term(),seed,len(forest.trees),suffix), potential)
     pickle.dump(forest, open("./Results/Forest_Nt%i_s%i_polytree%i_%s.p"%(forest.get_fk_term(),seed,len(forest.trees),suffix), "wb"))
 
-
+    JW.write_json(forest,"./Results/Forest_.json")
 
 if store_data:
     sys.stdout=old_stdout # here we restore the default behavior

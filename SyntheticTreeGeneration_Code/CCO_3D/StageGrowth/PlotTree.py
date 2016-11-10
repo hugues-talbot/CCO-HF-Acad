@@ -74,9 +74,9 @@ def plot_tree(tree, name, half):
     colors.extend([(1.0,1.0,1.0)])
     cmap =mpl.colors.ListedColormap(colors) #plt.cm.jet
     
-    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]-1,:,:].transpose()),shade=False,alpha=0.2)
+    #ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]-1,:,:].transpose()),shade=False,alpha=0.2)
     Z =  (center[2]+1)*np.ones(X.shape)
-    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]+1,:,:].transpose()),shade=False,alpha=0.2)
+    #ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]+1,:,:].transpose()),shade=False,alpha=0.2)
 #    Z =  (center[2]+10)*np.ones(X.shape)
 #    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(im[center[2]+10,:,:]),shade=False,alpha=0.2) 
 #    Z =  (center[2]+20)*np.ones(X.shape)
@@ -131,7 +131,7 @@ seed=42
 kterm=290
 
 #tree = pickle.load( open( "./Results/InterTree_Nt%i_kt%i_s%i_half_nr.p"% (nterm,kterm, seed), "rb" ) )
-tree = pickle.load( open( "./Results/InterTree_Nt250_kt20_s42_realcutof.p", "rb" ) )
+tree = pickle.load( open( "./Results/InterTree_Nt250_kt50_s42_corr.p", "rb" ) )
 
 
 plot_tree(tree,"figname", True)

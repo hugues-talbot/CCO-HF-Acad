@@ -20,6 +20,7 @@ import pylab as pl
 #inner surface and concavity potential value is 1
 #outer surface potential value is 0
 def potential_image(center, ext_radius_f, int_radius_f, half,cut_top, cutof_z_val):
+    print "creating potential image"
     #initialization
     cx,cy,cz = int(center[0]), int(center[1]),int(center[2])
     ext_radius = int(ext_radius_f)
@@ -46,7 +47,7 @@ def potential_image(center, ext_radius_f, int_radius_f, half,cut_top, cutof_z_va
     markers[cz-int_radius:cz+int_radius, cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 3
 
     #random_walker    
-    
+    print "running randomw walker"
     result = random_walker(im, markers, copy =True, return_full_prob = True, mode= 'cg_mg')   
     print "rdm walker shape",result.shape
     print markers.shape
