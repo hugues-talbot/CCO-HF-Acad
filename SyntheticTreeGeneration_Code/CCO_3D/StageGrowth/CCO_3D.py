@@ -126,7 +126,7 @@ def plot_tree(tree, vol_descptr, name):
 
 timing = True
 store_data = False
-parallelized = False
+parallelized = True
 half = True
 cutof = True
 cutof_val = 20
@@ -326,8 +326,8 @@ if True:
                         name ="./Results/InterTree_Nt%i_kt%i_s%i_corr" %(NTerm,kterm,seed)
                         pickle.dump(tree, open(name + ".p", "wb"))
 ##
-                    if kterm == 5 :
-                        break
+#                    if kterm == 5 :
+#                        break
                 else:
                     print "failed to add connection on tree"
             else:              
