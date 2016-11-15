@@ -12,6 +12,7 @@ from skimage.segmentation import random_walker
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pylab as pl
+import mpl_toolkits.mplot3d as a3
 
 #from pyamg import *
 
@@ -96,41 +97,110 @@ def potential_image(center, ext_radius_f, int_radius_f, half,cut_top, cutof_z_va
     plt.show()
     return result[1]
     
-if False:
-    cut_top = True
-    surface = True
-    half = True
-    center =np.array([55.,55.,55.])
-    ext_radius_f = 45
-    int_radius_f = 35
-    
+def potential_ellipsoid(center, r_int, r_ext, half,cut_top, cutop_val):
+    print "starting potential generation"
     #initialization
+    rz,ry,rx = int(r_ext[0]), int(r_ext[1]), int(r_ext[2])# r_ext[0] is smallest radius
+    riz,riy,rix = int(r_int[0]), int(r_int[1]), int(r_int[2])#r_int[0] is smallest radius
     cx,cy,cz = int(center[0]), int(center[1]),int(center[2])
-    ext_radius = int(ext_radius_f)
-    int_radius =int(int_radius_f)
-    im = np.zeros((cx+ext_radius*3, cy+ext_radius*3,cz+ext_radius*3)).astype('uint8')
-    markers = np.zeros((cx+ext_radius*3, cy+ext_radius*3, cz+ext_radius*3)).astype('uint8')
-    margin = int(np.ceil(ext_radius/10.))
+    im = np.zeros((cx+rx*2, cy+rx*2,cz+rx*2)).astype('uint8')
+    markers = np.zeros((cx+rx*2, cy+rx*2, cz+rx*2)).astype('uint8')
+    margin = int(np.ceil(rx/10.))
     # grids of index   
-    z,y,x = np.ogrid[-ext_radius-margin: ext_radius+margin, -ext_radius-margin: ext_radius+margin, -ext_radius-margin:ext_radius+margin]  
-    z_i, y_i, x_i = np.ogrid[-int_radius: int_radius, -int_radius: int_radius,-int_radius: int_radius]
+    z,y,x = np.ogrid[-rz-margin: rz+margin, -ry-margin: ry+margin, -rx-margin:rx+margin]  
+    z_i, y_i, x_i = np.ogrid[-riz: riz, -riy: riy,-rix: rix]
     
     #mask creation
-    index = x**2 + y**2 + z**2 <= ext_radius**2
-    im[cz-ext_radius-margin:cz+ext_radius+margin, cy-ext_radius-margin:cy+ext_radius+margin, cx-ext_radius-margin:cx+ext_radius+margin][index] = 1
-    index_int = x_i**2 + y_i**2 + z_i**2<= int_radius**2
-    im[cz-int_radius:cz+int_radius, cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 0
+    # a point is inside an ellipsoid if (x/a)2 + (y/b)2 + (z/c)2 <= 1
+    index = (x/float(rx))**2 + (y/float(ry))**2 + (z/float(rz))**2 <= 1
+    im[cz-rz-margin:cz+rz+margin, cy-ry-margin:cy+ry+margin, cx-rx-margin:cx+rx+margin][index] = 1
+    index_int = (x_i/float(rix))**2 + (y_i/float(riy))**2 + (z_i/float(riz))**2 <= 1   
+    im[cz-riz:cz+riz, cy-riy:cy+riy, cx-rix:cx+rix][index_int] = 0
 
     #marker creation
     #external
-    index = x**2 + y**2 +z**2 > ext_radius**2
-    markers[cz-ext_radius-margin:cz+ext_radius+margin, cy-ext_radius-margin:cy+ext_radius+margin, cx-ext_radius-margin:cx+ext_radius+margin][index] = 2
+    index = (x/float(rx))**2 + (y/float(ry))**2 + (z/float(rz))**2 > 1   
+    markers[cz-rz-margin:cz+rz+margin, cy-ry-margin:cy+ry+margin, cx-rx-margin:cx+rx+margin][index] = 2
     #internal
-    index_int = x_i**2 + y_i**2 +z_i**2 < int_radius**2
-    markers[cz-int_radius:cz+int_radius, cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 3
+    index_int = (x_i/float(rix))**2 + (y_i/float(riy))**2 + (z_i/float(riz))**2 <= 1
+    markers[cz-riz:cz+riz, cy-riy:cy+riy, cx-rix:cx+rix][index_int] = 3
 
     #random_walker    
+    print "starting random walker"   
+    result = random_walker(im, markers, copy =True, return_full_prob = True, mode= 'cg_mg')   
+    print "rdm walker shape",result.shape
     
+    #updating final shape: 
+    result[1][np.where(result[1] == 0.)] = -1
+    if half :
+        result[1][0:center[0],:,:] = -1
+    if cut_top:
+        thresh = center[2]+rx - cutop_val
+        result[1][:,:,thresh:result[1].shape[2]] = -1
+    
+    #printing option
+#    slicing = center[2]+5
+#    ax = a3.Axes3D(pl.figure(figsize=(8, 8)))
+#    xx, yy = pl.ogrid[0:im.shape[1], 0:im.shape[2]]
+#    #xx, yy = np.meshgrid(np.linspace(0,1,12), np.linspace(0,1,13))
+#    # create vertices for a rotated mesh (3D rotation matrix)
+#    X =  xx 
+#    Y =  yy
+#    Z =  slicing*np.ones(X.shape)
+#
+#    #cmap for random walker
+#    N=50
+#    colors = [(1.0,1.0,1.0)]
+#    colors.extend(plt.cm.jet(np.linspace(0., 1., N)))
+#    colors.extend([(1.0,1.0,1.0)])
+#    cmap =mpl.colors.ListedColormap(colors) #plt.cm.jet
+#    
+#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(result[1][slicing,:,:,].transpose()),shade=False)
+#    slicing = center[2] +1
+#    Z =  slicing*np.ones(X.shape)
+#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(result[1][slicing,:,:,].transpose()),shade=False)
+#    ax.set_xlabel('X axis')
+#    ax.set_ylabel('Y axis')
+#    ax.set_zlabel('Z axis')
+#    plt.show()
+    
+    return result[1]
+if False:
+    #ellipsoid
+    cut_top = True
+    surface = True
+    half = True
+    center = np.array([60,60,60])#np.array([95,95,95])
+    rz,ry,rx = 10,20,40
+    #rx,ry,rz = 30,40,70
+    riz,riy,rix = 5,15,30#20,30,60
+    
+    #initialization
+    cx,cy,cz = int(center[0]), int(center[1]),int(center[2])
+    im = np.zeros((cx+rx*2, cy+rx*2,cz+rx*2)).astype('uint8')
+    markers = np.zeros((cx+rx*2, cy+rx*2, cz+rx*2)).astype('uint8')
+    margin = int(np.ceil(rx/10.))
+    # grids of index   
+    z,y,x = np.ogrid[-rz-margin: rz+margin, -ry-margin: ry+margin, -rx-margin:rx+margin]  
+    z_i, y_i, x_i = np.ogrid[-riz: riz, -riy: riy,-rix: rix]
+    
+    #mask creation
+    # a point is inside an ellipsoid if (x/a)2 + (y/b)2 + (z/c)2 <= 1
+    index = (x/float(rx))**2 + (y/float(ry))**2 + (z/float(rz))**2 <= 1
+    im[cz-rz-margin:cz+rz+margin, cy-ry-margin:cy+ry+margin, cx-rx-margin:cx+rx+margin][index] = 1
+
+    index_int = (x_i/float(rix))**2 + (y_i/float(riy))**2 + (z_i/float(riz))**2 <= 1   
+    im[cz-riz:cz+riz, cy-riy:cy+riy, cx-rix:cx+rix][index_int] = 0
+
+    #marker creation
+    #external
+    index = (x/float(rx))**2 + (y/float(ry))**2 + (z/float(rz))**2 > 1   
+    markers[cz-rz-margin:cz+rz+margin, cy-ry-margin:cy+ry+margin, cx-rx-margin:cx+rx+margin][index] = 2
+    #internal
+    index_int = (x_i/float(rix))**2 + (y_i/float(riy))**2 + (z_i/float(riz))**2 <= 1
+    markers[cz-riz:cz+riz, cy-riy:cy+riy, cx-rix:cx+rix][index_int] = 3
+
+    #random_walker       
     result = random_walker(im, markers, copy =True, return_full_prob = True, mode= 'cg_mg')   
     print "rdm walker shape",result.shape
     print markers.shape
@@ -138,13 +208,12 @@ if False:
     if half :
         result[1][0:center[0],:,:] = -1
     if cut_top:
-        thresh = center[2]+ext_radius - 20
+        thresh = center[2]+rx - 20
         result[1][:,:,thresh:result[1].shape[2]] = -1
     
-    slicing = center[2]+10
-    fig = plt.figure(figsize=(8, 8))
-    ax = fig.add_subplot(111,projection='3d')#a3.Axes3D()#pl.figure(figsize=(wid, hei))
-    #ax.imshow(im[20],20)
+    slicing = center[2]+5
+
+    ax = a3.Axes3D(pl.figure(figsize=(8, 8)))
     xx, yy = pl.ogrid[0:im.shape[1], 0:im.shape[2]]
     #xx, yy = np.meshgrid(np.linspace(0,1,12), np.linspace(0,1,13))
     # create vertices for a rotated mesh (3D rotation matrix)
@@ -158,11 +227,11 @@ if False:
     #m.set_array(markers[:,:,slicing])
     
     #cmap for markers
-    colors = [(1.0,1.0,1.0)]
-    colors.extend([(0.0,0.0,1.)])
-    colors.extend([(1.0,0.72,0.06)])
-    colors.extend([(1.0,0.0,0.0)])
-    cmap = mpl.colors.ListedColormap(colors)
+#    colors = [(1.0,1.0,1.0)]
+#    colors.extend([(0.0,0.0,1.)])
+#    colors.extend([(1.0,0.72,0.06)])
+#    colors.extend([(1.0,0.0,0.0)])
+#    cmap = mpl.colors.ListedColormap(colors)
     
     #cmap for random walker
     N=50

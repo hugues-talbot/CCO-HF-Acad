@@ -25,7 +25,7 @@ from multiprocessing import Pool, TimeoutError
 import pickle
 import mpl_toolkits.mplot3d as a3
 from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.patches import Circle, PathPatch
+from matplotlib.patches import Circle, Ellipse, PathPatch
 import mpl_toolkits.mplot3d.art3d as art3d
 
 ############# Visualisation tools ####################
@@ -35,22 +35,40 @@ def plot_tree(tree, vol_descptr, name):
     hei=16
     ax = a3.Axes3D(pl.figure(figsize=(wid, hei)))
     
+    rx,ry,rz =vol_descptr[1][0], vol_descptr[1][1], vol_descptr[1][2]
+    rix,riy,riz =vol_descptr[2][0], vol_descptr[2][1], vol_descptr[2][2]
+
+    # Set of all spherical angles:
     u = np.linspace(0, 2 * np.pi, 100)
     v = np.linspace(0, np.pi, 100)
-
-    x = vol_descptr[0][0]+ vol_descptr[1] * np.outer(np.cos(u), np.sin(v))
-    y = vol_descptr[0][1]+ vol_descptr[1] * np.outer(np.sin(u), np.sin(v))
-    z = vol_descptr[0][2]+ vol_descptr[1] * np.outer(np.ones(np.size(u)), np.cos(v))
-    ax.plot_surface(x, y, z,rstride=2, cstride=2, linewidth=0,color='r',alpha = 0.1) #,
     
-    x = vol_descptr[0][0]+ vol_descptr[2] * np.outer(np.cos(u), np.sin(v))
-    y = vol_descptr[0][1]+ vol_descptr[2] * np.outer(np.sin(u), np.sin(v))
-    z = vol_descptr[0][2]+ vol_descptr[2] * np.outer(np.ones(np.size(u)), np.cos(v))
-    ax.plot_surface(x, y, z,rstride=2, cstride=2, linewidth=0,color='r',alpha = 0.1)
+    # Cartesian coordinates that correspond to the spherical angles:
+    # (this is the equation of an ellipsoid):
+    x = vol_descptr[0][0] + rx * np.outer(np.cos(u), np.sin(v))
+    y = vol_descptr[0][1] + ry * np.outer(np.sin(u), np.sin(v))
+    z = vol_descptr[0][2] + rz * np.outer(np.ones_like(u), np.cos(v))
+    
+    xi = vol_descptr[0][0] + rix * np.outer(np.cos(u), np.sin(v))
+    yi = vol_descptr[0][1] + riy * np.outer(np.sin(u), np.sin(v))
+    zi = vol_descptr[0][2] + riz * np.outer(np.ones_like(u), np.cos(v))
 
-    p = Circle((vol_descptr[0][0:2]), vol_descptr[1], facecolor = 'b', alpha=0.1) #Add a circle in the yz plane
-    ax.add_patch(p)
-    art3d.pathpatch_2d_to_3d(p, z = vol_descptr[0][1], zdir = 'x')
+   
+    ax.plot_surface(x, y, z,rstride=2, cstride=2, linewidth=0,color='r',alpha = 0.1) #,
+    ax.plot_surface(xi, yi, zi,rstride=2, cstride=2, linewidth=0,color='r',alpha = 0.1)
+    
+    #Add an ellips in the yz plane
+    e = Ellipse(xy=(vol_descptr[0][1] ,vol_descptr[0][2] ), width= ry*2, height=rz*2,facecolor='b',alpha = 0.1)
+    ax.add_patch(e)
+    art3d.pathpatch_2d_to_3d(e, z = vol_descptr[0][0], zdir = 'x')
+    
+    #Add an ellips in the xy plane
+    z_cut = vol_descptr[0][2] + rz - cutof_val
+    x_cut = cco_3df.length(np.sqrt(1.- ((z_cut-vol_descptr[0][2]) / float(rz))**2 ) * rx) 
+    y_cut = cco_3df.length(np.sqrt(1.- ((z_cut-vol_descptr[0][2]) / float(rz))**2 ) * ry) 
+    e = Ellipse(xy=(vol_descptr[0][0] ,vol_descptr[0][1] ), width= x_cut*2, height=y_cut*2,facecolor='b',alpha = 0.1)
+    ax.add_patch(e)
+    art3d.pathpatch_2d_to_3d(e, z = vol_descptr[0][2] + rz -20, zdir = 'z')
+    
     
 #    im = tree.w_pot
 #    xx, yy = pl.ogrid[0:im.shape[1], 0:im.shape[2]]
@@ -80,7 +98,7 @@ def plot_tree(tree, vol_descptr, name):
 ##
 #    
     #setting figure so that we get linewidth in data unit
-    bound = vol_descptr[1]*1.5
+    bound = vol_descptr[1][2]*1.5
     ax.set_xlim(vol_descptr[0][0] - bound,vol_descptr[0][0]+ bound)#using same bound diff for all axis 
     ax.set_ylim(vol_descptr[0][1] - bound,vol_descptr[0][1]+ bound)#--> proportional to the figure size
     ax.set_zlim(vol_descptr[0][2] - bound,vol_descptr[0][2]+ bound)
@@ -105,7 +123,7 @@ def plot_tree(tree, vol_descptr, name):
             tri = a3.art3d.Poly3DCollection(verts)
             tri.set_color('k')
           
-            tri.set_linewidth(radius*2.*pointlinewid_factor/(vol_descptr[1]*3.) )
+            tri.set_linewidth(radius*2.*pointlinewid_factor /(vol_descptr[1][2]*3.))
             ax.add_collection3d(tri)
             
 
@@ -123,8 +141,8 @@ def plot_tree(tree, vol_descptr, name):
 ############# Karch algo : CCO ####################
 
 timing = True
-store_data = True
-parallelized = False
+store_data = False
+parallelized = True
 half = True
 cutof = True
 cutof_val = 20
@@ -133,7 +151,7 @@ if timing:
     debut = time.time()
     print debut
 if store_data:
-    fd = open('./Results/CCO3D_newton_negpot_chggdtfactt.txt','w') # open the result file in write mode
+    fd = open('./Results/CCO3D_newton_negpot_ellips.txt','w') # open the result file in write mode
     old_stdout = sys.stdout   # store the default system handler to be able to restore it    
     sys.stdout = fd # Now your file is used by print as destination 
     
@@ -166,53 +184,55 @@ if True:
     N_con = 20
 
     # About  convexe perfusion surface : defines a disc surface 
-    v_center = np.array([55.,55.,55.])#np.array([14.,14., 14.])#np.array([80.,80.,80.])#np.array([80.,80.,80.])#
-    v_ext_radius =45#10.#50.#50#
-    v_int_radius =35#4.#15.#15#        
+    v_center = np.array([90,90,90])#np.array([14.,14., 14.])#np.array([80.,80.,80.])#np.array([80.,80.,80.])#
+    #v_ext_radius =45#10.#50.#50#
+    #v_int_radius =35#4.#15.#15#        
+
+    r_ext = np.array([30,40,70])
+    r_int = np.array([20,30,60])
     
     #in schreiner non convex cco: the total ellispoid volume is 48cm3
     #to use a similar volume in sphere we should take: r_ext = 45mm and r_int =35mm (so center = 55,55,55) 
-    v_descptr = [v_center, v_ext_radius, v_int_radius]
-    vperf = (4./3.) * np.pi*(v_ext_radius**3 - v_int_radius**3)
-    filename = "potential_rext%i_rint_%i" %(int(v_ext_radius), int(v_int_radius))
+    v_descptr = [v_center, r_ext, r_int]
+    vperf = (4./3.) * np.pi*(r_ext[0]*r_ext[1]*r_ext[2] - r_int[0]*r_int[1]*r_int[2])
+    filename = "potential_rext%i-%i-%i_rint%i-%i-%i_ellips" %(r_ext[0],r_ext[1],r_ext[2] ,r_int[0],r_int[1],r_int[2])
     if half:
-        vperf = (4./3.) * np.pi*(v_ext_radius**3 - v_int_radius**3) /2.
-        filename = "potential_half_rext%i_rint_%i_negcutcorr" %(int(v_ext_radius), int(v_int_radius))
+        vperf = (4./3.) * np.pi*(r_ext[0]*r_ext[1]*r_ext[2] - r_int[0]*r_int[1]*r_int[2]) /2.
+        filename = "potential_half_rext%i-%i-%i_rint%i-%i-%i_ellips" %(r_ext[0],r_ext[1],r_ext[2] ,r_int[0],r_int[1],r_int[2])
     filepath = "./Results/"+filename+".npy"
     if os.path.isfile(filepath):
         print "loading potential from numpy file %s" %filepath
         potential = np.load(filepath)
     else:
-        potential = cco_3df.potential_image(v_center, v_ext_radius,v_int_radius,half,cutof, cutof_val)
+        potential = cco_3df.potential_ellipsoid(v_center, r_int,r_ext,half,cutof, cutof_val)
         np.save("./Results/"+filename, potential)
     
     
     #### initialization ##    
     store_cet = []
-    tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, vperf, np.power((v_ext_radius**3 - v_int_radius**3),1/3.), potential, v_int_radius, v_center, v_ext_radius, gamma)
+    tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, vperf, np.power((r_ext[0]*r_ext[1]*r_ext[2] - r_int[0]*r_int[1]*r_int[2]),1/3.), potential, r_ext[2], v_center, r_ext[2], gamma)
     if half:      
-        tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, vperf, np.power((v_ext_radius**3 - v_int_radius**3)/2.,1/3.), potential, v_int_radius, v_center, v_ext_radius, gamma) #v_ext_radius/2.?
+        tree = nclass.Tree([], N_term, Q_perf, P_drop, viscosity, vperf, np.power((r_ext[0]*r_ext[1]*r_ext[2] - r_int[0]*r_int[1]*r_int[2])/2.,1/3.), potential, r_ext[2], v_center, r_ext[2], gamma) #v_ext_radius/2.?
      
-    # source point : define the root position
-     
-    
-    #root_position = np.array([v_center[0]+v_ext_radius,v_center[1], v_center[2]])
-    #root_position = np.array([v_center[0]-v_ext_radius+1,v_center[1]-1, v_center[2]-1])
     if half:
-        root_position = np.array([v_center[0],v_center[1], v_center[2]+v_ext_radius])
+        root_position = np.array([v_center[0],v_center[1], v_center[2]+r_ext[2]])
     if cutof:
-        cutof_radius = np.sqrt((v_ext_radius)**2 - ((v_ext_radius) - cutof_val)**2)
-        y_coord_add = 30
-        x_coord_add = np.sqrt(cutof_radius**2 - y_coord_add**2)
-        root_position = np.array([v_center[2] + x_coord_add,v_center[1] + y_coord_add, v_center[0]+v_ext_radius-cutof_val -0.948]) #(-1.7 if y=15)
-        #root_position = np.array([v_center[0]+v_ext_radius-20,v_center[1], v_center[2] + x_inter])
+        #y_root = v_center[1]
+        z_root = v_center[2] + r_ext[2] - cutof_val
+        x_radius = cco_3df.length(np.sqrt(1.- ((z_root-v_center[2]) / float(r_ext[2]))**2 ) * r_ext[0]) #dont need it because y_root = v_center[1] - (y_root / r_ext[1])**2
+        y_radius = cco_3df.length(np.sqrt(1.- ((z_root-v_center[2]) / float(r_ext[2]))**2 ) * r_ext[1])
+        y_root = v_center[1] + 0.5 * y_radius
+        x_root = v_center[0] + np.sqrt(1. - ((y_root - v_center[1]) /float(y_radius))**2) *x_radius
+        root_position = np.array([x_root,y_root, z_root -1.6])
+        
+        
     print "root_position",root_position
     
     #when computing surface growth they accept 50mm segments diving below the surface as tolerance, with a 40mm external radius
     tol_schreiner = 50 #we use the same length
     schreiner_ext_radii = 40
     tol_dist_c = schreiner_ext_radii - np.sqrt(schreiner_ext_radii**2-(tol_schreiner / 2.)**2)  #and our external diameter  
-    bellybutton = np.array([v_center[0]+v_ext_radius,v_center[1], v_center[2]])
+    bellybutton = np.array([v_center[0]+r_ext[0],v_center[1], v_center[2]])
     bellybutton[0] = bellybutton[0]-tol_dist_c  
     w_tol = tree.get_w(bellybutton) 
     print "wtol when surface", w_tol
@@ -249,10 +269,7 @@ if True:
               
 
         while tree.get_k_term() < N_term:
-            #break
             kterm = tree.get_k_term()
-            if kterm == 29:
-                parallelized = False
                 
             if kterm < InterTerm:          
                 surface = True
@@ -276,14 +293,10 @@ if True:
             test_N_con_max = False
             
             # test closest neighbors
-            neighbors = tree.find_neighbors(new_child_location, N_con)
-            
-
-                
+            neighbors = tree.find_neighbors(new_child_location, N_con)           
             args = [[tree, neighbors[i],new_child_location,curvature_tolerance,surface, surface_tol] for i in range (len(neighbors))]
     
             #process all neighbors connection test batch by batch
-    #        count_extend_neighb_research[0] = count_extend_neighb_research[0] + 1
             if parallelized == True:
                 while (len(cet) < N_con) and (len(cet) < len(neighbors)):           
                     end_lim = len(cet) + process_nb if (len(cet) + process_nb < len(neighbors)) else len(neighbors)            
@@ -321,11 +334,11 @@ if True:
                     d_tresh_factor = 1.
                     if kterm%10 == 0:
                         #plot_tree(tree, v_descptr, )
-                        name ="./Results/InterTree_Nt%i_kt%i_s%i_corr" %(NTerm,kterm,seed)
+                        name ="./Results/InterTree_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)
                         pickle.dump(tree, open(name + ".p", "wb"))
 ##
-                    if kterm == 9 :
-                        break
+#                    if kterm ==  7:
+#                        break
                 else:
                     print "failed to add connection on tree"
             else:              
@@ -341,12 +354,13 @@ if True:
             #keep going until reach Nterm!
         
         
-        name = "./Results/tree_Nt%i_kt%i_s%i" %(NTerm, tree.get_k_term(),seed)
+        name = "./Results/tree_Nt%i_kt%i_s%i_ellip" %(NTerm, tree.get_k_term(),seed)
         if half:
-            name = "./Results/tree_Nt%i_kt%i_s%i_corr" %(NTerm, tree.get_k_term(),seed)
+            name = "./Results/tree_Nt%i_kt%i_s%i_ellip" %(NTerm, tree.get_k_term(),seed)
 
+        
         plot_tree(tree, v_descptr, name)
-        pickle.dump(tree, open(name + ".p", "wb"))
+        #pickle.dump(tree, open(name + ".p", "wb"))
 
 
 if store_data:

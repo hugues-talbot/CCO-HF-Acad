@@ -568,7 +568,7 @@ class Tree:
                 return projpt
             else:
                 if count < max_iter:
-                    if fac < 0.01: #if we just escaped a dead end, we need to reset the gdt factor so that to move fast enough
+                    if fac < 0.04: #if we just escaped a dead end, we need to reset the gdt factor so that to move fast enough
                         return self.newton_algo_corrected(projpt,target,eps,count +1, max_iter,INITIAL_FAC)
                     else:
                         return self.newton_algo_corrected(projpt,target,eps,count +1, max_iter,fac)
@@ -594,8 +594,8 @@ class Tree:
     
     def newton_step_corr(self, point, gdt, target,fac):
         proj_pt = point + (target -self.get_w(point)) / gdt *fac
-        #print "orginal point",point , "w(point)",self.get_w(point) 
-        #print "target w", target, "gradient vector", gdt
+        print "orginal point",point , "w(point)",self.get_w(point) 
+        print "target w", target, "gradient vector", gdt
         print "projection", proj_pt, "w(projection)", self.get_w(proj_pt), "factor",fac
         return proj_pt
         
@@ -835,8 +835,12 @@ class Tree:
                                 nbr=3                          
                             return nbr, True, tree_vol, result[0],result[1], old_child_index                                
                         else:
-                            print "intersection test failed"
-                            return code, False, 0., result[0],result[1], old_child_index
+                            if previous_result[1][0] != 0. and previous_result[1][1] != 0. :
+                                print "convergence reached but intersection, using previous result"
+                                return nbr, True, initial_tree_vol, previous_result[0], previous_result[1], old_child_index
+                            else:
+                                print "intersection test failed becaue of intersection and no previous result"
+                                return code, False, 0., result[0],result[1], old_child_index
                     else:
                         if self.check_intersection(old_child_index, c2, branching_location, new_radii) ==  True:
                             #provides Kamiya with current position and radii as new starting point
