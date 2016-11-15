@@ -286,7 +286,7 @@ def random_location(center, radius):
 
 def test_connection_list(list_input):
     #copy_tree = copy.deepcopy(list_input[0])
-    return list_input[0].test_connection(list_input[1], list_input[2],list_input[3], list_input[4])
+    return list_input[0].test_connection(list_input[1], list_input[2],list_input[3], list_input[4], list_input[5])
 
 
 #########################################################
