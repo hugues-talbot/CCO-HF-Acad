@@ -210,7 +210,7 @@ if True:
     
     #when computing surface growth they accept 50mm segments diving below the surface as tolerance, with a 40mm external radius
     tol_schreiner = 50 #we use the same length
-    schreiner_ext_radii = 40
+    schreiner_ext_radii = 30
     tol_dist_c = schreiner_ext_radii - np.sqrt(schreiner_ext_radii**2-(tol_schreiner / 2.)**2)  #and our external diameter  
     bellybutton = np.array([v_center[0]+v_ext_radius,v_center[1], v_center[2]])
     bellybutton[0] = bellybutton[0]-tol_dist_c  

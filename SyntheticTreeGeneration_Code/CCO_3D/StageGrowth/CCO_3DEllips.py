@@ -110,7 +110,7 @@ def plot_tree(tree, vol_descptr, name):
     point_hei=hei*72 
     # For the calculation below, you have to adjust width by 0.8
     # because the top and bottom 10% of the figure are labels & axis
-    pointlinewid_factor = point_hei * 0.8 /yrange # corresponding width in pts ( /yrange ?)
+    pointlinewid_factor = point_hei * 0.8 #/yrange # corresponding width in pts ( /yrange ?)
     
     inv_length_fac = 1. / tree.length_factor
     for sgmt in tree.nodes:
@@ -141,8 +141,8 @@ def plot_tree(tree, vol_descptr, name):
 ############# Karch algo : CCO ####################
 
 timing = True
-store_data = False
-parallelized = True
+store_data = True
+parallelized = False
 half = True
 cutof = True
 cutof_val = 20
@@ -151,7 +151,7 @@ if timing:
     debut = time.time()
     print debut
 if store_data:
-    fd = open('./Results/CCO3D_newton_negpot_ellips.txt','w') # open the result file in write mode
+    fd = open('./Results/CCO3D_newton_negpot_ellipsqd.txt','w') # open the result file in write mode
     old_stdout = sys.stdout   # store the default system handler to be able to restore it    
     sys.stdout = fd # Now your file is used by print as destination 
     
@@ -337,8 +337,8 @@ if True:
                         name ="./Results/InterTree_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)
                         pickle.dump(tree, open(name + ".p", "wb"))
 ##
-#                    if kterm ==  7:
-#                        break
+                    if kterm ==  30:
+                        break
                 else:
                     print "failed to add connection on tree"
             else:              
@@ -360,7 +360,7 @@ if True:
 
         
         plot_tree(tree, v_descptr, name)
-        #pickle.dump(tree, open(name + ".p", "wb"))
+        pickle.dump(tree, open(name + ".p", "wb"))
 
 
 if store_data:

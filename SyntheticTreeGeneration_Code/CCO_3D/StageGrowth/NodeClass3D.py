@@ -619,15 +619,20 @@ class Tree:
         #print "sampling toward", seg_pt2
         #interval = cco_3df.length(p1p2_vec) / float(n)
         #print "n", n
+        print "sample and test between locations", seg_pt1, "and ", seg_pt2
         for i in range (1,int(n)):
             loc = seg_pt1 + (i / n) * p1p2_vec
             #print "location test",loc
             if (self.inside_perf_terr_exact(loc)) == False:
-                print "segment outside of perfusion territory"
+                print "segment outside of perfusion territory", self.get_w(loc),i
+                if wtol > 0.:
+                    if self.get_w(loc) > -0.1 and self.get_w(loc) < 0.:
+                        print "continuing because surface"
+                        continue
                 return False
             if wtol > 0.:
                 if self.get_w(loc) > wtol:
-                    print "segment too deep inside perf territory"
+                    print "segment too deep inside perf territory", self.get_w(loc), wtol
                     return False
         return True 
             
