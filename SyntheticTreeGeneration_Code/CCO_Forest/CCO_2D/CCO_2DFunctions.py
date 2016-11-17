@@ -8,6 +8,87 @@ Created on Thu May 19 16:18:32 2016
 import numpy as np
 import sys
 import copy
+from skimage.segmentation import random_walker
+import matplotlib.pyplot as plt
+###########################################Non convex functions####################
+## creating a potential grid using random walker
+#inner surface and concavity potential value is 1
+#outer surface potential value is 0
+def potential_image(center, ext_radius_f, int_radius_f):
+    cx,cy = int(center[0]), int(center[1])
+    ext_radius = int(ext_radius_f)
+    int_radius =int(int_radius_f)
+    im = np.zeros((cx+ext_radius*3, cy+ext_radius*3)).astype('uint8')
+    markers = np.zeros((cx+ext_radius*3, cy+ext_radius*3)).astype('uint8')
+    margin = int(np.ceil(ext_radius/20.))
+    y,x = np.ogrid[-ext_radius-margin: ext_radius+margin, -ext_radius-margin: ext_radius+margin]  
+    index = x**2 + y**2 <= ext_radius**2
+    im[cy-ext_radius-margin:cy+ext_radius+margin, cx-ext_radius-margin:cx+ext_radius+margin][index] = 1
+    
+    y_i, x_i = np.ogrid[-int_radius: int_radius, -int_radius: int_radius]
+    index_int = x_i**2 + y_i**2 <= int_radius**2
+    im[cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 0
+    
+    #index = np.logical_and(x**2 + y**2 >= ext_radius**2 * 0.94, x**2 + y**2 <= ext_radius**2)
+    index = x**2 + y**2 > ext_radius**2
+    markers[cy-ext_radius-margin:cy+ext_radius+margin, cx-ext_radius-margin:cx+ext_radius+margin][index] = 2
+    #index_int = np.logical_and(x_i**2 + y_i**2 >= int_radius**2 * 0.84, x_i**2 + y_i**2 <= int_radius**2)
+    index_int = x_i**2 + y_i**2 < int_radius**2
+    markers[cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 3
+    result = random_walker(im, markers, copy =True, return_full_prob = True)   
+    print "rdm walker shape",result.shape
+    print markers.shape
+    #index_int = x_i**2 + y_i**2 < int_radius**2
+    #result[cy-int_radius:cy+int_radius, cx-int_radius:cx+int_radius][index_int] = 1.
+    return result[1]
+    
+    
+### Newton Raphson algorithm : 
+#looking for the location reaching the potential target_w along a line (defined by target line vector)
+#considering the local gradient at point
+#iterating until find a potential respecting epsilon tolerance
+
+def length(vect):
+    return np.sqrt(np.sum(vect**2))
+    
+def interpol(interp_func, location):
+    return float(interp_func(location[::-1])) # use reverse location because axis are reversed in the image
+    
+def newton_step(interp_w, interp_gx, interp_gy, point, target_line_vect, target_w):
+    p_gdt = np.array([interpol(interp_gx, point), interpol(interp_gy, point)])
+    #print "p_gdt", p_gdt
+    norm_line_vect = target_line_vect * 1./ length(target_line_vect)  
+    #dot product projected along target line vector
+    vect_proj_length = np.sum(p_gdt*target_line_vect) * 1./length(target_line_vect) 
+    #print "vect_proj_length", vect_proj_length
+    vect_proj = norm_line_vect * vect_proj_length
+    #print "vect_proj", vect_proj
+    #print "point", point
+    #print interpol(interp_w, point)
+    #print interpol(interp_w,(point + vect_proj))
+    #print vect_proj
+    scal_gap = - interpol(interp_w, point) + interpol(interp_w,(point + vect_proj))
+    #print "scal_gap", scal_gap
+    scal_gap_2 = target_w - interpol(interp_w,point)
+    k = (scal_gap_2 / scal_gap )   
+    scaling = vect_proj_length 
+    proj_pt = point + k*scaling * norm_line_vect
+    return proj_pt
+
+def newton_algo(interp_w, interp_gx, interp_gy, point, target_line_vect, target_w, eps):
+    proj_pt = newton_step(interp_w, interp_gx, interp_gy, point, target_line_vect, target_w)
+    print "proj_pt", proj_pt
+    w_proj = interpol(interp_w, proj_pt)
+    print "w_proj", w_proj
+    if w_proj < target_w + eps and w_proj > target_w - eps:
+        print "starting point", proj_pt, w_proj
+        return proj_pt
+    else:
+        if w_proj == 0. or w_proj == 1.:
+            print "no solution for this situation, getting out  of territory"
+            return proj_pt
+        else:
+            return newton_algo(interp_w, interp_gx, interp_gy, proj_pt, target_line_vect, target_w, eps)
 
 #########################################################
 
@@ -21,8 +102,12 @@ def calculate_d_tresh_2D(r_supp, k_term):
     return np.sqrt(np.pi*(r_pk**2)/(k_term)), r_pk
     
 ## random location generation
-def random_location():
-    return np.random.rand(2)*200
+def random_location(center, radius):
+    max_border = np.max(center+radius)+10
+    #print "mqx border", max_border
+    position = np.random.rand(2)*max_border
+    #print "rdm position", position
+    return position
        
     
 # area is defined by two descriptors: [0] = center coord(x,y) and [1] = radius
@@ -42,40 +127,7 @@ def first_segmt_end(area, area_descptr):
             return position
 
 
-#######################################################
 
-def test_connection_list(list_input):
-    copy_tree = copy.deepcopy(list_input[0])
-    return copy_tree.test_connection(list_input[1], list_input[2])
-
-
-#######################################################
-#radius study
-            
-def collect_radii_along_bifurcations(tree, filename):
-    radii = []
-    indexes = [[tree.get_root_index()]]
-    a = 0
-    all_leaves_reached = False
-    while (all_leaves_reached == False):
-        children = []
-        radius_list = []
-        for i in indexes[a]:
-            children_array = tree.nodes[i].children_index
-            if children_array[0] > 0:
-                children.append(children_array[0])
-            if children_array[1] > 0:
-                children.append(children_array[1])
-            radius_list.append(tree.get_radius(i))
-        radii.append(radius_list)
-        if len(children) > 0:
-            indexes.append(children)
-            a = a+1
-        else:
-            all_leaves_reached = True
-    np.save(filename,radii)
-
-#######################################################
 
 #sibling ratio is r_child_0 / r_child_1
 def calculate_betas(sibling_ratio, gamma):

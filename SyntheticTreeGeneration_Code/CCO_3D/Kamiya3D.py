@@ -30,10 +30,10 @@ def starting_point(c0,c1,c2,f):
         return 0.,0.
     x_coord = (c0[0]*f[0] + c1[0]*f[1] + c2[0]*f[2]) / (2* f[0])
     y_coord = (c0[1]*f[0] + c1[1]*f[1] + c2[1]*f[2]) / (2* f[0])
-    return x_coord, y_coord
+    z_coord = (c0[2]*f[0] + c1[2]*f[1] + c2[2]*f[2]) / (2* f[0])
+    return np.array([x_coord, y_coord,z_coord])
     
-def calculate_segment_lengths(c0,c1,c2,x,y, length_factor):
-    coords = np.array([x,y])
+def calculate_segment_lengths(c0,c1,c2,coords, length_factor):
     l = np.ones(3)
     l[0] = rescaled_length(c0 - coords, length_factor)
     l[1] = rescaled_length(c1 - coords, length_factor)
@@ -55,14 +55,14 @@ def calculate_dp_from_Poiseuille(f,l,r_ori, visc):
 def calculate_new_bif_coords(c0,c1,c2,f,l,sqrd_r):
     new_x = ( c0[0]*sqrd_r[0]/l[0] + c1[0]*sqrd_r[1]/l[1] + c2[0]*sqrd_r[2]/l[2] ) /  ( sqrd_r[0]/l[0] + sqrd_r[1]/l[1] + sqrd_r[2]/l[2] )
     new_y = ( c0[1]*sqrd_r[0]/l[0] + c1[1]*sqrd_r[1]/l[1] + c2[1]*sqrd_r[2]/l[2] ) /  ( sqrd_r[0]/l[0] + sqrd_r[1]/l[1] + sqrd_r[2]/l[2] )
-    return new_x, new_y
+    new_z = ( c0[2]*sqrd_r[0]/l[0] + c1[2]*sqrd_r[1]/l[1] + c2[2]*sqrd_r[2]/l[2] ) /  ( sqrd_r[0]/l[0] + sqrd_r[1]/l[1] + sqrd_r[2]/l[2] )      
+    return new_x, new_y,new_z
     
     
 def non_linear_solver(f,l,k,dp1,dp2,r_ori,gamma):
     def func(z):
         r1=z[0]
         r2=z[1]
-        #print "z", z
         zeta= 3+gamma
         r14= r1*r1
         r16 = r1**(zeta/2.) #r14*r1
@@ -86,13 +86,13 @@ def non_linear_solver(f,l,k,dp1,dp2,r_ori,gamma):
     return sol.success, sol.x
     
 #l contains l0, l1, l2
-def calculate_squared_radii(f, l, dp1, dp2, r_ori, visc,gamma):
+def calculate_squared_radii(f, l, dp1, dp2, r_ori, visc, gamma):
     k=8*visc/np.pi
     success, r_1_2 = non_linear_solver(f,l,k,dp1,dp2, r_ori,gamma)
     r1 = r_1_2[0]
     r2 = r_1_2[1]
     if (success == True):
-        r0 = np.power(f[0]*(r1**gamma/f[1] + r2**gamma/f[2]) , 1/gamma)  
+        r0 = np.power(f[0]*(r1**gamma/f[1] + r2**gamma/f[2]) , 1./gamma)  
         return r0,r1,r2
     else:
         return 0.,0.,0.
@@ -102,23 +102,22 @@ def single_bif_volume(r, l):
     
 #input r : r[0] and r[1] are the radii before connection added (r0 = r1 = r1 = radius of original segment before connection added) 
 #        this estimated r is used to calculate dp, then is updated in the calculate_radii function     
-def kamiya_loop_r2(x_ini,y_ini,c0,c1,c2,f, r, length_factor, visc,gamma):
-    l = calculate_segment_lengths(c0,c1,c2,x_ini,y_ini, length_factor)
+def kamiya_loop_r2(coords_ini,c0,c1,c2,f, r, length_factor, visc,gamma):
+    l = calculate_segment_lengths(c0,c1,c2,coords_ini, length_factor)
     dp1, dp2 = calculate_dp_from_Poiseuille(f,l,r, visc)
     r[0], r[1], r[2] = calculate_squared_radii(f,l,dp1, dp2, np.power(r,2)[1:3], visc,gamma)
     if (r[0] == 0.):
-        return False, x_ini, y_ini, np.sqrt(r), l
+        return False, coords_ini, np.sqrt(r), l
     else:        
-        x_new,y_new = calculate_new_bif_coords(c0,c1,c2,f,l,r)
-        return True, x_new, y_new, np.sqrt(r), l  
+        x_new,y_new,z_new = calculate_new_bif_coords(c0,c1,c2,f,l,r)
+        return True, np.array([x_new, y_new,z_new]), np.sqrt(r), l  
         
 #when calculating segment length, need to consider a factor 
 #because current coordinates are scaled from a bigger perfusion territory
 def rescaled_length(vector, factor):
     return np.sqrt(np.sum(vector**2))*factor
 
-def calculate_seg_lengths(c0,c1,c2,x,y, length_factor):
-    coords = np.array([x,y])
+def calculate_seg_lengths(c0,c1,c2,coords, length_factor):
     l = np.zeros(3)
     l[0] = rescaled_length(c0 - coords, length_factor)
     l[1] = rescaled_length(c1 - coords, length_factor)
@@ -130,12 +129,12 @@ def calculate_seg_lengths(c0,c1,c2,x,y, length_factor):
 # f = flow in mm3/s
 # c are coordinates of each segment end
 def kamiya_single_bif_opt(r, f, c0, c1, c2, iter_max, tolerance, store_whole_results, length_factor):
-    x, y = starting_point(c0,c1,c2,f)
+    xyz = starting_point(c0,c1,c2,f)
     print "starting point coord ", x, y
     print "starting radii ", r
     it = 0
     gdt = 1
-    l_ori = calculate_segment_lengths(c0,c1,c2,x,y, length_factor)
+    l_ori = calculate_segment_lengths(c0,c1,c2,xyz, length_factor)
     volume = single_bif_volume(r, l_ori)
     storage = []
     

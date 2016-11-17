@@ -1,7 +1,7 @@
 import numpy as np
 import copy
-import Kamiya3D as kami
-import CCO_3DFunctions as cco_3df
+import Kamiya as kami
+import CCO_2DFunctions as cco_2df
 import sys
 from scipy.interpolate import RegularGridInterpolator
 
@@ -91,10 +91,10 @@ class Node:
 
 class Tree:
     "Class defining attributes of the tree during growth"
-    "v_perf: total perfusion volume of the final tree"
+    "a_perf: total perfusion area of the final tree"
     "r_f: real radius (mm) of the total perfusion area"
 
-    def __init__(self, nodes, n_term, q_perf, p_drop, visc, v_perf, r_f, w, max_curv_radius,center,real_radius, gamma):
+    def __init__(self, nodes, n_term, q_perf, p_drop, visc, a_perf, r_f, w, max_curv_radius,center,real_radius, gamma):
         self.nodes = nodes
         self.n_term = n_term
         self.final_q_perf = q_perf
@@ -102,22 +102,21 @@ class Tree:
         self.p_drop = p_drop
         self.node_index = 0 #index of the next added node
         self.nu = visc
-        self.v_perf = v_perf
-        self.r_supp = np.power(3. * v_perf / (n_term * np.pi * 4.), 1./3) #microbox radius: average radius of terminal segment perfusion territory when reaching final tree growth
+        self.a_perf = a_perf
+        self.r_supp = np.sqrt(a_perf / (n_term * np.pi)) #microbox radius: average radius of terminal segment perfusion territory when reaching final tree growth
         self.final_perf_radius = r_f #real size of the estimated plain perfusion territory radius (excluding concavity surface)
         self.length_factor = 1 # not a const, is updated during tree growth after each added bifurcation
         self.w_pot = w
-        self.interp_w  = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1),np.arange(0,w.shape[2],1)),w)
-        self.nearest_w = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1),np.arange(0,w.shape[2],1)),w, method = "nearest")
-        self.interp_gx = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1),np.arange(0,w.shape[2],1)),np.gradient(w)[2])
-        self.interp_gy = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1),np.arange(0,w.shape[2],1)),np.gradient(w)[1])
-        self.interp_gz = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1),np.arange(0,w.shape[2],1)),np.gradient(w)[0])       
+        self.interp_w = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),w)
+        self.nearest_w = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),w, method = "nearest")
+        self.interp_gx = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),np.gradient(w)[1])
+        self.interp_gy = RegularGridInterpolator((np.arange(0,w.shape[0],1),np.arange(0,w.shape[1],1)),np.gradient(w)[0])
         self.max_curv_rad = max_curv_radius
         self.center = center
         self.real_final_radius = real_radius #real size of the final cercle (includes the concavity)
         self.gamma = gamma
     def __deepcopy__(self, tree):
-        return Tree(copy.deepcopy(self.nodes), self.n_term, self.final_q_perf, self.p_drop, self.nu, self.v_perf, self.final_perf_radius, self.w_pot, self.max_curv_rad,self.center, self.real_final_radius, self.gamma)    		
+        return Tree(copy.deepcopy(self.nodes), self.n_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius, self.w_pot, self.max_curv_rad,self.center, self.real_final_radius, self.gamma)    		
             
     def nodes(self):
         return self.nodes
@@ -138,7 +137,7 @@ class Tree:
     
     # get the number of terminal segments in the current tree            
     def get_k_term(self):
-        self.k_term = len(self.nodes)/2 #because it is a dichotomous tree
+        self.k_term = len(self.nodes)/2 #because it is a dichotomic tree
         return self.k_term    	
     
     #flow at feeding artery, depending on the number of kterm
@@ -186,7 +185,7 @@ class Tree:
     #from the final coordinates world (dimensions of the final perfusion territory)
     #to the current k world (whose perfusion territory size is increased before each added bifurcation)
     def update_length_factor(self):
-        r_pk = np.power((self.get_k_term() + 1)* self.r_supp**3,1./3) #correspond to the plain perfusion territory (excluding concavity volume)
+        r_pk = np.sqrt((self.get_k_term() + 1)* self.r_supp**2) #correspond to the plain perfusion territory (excluding concavity surface)
         self.length_factor =  r_pk / self.final_perf_radius
 
     
@@ -268,7 +267,7 @@ class Tree:
         if (self.inside_perf_territory(location) == True):    
             for sgmt in self.nodes:
                 if (sgmt.parent() >= 0):
-                    dist = cco_3df.segment_distance(sgmt.coord, (self.get_node(sgmt.parent())).coord, location)
+                    dist = cco_2df.segment_distance(sgmt.coord, (self.get_node(sgmt.parent())).coord, location)
                     if (dist < d_tresh):
                         return False
         else:
@@ -279,23 +278,22 @@ class Tree:
     # a new location is a random location constrained by perfusion territory and distance criterion            
     def get_new_location(self, n_term, d_tresh_factor):   
         k_term = self.get_k_term()
-        d_tresh, r_pk = cco_3df.calculate_d_tresh_3D(self.r_supp, k_term)
+        d_tresh, r_pk = cco_2df.calculate_d_tresh_2D(self.r_supp, k_term)
         length_factor = r_pk /  self.final_perf_radius
-        d_tresh_factorized = d_tresh / length_factor *d_tresh_factor#d_tresh is calculated in the current k_world dimensions
-        initial_d_tresh = d_tresh_factorized     
+        d_tresh_factorized = d_tresh / length_factor * d_tresh_factor#d_tresh is calculated in the current k_world dimensions
         meet_criteria = False
         ind = 0
-        max_itr= 50
-        while (meet_criteria == False and ind < max_itr):
-            point = cco_3df.random_location(self.center, self.real_final_radius)
+        max_it = 100
+        while (meet_criteria == False and ind < max_it):
+            point = cco_2df.random_location(self.center, self.real_final_radius)
             if (self.test_dist_criteria(point, d_tresh_factorized)):
                 print "location found"
                 print point
                 return True, point, d_tresh_factorized
             ind = ind + 1
-            if ind == max_itr:
+            if ind == max_it:
                 d_tresh_factorized = 0.9*d_tresh_factorized
-                print "using new value d_tresh: ", d_tresh_factorized, "initial one is", initial_d_tresh
+                print "using new value: ", d_tresh_factorized
                 ind = 0
         return False, np.array([0.,0.]), d_tresh_factorized
         
@@ -304,41 +302,46 @@ class Tree:
         inside_area = False
         first_node_coord = self.nodes[0].coord
         while inside_area == False :    
-            position = cco_3df.random_location(self.center, self.real_final_radius)
-            #print "position",position
+            position = cco_2df.random_location(self.center, self.real_final_radius)
             if (self.inside_perf_territory(position)):
-                #print "insid perf"
                 n = self.calculate_sampling(self.max_curv_rad, position, first_node_coord)
                 if self.sample_and_test(position, first_node_coord, n) == True:
                     return position
                 
-    def inside_perf_territory(self, location):       
-        if location[1] < 0. or location[0] < 0. or location[2] < 0:
+    def inside_perf_territory(self, location):
+        if location[1] < 0. or location[0] < 0.:
             return False
-        if location[2] < (self.w_pot.shape[0]-1) and location[1] < (self.w_pot.shape[1]-1) and location[0] < (self.w_pot.shape[2]-1): 
+        if location[1] < (self.w_pot.shape[0]-1) and location[0] < (self.w_pot.shape[1]-1): 
             pot_val = round(self.get_nearest_w(location),3)
             #print "pot val ", pot_val
             #print "round 10", round(self.get_w(location),10)
             #print "round 20", round(self.get_w(location),20)
             if (pot_val> 0.) and (pot_val < 1.0): 
                 return True
-            #print "location", location
+        return False
+        
+    def in_or_on_border_perf_territory(self, location):
+        pot_val = self.get_w(location)
+        if pot_val>= 0. and pot_val <= 1.:
+                return True
         return False
         
     def get_w(self, location):
-        return float(self.interp_w(location))
+        # interpolate value from potential function          
+#        print location[::-1]
+#        print float(self.interp_w(location[::-1]))
+        return float(self.interp_w(location[::-1]))
         
     def get_nearest_w(self, location):
-        return float(self.nearest_w(location)) 
+        return float(self.nearest_w(location[::-1])) 
         
     def get_gx(self, location):
-        return float(self.interp_gx(location))
+        #print self.interp_gx(location)
+        return float(self.interp_gx(location[::-1]))
     
     def get_gy(self, location):
-        return float(self.interp_gy(location))
+        return float(self.interp_gy(location[::-1]))
         
-    def get_gz(self, location):
-        return float(self.interp_gz(location))
 
     # add bifurcation on tree structure, and set the two children new resistances 
     # beta has been calculated with child_0/child_1 radius ratio where child_0 is old_child         
@@ -402,7 +405,7 @@ class Tree:
         dist_type = [("distance", float), ("index", int)]
         for i in self.nodes:
             if (i.index > 0):
-                dist = cco_3df.segment_distance(i.coord, (self.nodes[i.parent()]).coord, location)
+                dist = cco_2df.segment_distance(i.coord, (self.nodes[i.parent()]).coord, location)
                 distances.append((dist, i.index))
         threshold = n if (len(self.nodes) > n) else len(distances)
         d_array = np.array(distances, dtype = dist_type)
@@ -421,7 +424,7 @@ class Tree:
                 radius_i_rescaled = self.get_radius(i.index) * inv_length_factor
                 new_branches_radii_rescaled = new_branches_radii * inv_length_factor
                 #print "testing connection with segment", "parent", parent_i.coord, "child", i.coord
-                if (cco_3df.no_overlap(i.coord, parent_i.coord, new_child_location, branching_location, radius_i_rescaled, new_branches_radii_rescaled[2]) == False):
+                if (cco_2df.no_overlap(i.coord, parent_i.coord, new_child_location, branching_location, radius_i_rescaled, new_branches_radii_rescaled[2]) == False):
                     return False
                     
                 old_parent_index = old_child.parent()
@@ -429,13 +432,13 @@ class Tree:
                 siblings = old_parent.children()
                 old_child_sibling = siblings[0] if (old_child_index == siblings[1]) else siblings[1]
                 if (i.index != old_parent_index) and (i.index != old_child_sibling): 
-                    if (cco_3df.no_overlap(i.coord, parent_i.coord, branching_location, old_parent.coord, radius_i_rescaled, new_branches_radii_rescaled[0]) ==  False):
+                    if (cco_2df.no_overlap(i.coord, parent_i.coord, branching_location, old_parent.coord, radius_i_rescaled, new_branches_radii_rescaled[0]) ==  False):
                         return False
                         
                 if (old_child.is_leaf() == False):
                     old_child_children = old_child.children()
                     if (i.index != old_child_children[0]) and (i.index != old_child_children[1]):
-                        if (cco_3df.no_overlap(i.coord, parent_i.coord, old_child.coord, branching_location, radius_i_rescaled, new_branches_radii_rescaled[1]) ==  False):
+                        if (cco_2df.no_overlap(i.coord, parent_i.coord, old_child.coord, branching_location, radius_i_rescaled, new_branches_radii_rescaled[1]) ==  False):
                             return False
         return True
           
@@ -454,7 +457,7 @@ class Tree:
                 sibling_ratio = np.power(current_node.flow * resistance_current_child / (sibling.flow * resistance_sibling), 1./4)                            
             else :
                 sibling_ratio = np.power(sibling.flow * resistance_sibling / (current_node.flow * resistance_current_child), 1./4)                      
-            betas = cco_3df.calculate_betas(sibling_ratio, 3.)        
+            betas = cco_2df.calculate_betas(sibling_ratio, 3.)        
             return betas
         else:
             #print "beta of root point, no need to calculate"
@@ -476,13 +479,13 @@ class Tree:
     def local_n(self, seg_1, seg_2):
         wp1 = self.get_w(seg_1)
         wp2 = self.get_w(seg_2)
-        gdt_p1 = np.array([self.get_gx(seg_1), self.get_gy(seg_1), self.get_gz(seg_1)])
-        gdt_p2 = np.array([self.get_gx(seg_2), self.get_gy(seg_2), self.get_gz(seg_2)])
+        gdt_p1 = np.array([self.get_gx(seg_1), self.get_gy(seg_1)])
+        gdt_p2 = np.array([self.get_gx(seg_2), self.get_gy(seg_2)])
         p1p2_vec = seg_2 - seg_1
         # wp / dot product
         l1 = - wp1 * (1. / np.sum(gdt_p1* p1p2_vec))
         l2 = - wp2 * (1. / np.sum(gdt_p2* -p1p2_vec))
-        #print "l1", l1, "l2", l2
+        print "l1", l1, "l2", l2
         lbda = min(l1,l2)    
         splg_n = np.ceil(np.abs(1./lbda))
         print "local n", splg_n
@@ -492,21 +495,18 @@ class Tree:
         #mid point of seg
         midp = (seg_pt1 + seg_pt2)*0.5
         #find gdt of w at mid point
-        gdt_vec = np.array([self.get_gx(midp), self.get_gy(midp), self.get_gz(midp)])
+        gdt_vec = np.array([self.get_gx(midp), self.get_gy(midp)])
         #print "gdt vec",gdt_vec
         #find on this line the point p where w(p) = 0.5 * (w(seg_pt1) + w(seg_pt2))
         target_w = 0.5 * (self.get_w(seg_pt1) + self.get_w(seg_pt2))
-        #print "self.get_w(seg_pt1)", self.get_w(seg_pt1)
-        #print "self.get_w(seg_pt2)", self.get_w(seg_pt2)
-        #print "self.get_w(midp)", self.get_w(midp)
-        #print "test", new_location, gdt_vec, target_w, eps
+        print "test", new_location, gdt_vec, target_w, eps
         starting_point = self.newton_algo(midp, gdt_vec, target_w, eps, 0, 100,1.)
         print "starting point", starting_point
         return starting_point
         
     def newton_step(self, point, target_line_vect, target_w, fac):
         #print "vec length",self.vec_length(target_line_vect)
-        p_gdt = np.array([self.get_gx(point), self.get_gy(point), self.get_gz(point)])
+        p_gdt = np.array([self.get_gx(point), self.get_gy(point)])
         #print "gdt", p_gdt
         norm_line_vect = target_line_vect * 1./ self.vec_length(target_line_vect)  
         #dot product projected along target line vector
@@ -520,18 +520,17 @@ class Tree:
         #print "scal gap", scal_gap
         scal_gap_2 = target_w - self.get_w(point)
         #print "scal_gap_2", scal_gap_2
-        #print "fac", fac
         k = (scal_gap_2 / scal_gap ) 
-        #print "k", k
+        print "k", k
         proj_pt = point + k*vect_proj_length * norm_line_vect * fac
         return proj_pt
 
     def newton_algo(self, point, target_line_vect, target_w, eps, count, max_iter, fac):
         proj_pt = self.newton_step(point, target_line_vect, target_w, fac)
-        #print "proj point", proj_pt
+        print "proj point", proj_pt
         if self.inside_perf_territory(proj_pt):            
             w_proj = self.get_w(proj_pt)
-            #print "w_proj", w_proj, "target", target_w
+            print "w_proj", w_proj, "target", target_w
             if w_proj < target_w + eps and w_proj > target_w - eps:
                 print "success", proj_pt
                 return proj_pt
@@ -540,23 +539,25 @@ class Tree:
                     return self.newton_algo(proj_pt, target_line_vect, target_w, eps, count+1, max_iter, fac)
                 else:
                     print "max iteration reached"
-                    return np.zeros(3) #should be out of perfusion territory
+                    return np.zeros(2) #should be out of perfusion territory
         else:
             #TO DO
             if fac < 1.:
                 print "out of perf territory"
-                return np.zeros(3)
+                return np.zeros(2)
             else:
                 #test again from same initial point but using a smaller walking gap
-                return self.newton_algo(point, target_line_vect, target_w, eps, count+1, max_iter, 0.1)
+                return self.newton_algo(point, target_line_vect, target_w, eps, count+1, max_iter, 0.5)
                 # if goes out again, it means there is no solution
             
             
     def calculate_sampling(self, max_curv_radius, seg_1, seg_2):
         tolerance = 0.05*max_curv_radius
         loc_n = self.local_n(seg_1, seg_2)
+        #r_star = max_curv_radius - tolerance
         c= np.sqrt(max_curv_radius**2 - (max_curv_radius-tolerance)**2)
-        global_n = np.ceil(cco_3df.length(seg_2-seg_1) / c)
+        global_n = np.ceil(cco_2df.length(seg_2-seg_1) / c)
+        #print "global n", global_n
         if (loc_n >= global_n):
             print "n is local one", loc_n
             return loc_n
@@ -568,7 +569,7 @@ class Tree:
     def sample_and_test(self, seg_pt1, seg_pt2, n):
         p1p2_vec = seg_pt2 - seg_pt1
         #print "sampling toward", seg_pt2
-        #interval = cco_3df.length(p1p2_vec) / float(n)
+        #interval = cco_2df.length(p1p2_vec) / float(n)
         #print "n", n
         for i in range (1,int(n)):
             loc = seg_pt1 + (i / n) * p1p2_vec
@@ -622,23 +623,25 @@ class Tree:
         c1 = (self.nodes[old_child_index]).coord
         c2 = new_child_location        
         iterat = 0
+        code= 0 
         #kamiya uses a convex average as starting point
         #schreiner starts from the midpoint of the segment we are connecting with
         #karch uses potential information to get a smart starting point for non convex CCO
         eps = 0.001
-        code= 0 
         print "tesing with node index", old_child_index, "coord", self.nodes[old_child_index].coord
         print "new_child_location",new_child_location
-        xyz = self.starting_point(c0, c1, c2, eps)
-        if self.inside_perf_territory(xyz) == False:
+        xy = self.starting_point(c0, c1, c2, eps)
+        if self.inside_perf_territory(xy) == False:
             print "branching location starting point out of territory: unplausible location"
-            return code, False, 0., np.zeros(2), np.zeros(3), old_child_index
+            return code, False, 0., [[0.,0.], [0.,0.]], old_child_index
         
+        
+        x,y = xy[0], xy[1]
             
         #calculate original tree volume or take a bigger approximation (easier because no need of adding segment)
         initial_tree_vol = self.volume() * 10.
-        previous_result = [np.zeros(2), np.zeros(3)]            
-        lengths = kami.calculate_segment_lengths(c0,c1,c2,xyz,self.length_factor)
+        previous_result = [[0.,0.], [0.,0.]]            
+        lengths = kami.calculate_segment_lengths(c0,c1,c2,x,y,self.length_factor)
         length_tol = 0.15*self.max_curv_rad*self.length_factor
         if (lengths[0] < length_tol) and (lengths[1] < length_tol) and (lengths[2] < length_tol):
             print "reaching boundary condition for concavity crossing test at node", self.get_k_term(),"with length_tol", length_tol
@@ -646,20 +649,20 @@ class Tree:
             #compute Kamiya iterqtion and apply concavity test only at the end
             while (iterat < iter_max):
                 #call Kamiya : local optimization of the single bifurcation
-                conv, xyz_c, r_c, l = kami.kamiya_loop_r2(xyz, c0, c1, c2, f, r, self.length_factor, self.nu, self.gamma)
-                result = [np.zeros(2), np.zeros(3)]
+                conv, x_c, y_c, r_c, l = kami.kamiya_loop_r2(x, y, c0, c1, c2, f, r, self.length_factor, self.nu, self.gamma)
+                result = [[0.,0.], [0.,0.]]
                 if conv ==  False:
                     print "kamyia doesnt converge"
-                    return code, False, 0., result[0],result[1], old_child_index
+                    return code, False, 0., result, old_child_index
     
-                branching_location = xyz_c
+                branching_location = np.array([x_c,y_c])
                 
                 #create copy of tree and connect new branch given Kamyia's results
                 tree_copy = copy.deepcopy(self)
                 tree_copy.update_length_factor()
                 tree_copy.depthfirst_resistances(0)
                 tree_copy.update_flow()
-                estimate_betas = cco_3df.calculate_betas(r_c[1]/r_c[2], 3.) 
+                estimate_betas = cco_2df.calculate_betas(r_c[1]/r_c[2], 3.) 
                 #we call it "estimate" because it's calculated with segment radii 
                 #(not using flow nor resistance, which is the strict method)
                 #the "correct" beta comes from balancing_ratio (resistance update)
@@ -671,9 +674,9 @@ class Tree:
                 #calculate total tree volume and volume gradient
                 tree_vol = tree_copy.volume()
                 new_radii = np.array([tree_copy.get_radius(tree_copy.node_index-2), tree_copy.get_radius(old_child_index), tree_copy.get_radius(tree_copy.node_index-1)])
-                if cco_3df.degenerating_test(c0,c1,c2, branching_location, new_radii, self.length_factor) == False :
+                if cco_2df.degenerating_test(c0,c1,c2, branching_location, new_radii, self.length_factor) == False :
                         print "degenerated segments"
-                        return code, False, 0., result[0],result[1], old_child_index 
+                        return code, False, 0., [[0.,0.], [0.,0.]], old_child_index 
                 vol_gdt = initial_tree_vol - tree_vol
                 if np.abs(vol_gdt) < tolerance:
                     #if gradients is under tolerance, and iter_max not reached:                
@@ -682,57 +685,57 @@ class Tree:
                         result=[correct_beta, branching_location]  
                         print "connection test reaching concavity test" 
                         #compute concavity crossing test:
-                        sampling_n = self.calculate_official_sampling(c0,c1,c2,xyz)
+                        sampling_n = self.calculate_official_sampling(c0,c1,c2,xy)
                         inside_territory = False
                         if self.inside_perf_territory(branching_location) ==  False:
-                            print "kmiya result is out territory",round(self.get_nearest_w(branching_location),3)# self.get_w(branching_location)
-                            return code, False, 0., result[0],result[1], old_child_index
+                            print "kmiya result is out territory", self.get_w(branching_location)
+                            return code, False, 0., result, old_child_index
                         inside_territory = self.concavity_test_for_segments(branching_location, c0,c1,c2, sampling_n)
                         if (inside_territory == True): 
                             print "connection test succeeed and bifurcation inside territory"                                               
-                            return 1, True, tree_vol, result[0],result[1], old_child_index  
+                            return 1, True, tree_vol, result, old_child_index  
                         else:
                             print "bifurcation outside territory"
-                            return code, False, 0., result[0],result[1], old_child_index
+                            return code, False, 0., result, old_child_index
                            
                     else:
                         print "intersection test failed"
-                        return code, False, 0., result[0],result[1], old_child_index
+                        return code, False, 0., result, old_child_index
                 else:
                     if self.check_intersection(old_child_index, c2, branching_location, new_radii) ==  True:
                         #provides Kamiya with current position and radii as new starting point
                         print "next iteration of Kamiya"
                         previous_result = [correct_beta, branching_location]
                         initial_tree_vol = tree_vol
-                        xyz,r = xyz_c, new_radii
+                        x,y,r = x_c,y_c,new_radii
                         iterat = iterat + 1
                     else: 
                         print "no cvgce and intersection test failed, not iterating kamiya"
-                        return code, False, 0., result[0],result[1], old_child_index
+                        return code, False, 0., result, old_child_index
             print "connection test failed : iter max reached"
-            return code, False, 0., result[0],result[1], old_child_index     
+            return code, False, 0., result, old_child_index     
                 
             
         else:      
             #calculate n = number of sampling for concavity test during process
-            sampling_n = self.calculate_official_sampling(c0,c1,c2,xyz)
+            sampling_n = self.calculate_official_sampling(c0,c1,c2,xy)
     
             while (iterat < iter_max):
                 #call Kamiya : local optimization of the single bifurcation
-                conv, xyz_c, r_c, l = kami.kamiya_loop_r2(xyz, c0, c1, c2, f, r, self.length_factor, self.nu, self.gamma)
-                result = [np.zeros(2),np.zeros(3)]
+                conv, x_c, y_c, r_c, l = kami.kamiya_loop_r2(x, y, c0, c1, c2, f, r, self.length_factor, self.nu,self.gamma)
+                result = [[0.,0.], [0.,0.]]
                 if conv ==  False:
                     print "kamyia doesnt converge"
-                    return code, False, 0., result[0],result[1], old_child_index
+                    return code, False, 0., result, old_child_index
     
-                branching_location = xyz_c
+                branching_location = np.array([x_c,y_c])
                 
                 inside_territory = True
                 # test intersection with concavity along the n samplings
                 print "branching location",branching_location,  self.get_w(branching_location)
                 if self.inside_perf_territory(branching_location) ==  False:
-                    print "kmiya result is out territory",round(self.get_nearest_w(branching_location),3)#self.get_w(branching_location)
-                    return code, False, 0., result[0],result[1], old_child_index                   
+                    print "kmiya result is out territory", self.get_w(branching_location)
+                    return code, False, 0., result, old_child_index                   
                 inside_territory = self.concavity_test_for_segments(branching_location, c0,c1,c2, sampling_n)
                 
                 #create copy of tree and connect new branch given Kamyia's results
@@ -740,7 +743,7 @@ class Tree:
                 tree_copy.update_length_factor()
                 tree_copy.depthfirst_resistances(0)
                 tree_copy.update_flow()
-                estimate_betas = cco_3df.calculate_betas(r_c[1]/r_c[2], 3.) 
+                estimate_betas = cco_2df.calculate_betas(r_c[1]/r_c[2], 3.) 
                 #we call it "estimate" because it's calculated with segment radii 
                 #(not using flow nor resistance, which is the strict method)
                 #the "correct" beta comes from balancing_ratio (resistance update)
@@ -752,9 +755,9 @@ class Tree:
                 #calculate total tree volume and volume gradient
                 tree_vol = tree_copy.volume()
                 new_radii = np.array([tree_copy.get_radius(tree_copy.node_index-2), tree_copy.get_radius(old_child_index), tree_copy.get_radius(tree_copy.node_index-1)])
-                if cco_3df.degenerating_test(c0,c1,c2, branching_location, new_radii, self.length_factor) == False :
+                if cco_2df.degenerating_test(c0,c1,c2, branching_location, new_radii, self.length_factor) == False :
                         print "degenerated segments"
-                        return code, False, 0., result[0],result[1], old_child_index 
+                        return code, False, 0., [[0.,0.], [0.,0.]], old_child_index 
                 vol_gdt = initial_tree_vol - tree_vol
                 if inside_territory == True:
                     if np.abs(vol_gdt) < tolerance:
@@ -766,34 +769,34 @@ class Tree:
                             nbr = iterat*sampling_n*3
                             if nbr <3:
                                 nbr=3
-                            return nbr, True, tree_vol, result[0],result[1], old_child_index                                
+                            return nbr, True, tree_vol, result, old_child_index                                
                         else:
                             print "intersection test failed"
-                            return code, False, 0., result[0],result[1], old_child_index
+                            return code, False, 0., result, old_child_index
                     else:
                         if self.check_intersection(old_child_index, c2, branching_location, new_radii) ==  True:
                             #provides Kamiya with current position and radii as new starting point
                             print "next iteration of Kamiya"
                             previous_result = [correct_beta, branching_location]
                             initial_tree_vol = tree_vol
-                            xyz,r = xyz_c,new_radii
+                            x,y,r = x_c,y_c,new_radii
                             iterat = iterat + 1
                         else: 
                             print "no cvgce and intersection test failed, not iterating kamiya"
-                            return code, False, 0., result[0],result[1], old_child_index
+                            return code, False, 0., result, old_child_index
                 else:
                     if previous_result[1][0] != 0. and previous_result[1][1] != 0. :
                         print "using previous result which was inside territory and not intersecting"
                         nbr = iterat*sampling_n*3
                         if nbr <3:
                             nbr=3
-                        return nbr, True, initial_tree_vol, previous_result[0], previous_result[1], old_child_index
+                        return nbr, True, initial_tree_vol, previous_result, old_child_index
                     else: 
                         print "no previous result,connection test failed "
-                        return code, False, 0., result[0], result[1], old_child_index
+                        return code, False, 0., result, old_child_index
                                
             print "connection test failed : iter max reached"
-            return code, False, 0., result[0],result[1], old_child_index        
+            return code, False, 0., result, old_child_index        
         
         
     
