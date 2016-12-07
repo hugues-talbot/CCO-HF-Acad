@@ -123,6 +123,7 @@ class Tree:
         self.center = center
         self.real_final_radius = real_radius #real size of the final cercle (includes the concavity)
         self.gamma = gamma
+
     def __deepcopy__(self, tree):
         return Tree(copy.deepcopy(self.nodes), self.n_term, self.final_q_perf, self.p_drop, self.nu, self.v_perf, self.final_perf_radius, self.w_pot, self.max_curv_rad,self.center, self.real_final_radius, self.gamma)    		
             

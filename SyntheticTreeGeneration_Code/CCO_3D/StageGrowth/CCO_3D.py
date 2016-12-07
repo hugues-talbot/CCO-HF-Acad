@@ -138,7 +138,7 @@ if store_data:
     sys.stdout = fd # Now your file is used by print as destination 
     
 
-if True:
+if False:
 
     NTerm = 500
     if half:
@@ -324,7 +324,7 @@ if True:
                         name ="./Results/InterTree_Nt%i_kt%i_s%i_corr" %(NTerm,kterm,seed)
                         pickle.dump(tree, open(name + ".p", "wb"))
 ##
-                    if kterm == 9 :
+                    if kterm == 2 :
                         break
                 else:
                     print "failed to add connection on tree"
