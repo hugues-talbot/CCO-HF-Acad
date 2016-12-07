@@ -254,7 +254,7 @@ if True:
     plot_forest(forest, area_descptr, "./Results/Forest_Nt%i_s%i_polytree%i_%s" %(forest.get_fk_term(),seed,len(forest.trees),suffix), potential)
     pickle.dump(forest, open("./Results/Forest_Nt%i_s%i_polytree%i_%s.p"%(forest.get_fk_term(),seed,len(forest.trees),suffix), "wb"))
 
-    JW.write_json(forest,"./Results/Forest_.json")
+    JW.write_json(forest,"./Results/Forest_test.json")
 
 if store_data:
     sys.stdout=old_stdout # here we restore the default behavior
