@@ -60,7 +60,7 @@ def get_data_fp(input_file):
 
 import json
 
-def write_json(forest, filename):
+def write_json(forest, matrix, filename):
     file_out = open(filename, 'w')
     fdict={}
     fdict.update({"Flow" : forest.final_q_perf})
@@ -77,7 +77,7 @@ def write_json(forest, filename):
         fdict["Trees"][tree.tree_index]["Nodes"]= {}
         for node in tree.nodes:
             fdict["Trees"][tree.tree_index]["Nodes"][node.index]={}
-            fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Location" : node.coord.tolist()})
+            fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Location" : (voxel_to_world(node.coord[::-1], matrix)).tolist()})
             fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Parent" : node.parent_index})
             fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Children" : node.children_index.tolist()})
             fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Radius" : tree.get_radius(node.index)})
@@ -89,7 +89,12 @@ def write_json(forest, filename):
 
 
 
-
+if False:
+    N=50
+    colors = [(1.0,1.0,1.0)]
+    colors.extend(plt.cm.jet(np.linspace(0., 1., N)))
+    colors.extend([(1.0,1.0,1.0)])
+    cmap =plt.colors.ListedColormap(colors) #plt.cm.jet
 
 
 if False:

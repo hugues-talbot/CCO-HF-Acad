@@ -22,13 +22,13 @@ import sys  # Need to have acces to sys.stdout
 import time
 from multiprocessing import Pool, TimeoutError
 import pickle
-
+import copy
 
 ############################################################
 ### LOADING INPUTS
 
 # Location of sources with flow and pressure -> obtained from centerline, mssing branched statistics
-sources = np.load("./Inputs/Sources.npy") 
+sources = np.load("./Inputs/SourcesCor.npy") 
 # dtype_r=[("WorldCoordX", float),("WorldCoordY", float), ("WorldCoordZ", float),
 #          ("Diameter",float), ("Pressure", float),("Flow", float), 
 #          ("VoxelCoordX", float),("VoxelCoordY", float), ("VoxelCoordZ", float)]
@@ -64,12 +64,13 @@ segm_vessel_dist = np.load("./Inputs/DistMapFromCenterlines.npy")
 ##CHECK ALL IMAGE SIZES
 im_size_max = np.max(heart_potential.shape)
 
-
+## CHECK ALL SOURCES ARE INSIDE HEART POT/LV POT ==>otherwise need to change potential
+## if outside LV: calculate dist max and see if sources are too far from LV --> use projection
 ##################################################################################
 ############# INITIALIZATION ####################
 
 timing = True
-store_data = False
+store_data = True
 parallelized = False
 filename = "./Results/Test"
 
@@ -78,7 +79,7 @@ if timing:
     print debut
 if store_data:
     fd = open(filename + ".txt",'w') # open the result file in write mode
-    old_stdout = sys.stdout   # store the default system handler to be able to restore it    
+    old_stdout = sys.stdout   # store the default system handler to be able to restore it     
     sys.stdout = fd # Now your file is used by print as destination 
     
 
@@ -120,7 +121,6 @@ if True:
     d_tresh_factor = 1
          
     while forest.get_fk_term() < NTerm:
-        break
         kterm = forest.get_fk_term()
             
         if kterm < InterTerm:          
@@ -129,7 +129,7 @@ if True:
             surface = False
             surface_tol = 0.
         
-        success, new_child_location, d_tresh = forest.get_new_location( d_tresh_factor)
+        success, new_child_location, d_tresh = forest.get_new_location(d_tresh_factor)
         if (success == False):
             print "impossible to satisfy distance criteria", "d_tresh", d_tresh
             break       
@@ -140,12 +140,14 @@ if True:
         adding_location = False
         added_location = []
         
-        dtype_r=[("convgce", int), ("volume", float), ("betas", float,(2)),("branching_location",float,(3)),("old_child_index", int)]
+        dtype_r=[("convgce", int), ("volume", float), ("betas", float,(2)),("branching_location",float,(3)),("tree_index", int),("old_child_index", int), ("tree_volume", float)]
                 
         test_N_con_max = False
         
         # test closest neighbors
         neighbors = forest.find_forest_neighbors(new_child_location, N_con)
+
+
         args = [[forest, neighbors[i][0], neighbors[i][1],new_child_location, surface, surface_tol] for i in range (len(neighbors))]
 
         #process all neighbors connection test batch by batch
@@ -159,8 +161,8 @@ if True:
         else:
             for n_index in range(len(neighbors)):
                 res= forest.test_forest_connection(neighbors[n_index][0], neighbors[n_index][1], new_child_location, surface, surface_tol)                 
-                cet[n_index] = res[1:]
-                print "res[1:]", res[1:]                  
+                cet[n_index] = res
+                print "res", res                 
 
         
         cet_filtered = filter(None,cet)
@@ -172,21 +174,23 @@ if True:
             cet_sorted = np.sort(cet_sel, order = "volume")
             cet_final=cet_sorted[0]
             adding_location = True
-            added_location.append(cet_final.tolist()[1:])
+            added_location.append(cet_final.tolist())
            
         if (adding_location): # optimal connection found!
             opt = added_location[-1]   
-            if (forest.add_connection(opt[3], new_child_location, opt[2], opt[1])):
+            if (forest.add_connection([opt[2], opt[3]], opt[4], opt[5],new_child_location, opt[6])):
                 print "k termmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm is now ", forest.get_fk_term()
                 kterm=forest.get_fk_term()
                 d_tresh_factor = 1.
-                if kterm%10 == 0:
-                    name =filename+"_F_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)
-                    pickle.dump(forest, open(name + ".p", "wb"))
+                if kterm == 50:
+                    break
+#                if kterm%10 == 0:
+#                    name =filename+"_F_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)
+#                    pickle.dump(forest, open(name + ".p", "wb"))
             else:
                 print "failed to add connection on tree"
         else:              
-            print "ktemmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm", forest.get_k_term()
+            print "ktemmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm", forest.get_fk_term()
             print "location doesn't provide an optimal connection, testing new location"
             dead_end_counter = dead_end_counter +1
             print "dead_end_counter = ", dead_end_counter
@@ -203,8 +207,9 @@ if True:
     #cco_3df.plot_forest(forest, name)
     #pickle.dump(forest, open(name + ".p", "wb"))
     #pickle.dump(forest.trees,open(name + ".p", "wb"))
+    pickle.dump([copy.copy(i) for i in forest.trees],open(name + ".p", "wb"))
     #print "forest saved"
-    #cv.write_json(forest,filename+"Forest.json")
+    cv.write_json(forest,model_matrix,"C:/Users/cjaquet/Documents/SynthTreeData/3c9e679d-2eab-480c-acaa-31da12301b0a/Forest.json")
     #print "json generated"
     
 if store_data:

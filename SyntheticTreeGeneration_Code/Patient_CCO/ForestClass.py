@@ -10,7 +10,7 @@ import CCO_3DFunctions as cco_3df
 
 import NodeClass3D as nclass
 from scipy.interpolate import RegularGridInterpolator
-
+DIST_TO_CENTERLINE = 1.5
 class Forest:
     def __init__(self, trees, n_term, q_perf, p_term, visc, v_perf, r_f, vox_size, heart_w, chamber_w, vs_dist, max_curv_radius, im_size, gamma):
         self.trees = trees
@@ -30,7 +30,7 @@ class Forest:
         self.voxel_size = vox_size
         self.heart_w = heart_w
         self.lv_w = chamber_w
-        self.interp_w =  RegularGridInterpolator((np.arange(0,im_size[0]*vox_size[0],vox_size[0]),np.arange(0,im_size[1]*vox_size[1],vox_size[1]), np.arange(0,im_size[2]*vox_size[2],vox_size[2])),chamber_w)
+        self.interp_w =  RegularGridInterpolator((np.arange(0,im_size[0]*vox_size[0],vox_size[0]),np.arange(0,im_size[1]*vox_size[1],vox_size[1]), np.arange(0,im_size[2]*vox_size[2],vox_size[2])),chamber_w,bounds_error=False, fill_value = -2.)
         self.interp_gx = RegularGridInterpolator((np.arange(0,im_size[0]*vox_size[0],vox_size[0]),np.arange(0,im_size[1]*vox_size[1],vox_size[1]), np.arange(0, im_size[2]*vox_size[2],vox_size[2])),np.gradient(chamber_w)[0])
         self.interp_gy = RegularGridInterpolator((np.arange(0,im_size[0]*vox_size[0],vox_size[0]),np.arange(0,im_size[1]*vox_size[1],vox_size[1]), np.arange(0, im_size[2]*vox_size[2],vox_size[2])),np.gradient(chamber_w)[1])
         self.interp_gz = RegularGridInterpolator((np.arange(0,im_size[0]*vox_size[0],vox_size[0]),np.arange(0,im_size[1]*vox_size[1],vox_size[1]), np.arange(0, im_size[2]*vox_size[2],vox_size[2])),np.gradient(chamber_w)[2])
@@ -38,15 +38,15 @@ class Forest:
         self.interp_ghx = RegularGridInterpolator((np.arange(0,im_size[0]*vox_size[0],vox_size[0]),np.arange(0,im_size[1]*vox_size[1],vox_size[1]), np.arange(0, im_size[2]*vox_size[2],vox_size[2])),np.gradient(heart_w)[0])
         self.interp_ghy = RegularGridInterpolator((np.arange(0,im_size[0]*vox_size[0],vox_size[0]),np.arange(0,im_size[1]*vox_size[1],vox_size[1]), np.arange(0, im_size[2]*vox_size[2],vox_size[2])),np.gradient(heart_w)[1])
         self.interp_ghz = RegularGridInterpolator((np.arange(0,im_size[0]*vox_size[0],vox_size[0]),np.arange(0,im_size[1]*vox_size[1],vox_size[1]), np.arange(0, im_size[2]*vox_size[2],vox_size[2])),np.gradient(heart_w)[2])
-        self.v_dist_map = RegularGridInterpolator((np.arange(0,im_size[0]*vox_size[0],vox_size[0]),np.arange(0,im_size[1]*vox_size[1],vox_size[1]), np.arange(0, im_size[2]*vox_size[2],vox_size[2])),vs_dist)
-        
+        self.v_dist_map = RegularGridInterpolator((np.arange(0,im_size[0]*vox_size[0],vox_size[0]),np.arange(0,im_size[1]*vox_size[1],vox_size[1]), np.arange(0, im_size[2]*vox_size[2],vox_size[2])),vs_dist, bounds_error=False, fill_value = -2.)
+        self.dist_max=np.zeros((1,1))
     ##trees should be created according to increasing flow 
     def create_tree(self, source_location, q_perf, p_perf):
         tree_index = len(self.trees)
         delta_p = p_perf - self.p_term
         print "delta p of tree", delta_p
         print "tree of index", tree_index
-        tree = nclass.Tree(tree_index, [], self.q_term, q_perf, delta_p, self.nu, self.v_perf, self.final_perf_radius, [self.interp_w, self.interp_gx, self.interp_gy, self.interp_gz, self.interp_h, self.interp_ghx, self.interp_ghy, self.interp_ghz], self.voxel_size, self.im_size,self.max_curv_rad, np.max(self.im_size), self.gamma)        
+        tree = nclass.Tree(tree_index, [], self.q_term, q_perf, delta_p, self.nu, self.v_perf, self.final_perf_radius, [self.interp_w, self.interp_gx, self.interp_gy, self.interp_gz, self.interp_h, self.interp_ghx, self.interp_ghy, self.interp_ghz, self.v_dist_map], self.voxel_size, self.im_size,self.max_curv_rad, np.max(self.im_size), self.gamma)        
         root_node = nclass.Node(0,source_location, q_perf, -1)
         root_node.set_child_0_index(1)
         tree.add_node(root_node)  
@@ -58,6 +58,7 @@ class Forest:
         
     def first_segment_end(self, surface, surface_tol):
         dist_max = self.find_sources_dist_max() 
+        self.dist_max=dist_max
         #if different flows need to add first segment on biggest flow tree 
         #first forest segment location is constrained to a maximum distance induced by other existing sources location and flow relationships
         indexes = []
@@ -82,11 +83,11 @@ class Forest:
                 while location_found == False:          
                     result = self.get_new_loc_for_sources( 1., tree, dist_max[current_index][0]*dist_max[current_index][1]) #1 is dtreshfactor
                     location_found = result[0]
-                    if (current_index == 7):
-                        print "out"
-                        break
-                if (current_index == 7):
-                        break
+#                    if (current_index == 7):
+#                        print "out"
+#                        break
+#                if (current_index == 7):
+#                        break
                 secund_node = nclass.Node(1, result[1], (self.trees[current_index]).final_q_perf, 0)               
                 (self.trees[current_index]).add_node(secund_node)
                 #updates
@@ -118,7 +119,7 @@ class Forest:
             while (inf_dist_max == False):
                 rdm_in_sqre = np.random.rand(3)*2.*dist_max
                 new_pos = source_loc - (np.ones(3)*dist_max) + rdm_in_sqre
-                if cco_3df.length(new_pos-source_loc) < dist_max:  
+                if cco_3df.length(new_pos-source_loc, self.voxel_size) < dist_max:  
                     inf_dist_max = True
             return new_pos
         
@@ -128,10 +129,10 @@ class Forest:
         inside_area = False
         while inside_area == False :    
             position = self.new_pos_inside_sqr(source_loc, max_dist)
-            if (tree.inside_perf_territory(position)):
+            if (tree.inside_perf_territory(position) and self.outside_segmented_vessels(position, DIST_TO_CENTERLINE)):
                 inside, val = self.inside_heart(source_loc)
                 n = tree.calculate_sampling(self.max_curv_rad, position, source_loc)
-                if tree.sample_and_test(position, source_loc, n, val) == True:
+                if tree.sample_and_test(position, source_loc, n, val, False) == True:
                     print "first source end found"
                     return position
                 else:
@@ -145,12 +146,14 @@ class Forest:
         return fk_term
         
     def find_sources_dist_max(self):
+        #find closest source for each source
+        #store the distance and the ratio of flow between the two
         tree_nb = len(self.trees)
         dist_max = np.ones((tree_nb,2))*np.max(self.im_size)*10.
         #print "dist_max_initial", dist_max
         for tree in self.trees:
             for i in range (tree.tree_index+1, tree_nb):
-                dist = cco_3df.length(tree.nodes[0].coord - self.trees[i].nodes[0].coord)
+                dist = cco_3df.length(tree.nodes[0].coord - self.trees[i].nodes[0].coord, self.voxel_size)
                 if dist_max[tree.tree_index][0] > dist:
                     dist_max[tree.tree_index][0] = dist
                     tree_q_perf = tree.final_q_perf
@@ -160,7 +163,7 @@ class Forest:
                     dist_max[i][0] = dist
                     tree_q_perf = tree.final_q_perf
                     i_q_perf = self.trees[i].final_q_perf
-                    dist_max[i][1] = tree_q_perf / (i_q_perf + tree_q_perf)  
+                    dist_max[i][1] = i_q_perf / (i_q_perf + tree_q_perf)  
         return dist_max
     
     def get_new_loc_for_sources(self, d_tresh_factor, current_tree, dist_max): 
@@ -176,7 +179,7 @@ class Forest:
         print "looking for a position respecting dist_max", dist_max, "and d_tresh", d_tresh_factorized
         while (meet_criteria == False and ind < max_it):        
             new_pos = self.new_pos_inside_sqr(source_coord, dist_max)
-            if current_tree.inside_perf_territory(new_pos): 
+            if current_tree.inside_perf_territory(new_pos) and self.outside_segmented_vessels(new_pos, DIST_TO_CENTERLINE): 
                 respect_criteria = True
                 for tree in self.trees:
                     if tree.tree_index != current_tree.tree_index:
@@ -187,12 +190,13 @@ class Forest:
                 if (respect_criteria == True):                    
                     ins, val = self.inside_heart(source_coord) #if inside heart (so outside lv: will test sample on heart and lv)
                     n = tree.calculate_sampling(self.max_curv_rad, new_pos, source_coord)
-                    if tree.sample_and_test(new_pos, source_coord, n, val) == True:
+                    if tree.sample_and_test(new_pos, source_coord, n, val, False) == True:
                         return True, new_pos, d_tresh_factorized
-                    else:
-                        print "not found for source", source_coord, "dist max", dist_max, "location", new_pos
+                    #else:
+                    #    print "not found for source", source_coord, "dist max", dist_max, "location", new_pos
             else:
-                print "location out", current_tree.tree_index
+                #print "location out, source coord", source_coord, "dist max", dist_max, "location", new_pos
+                current_tree.inside_perf_territory(source_coord)
                 continue
             ind = ind + 1
             if ind == max_it:
@@ -202,25 +206,34 @@ class Forest:
            
         return False, np.array([0.,0.]), d_tresh_factorized
     
-    def inside_perf_territory(self, location):
-        if location[2] < 0 or location[1] < 0. or location[0] < 0.:
-            return False
-        if location[1] < (self.im_size[0]-1) and location[0] < (self.im_size[1]-1): 
-            pot_val = round(self.trees[0].get_w(location),3)
-            if (pot_val> 0.) and (pot_val < 1.0): 
+    
+    def outside_segmented_vessels(self, location, dist_to_centerline):  
+        fmm_val = round(self.trees[0].get_fmm(location),3)
+        if (fmm_val> dist_to_centerline): 
                 return True
+        return False
+    
+    def inside_perf_territory(self, location):
+        pot_val = round(self.trees[0].get_w(location),3)
+        if (pot_val> 0.) and (pot_val < 1.0):
+            print "inside perf", pot_val
+            return True
+        else:
+            if (pot_val == -2.):
+                print "out of the box"
+            print "out", pot_val
         return False 
         
     def inside_heart(self,location):
-        if location[2] < 0 or location[1] < 0. or location[0] < 0.:
-            return False, -1.
-        if location[2] < (self.im_size[2]-1) and location[1] < (self.im_size[0]-1) and location[0] < (self.im_size[1]-1): 
-            pot_val = round(self.trees[0].get_h(location),3)
-            if (pot_val> 0.) and (pot_val < 1.0): 
-                return True, pot_val
-            else:
-                return False, pot_val
-        return False, -1. 
+        pot_val = round(self.trees[0].get_h(location),3)
+        if (pot_val> 0.) and (pot_val < 1.0):
+            print "inside heart"
+            return True, pot_val
+        else:
+            return False, pot_val
+        if (pot_val == -2.):
+                print "out of the box"
+        return False, pot_val 
        
     def get_new_location(self, d_tresh_factor):   
         k_term = self.get_fk_term()
@@ -232,7 +245,7 @@ class Forest:
         max_it = 100
         while (meet_criteria == False and ind < max_it):
             point = cco_3df.random_location(self.im_size)
-            if (self.inside_perf_territory(point) == True):
+            if (self.inside_perf_territory(point) == True) and (self.outside_segmented_vessels(point, DIST_TO_CENTERLINE)):
                 respect_criteria = True
                 for tree in self.trees:
                     if tree.test_dist_criteria(point, d_tresh_factorized,False) == False:
@@ -256,7 +269,8 @@ class Forest:
         dist_type = [("distance", float), ("tree_index", int), ("node_index", int)]
         for j in range(len(self.trees)):
             if self.trees[j].activ: #look only for neighbors of activ trees
-                distances = distances + (self.trees[j]).find_neighbors(location, n)          
+                distances = distances + (self.trees[j]).find_neighbors(location, n)  
+        print "distances", distances
         threshold = n if (self.node_nber - len(self.trees)> n) else len(distances)
         print "node_nber", self.node_nber, "Ncon ", n, "len(distances) ", len(distances)
         print "threshold", threshold
@@ -291,7 +305,7 @@ class Forest:
             for tree in self.trees:
                 tree.update_volume()
         
-    def test_forest_connection(self, tree_ind, node_index, new_location):       
+    def test_forest_connection(self, tree_ind, node_index, new_location, surface, surface_tol):       
         current_tree = self.trees[tree_ind]
         print "testing neighbor of tree index", tree_ind
         reslt = current_tree.test_connection(node_index, new_location)
@@ -321,11 +335,11 @@ class Forest:
                         total_volume = total_volume + tree.tree_volume 
                         print "adding volume of tree", tree.tree_index, " ", tree.tree_volume   
                 print "test forest connection: positiv result"
-                return True, total_volume, beta_and_bif_location, tree_ind, node_index, current_tree_volume 
+                return True, total_volume, beta_and_bif_location[0],beta_and_bif_location[1], tree_ind, node_index, current_tree_volume 
             else:
-                return False, 0.,[np.zeros(2), np.zeros(3)], tree_ind, node_index, current_tree_volume
+                return False, 0.,np.zeros(2), np.zeros(3), tree_ind, node_index, current_tree_volume
         else:
-            return False, 0.,[np.zeros(2), np.zeros(3)], tree_ind, node_index, current_tree_volume
+            return False, 0.,np.zeros(2), np.zeros(3), tree_ind, node_index, current_tree_volume
     
     def add_connection(self, beta_and_bif_location, tree_index, node_index, new_location,tree_volume):
         if (self.trees[tree_index]).add_connection(node_index, new_location, beta_and_bif_location[1], beta_and_bif_location[0], tree_volume):

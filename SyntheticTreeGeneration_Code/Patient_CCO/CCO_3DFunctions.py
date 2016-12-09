@@ -101,8 +101,10 @@ def potential_ellipsoid(center, r_int, r_ext, half,cut_top, cutop_val):
     return result[1]
 
 
-def length(vect):
-    return np.sqrt(np.sum(vect**2))
+def length(vect, vox_size):
+    if vox_size[0] == 0. and vox_size[1] == 0. and vox_size[2] == 0.:
+        return  np.sqrt(np.sum((vect)**2))
+    return np.sqrt(np.sum((vect*vox_size)**2))
     
 #########################################################
 
