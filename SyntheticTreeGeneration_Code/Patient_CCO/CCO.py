@@ -159,7 +159,6 @@ if True:
          
     while forest.get_fk_term() < NTerm:
         kterm = forest.get_fk_term()
-
         if kterm < InterTerm:          
             surface = True
         else: 

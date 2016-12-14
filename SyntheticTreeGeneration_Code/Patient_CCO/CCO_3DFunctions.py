@@ -140,23 +140,23 @@ def calculate_betas(sibling_ratio, gamma):
     return np.array([beta_child_0, beta_child_1])
     
 #return distance between point and segment
-def segment_distance(seg_pt_a, seg_pt_b, point):
+def segment_distance(seg_pt_a, seg_pt_b, point, vox_size):
     vect_ab = seg_pt_b - seg_pt_a
     vect_ap = point - seg_pt_a
     vect_bp = point - seg_pt_b
-    squared_length_ab = float(np.sum(vect_ab**2))
+    squared_length_ab = length(vect_ab, vox_size)
     if (squared_length_ab == 0.): 
-        return np.sqrt(np.sum(vect_ap**2))
+        return length(vect_ap, vox_size)
     
     relative_position = (np.sum(vect_ap*vect_ab)) / squared_length_ab
     if (relative_position < 0.): # outside segment passed point a    
-        return  np.sqrt(np.sum(vect_ap**2))
+        return  length(vect_ap, vox_size)
     elif (relative_position > 1.): #outside the segment passed point b     
-        return np.sqrt(np.sum(vect_bp**2))
+        return length(vect_bp, vox_size)
 
     projected_point = seg_pt_a + relative_position * vect_ab
     vect_projp = point - projected_point
-    return np.sqrt(np.sum(vect_projp**2))
+    return length(vect_projp, vox_size)
   
 #return distance between line and point  
 def line_distance(seg_pt_a, seg_pt_b, point):
@@ -176,11 +176,10 @@ def line_distance(seg_pt_a, seg_pt_b, point):
     return np.sqrt(np.sum(normal_vec**2))
 
 #test if any of the 3 segments has a length close to 0 (the bifurcation has degenerated into 2 segments)  
-def degenerating_test(c0, c1, c2, branching_location, radii, length_factor):
-    seg_parent_length = np.sqrt(np.sum((c0 - branching_location)**2)) * length_factor
-    seg_old_child_length = np.sqrt(np.sum((c1 - branching_location)**2)) * length_factor
-    seg_new_child_length = np.sqrt(np.sum((c2 - branching_location)**2)) * length_factor
-
+def degenerating_test(c0, c1, c2, branching_location, radii, length_factor, vox_size):
+    seg_parent_length = length(c0 - branching_location, vox_size) * length_factor
+    seg_old_child_length = length(c1 - branching_location, vox_size) * length_factor
+    seg_new_child_length = length(c2 - branching_location, vox_size) * length_factor
     if (seg_parent_length < 2.*radii[0]):
         #print "parent seg degenerate"            
         return False
@@ -278,12 +277,17 @@ def closestDistanceBetweenLines(a0,a1,b0,b1,clampAll=False,clampA0=False,clampA1
     return pA,pB,d
     
 #test if segment ab intersect with cd considering their respective width
-def no_overlap(point_a, point_b, point_c, point_d, width_ab, width_cd):
+def no_overlap(point_a, point_b, point_c, point_d, width_ab, width_cd, vox_size):
     p1,p0,dist = closestDistanceBetweenLines(point_a, point_b,point_c,point_d, True)
-    if dist < (width_ab + width_cd):
-        return False
-    else :
+        
+    if np.all(dist / vox_size > (width_ab + width_cd)/vox_size):
         return True
+    else:
+        return False
+#    if dist < (width_ab + width_cd):
+#        return False
+#    else :
+#        return True
         
     
 def normalize(vector):

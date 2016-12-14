@@ -138,7 +138,7 @@ class Tree:
         return Tree(self.tree_index, copy.deepcopy(self.nodes), self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[self.interp_w, self.interp_gx, self.interp_gy, self.interp_gz, self.interp_h, self.interp_hgx, self.interp_hgy, self.interp_hgz, self.interp_fmm, self.interp_fmm_gx, self.interp_fmm_gy, self.interp_fmm_gz],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma )    		
     
     def __copy__(self):
-        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[0,0,0,0,0,0,0,0,0],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma)
+        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[0,0,0,0,0,0,0,0,0,0,0,0],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma)
       
     def set_interpolators(self,interpolators):
         self.interp_w = interpolators[0] #lv, lvgx, lvgy, lvgz, then heart
@@ -306,7 +306,7 @@ class Tree:
         if (self.inside_perf_territory(location) == True):    
             for sgmt in self.nodes:
                 if (sgmt.parent() >= 0):
-                    dist = cco_3df.segment_distance(sgmt.coord, (self.get_node(sgmt.parent())).coord, location)
+                    dist = cco_3df.segment_distance(sgmt.coord, (self.get_node(sgmt.parent())).coord, location, self.voxel_size)
                     if (dist < d_tresh):
                         return False
                 else:
@@ -441,7 +441,7 @@ class Tree:
         distances=[]
         for i in self.nodes:
             if (i.index > 0):
-                dist = cco_3df.segment_distance(i.coord, (self.nodes[i.parent()]).coord, location)
+                dist = cco_3df.segment_distance(i.coord, (self.nodes[i.parent()]).coord, location, self.voxel_size)
                 distances.append((dist, self.tree_index, i.index))
         return distances
         
@@ -528,10 +528,14 @@ class Tree:
             
     def test_vessel_direction(self, node_coord, new_location):
         gdt = np.array([self.get_fmm_gx(node_coord), self.get_fmm_gy(node_coord), self.get_fmm_gz(node_coord)])
-        gdt_norm = cco_3df.normalize(gdt)
-        dirction = cco_3df.normalize(new_location-node_coord)
-        dot_pdt = cco_3df.dot(gdt_norm, dirction)
+        gdt_l = cco_3df.length(gdt, self.voxel_size)
+        gdt_norm = gdt/gdt_l
+        dirction_l = cco_3df.length(new_location-node_coord, self.voxel_size)
+        dirction_norm = (new_location-node_coord) / dirction_l
+        print "test vessel direction", gdt
+        dot_pdt = cco_3df.dot(gdt_norm, dirction_norm)
         if dot_pdt < 0:
+            print "vessel going in wrong direction", dot_pdt
             return False
         return True
 
@@ -929,7 +933,7 @@ class Tree:
                 #calculate total tree volume and volume gradient
                 tree_vol = tree_copy.volume()
                 new_radii = np.array([tree_copy.get_radius(tree_copy.node_index-2), tree_copy.get_radius(old_child_index), tree_copy.get_radius(tree_copy.node_index-1)])
-                if cco_3df.degenerating_test(c0,c1,c2, branching_location, new_radii, self.length_factor) == False :
+                if cco_3df.degenerating_test(c0,c1,c2, branching_location, new_radii, self.length_factor, self.voxel_size) == False :
                         print "degenerated segments"
                         return code, False, 0., [[0.,0.], [0.,0.]], old_child_index, new_radii 
                 vol_gdt = initial_tree_vol - tree_vol
@@ -1023,7 +1027,7 @@ class Tree:
                 #calculate total tree volume and volume gradient
                 tree_vol = tree_copy.volume()
                 new_radii = np.array([tree_copy.get_radius(tree_copy.node_index-2), tree_copy.get_radius(old_child_index), tree_copy.get_radius(tree_copy.node_index-1)])
-                if cco_3df.degenerating_test(c0,c1,c2, branching_location, new_radii, self.length_factor) == False :
+                if cco_3df.degenerating_test(c0,c1,c2, branching_location, new_radii, self.length_factor, self.voxel_size) == False :
                         print "degenerated segments"
                         return code, False, 0., result, old_child_index, new_radii 
                 vol_gdt = initial_tree_vol - tree_vol

@@ -150,6 +150,9 @@ class Forest:
         inside_area = False
         while inside_area == False :    
             position = self.new_pos_inside_sqr(source_loc, max_dist)
+            if tree.test_vessel_direction(source_loc, position) == False:
+                print "wrong vessel direction"
+                continue
             if (surface_tol > 0.):
                 ins, val = tree.inside_heart(source_loc)
                 if (ins):#if source inside heart and out lv
@@ -267,7 +270,9 @@ class Forest:
             if dist_max > DIST_TO_CENTERLINE:
                 if self.outside_segmented_vessels(new_pos, DIST_TO_CENTERLINE) == False:
                     continue
-           
+            if current_tree.test_vessel_direction(source_coord, new_pos) == False:
+                print "wrong direction"
+                continue
             if surface_tol > 0.:#staged growth protocol                
                 if (val < 1.):#if source inside heart and out lv
                     #print "proj failed, changing method" #or should use the sampling method between these 2 points
@@ -503,6 +508,10 @@ class Forest:
     def test_forest_connection(self, tree_ind, node_index, new_location, surface, surface_tol):       
         current_tree = self.trees[tree_ind]
         print "testing neighbor of tree index", tree_ind
+        parent_node_coord = current_tree.nodes[(current_tree.nodes[node_index]).parent()].coord
+        if current_tree.test_vessel_direction(parent_node_coord, new_location) == False:
+            print "wrong direction"
+            return False, 0.,np.zeros(2), np.zeros(3), tree_ind, node_index, 0.
         reslt = current_tree.test_connection(node_index, new_location, surface_tol)
         #1, True, tree_vol, result, old_child_index, new_radii
         current_tree_volume =reslt[2]
