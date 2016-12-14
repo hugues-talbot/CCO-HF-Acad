@@ -242,6 +242,7 @@ class Forest:
             #need to check if lv close enough
             dist_to_lv = self.measure_dist_to_lv(source_coord)
             #print "NEW DIST TO LV", dist_to_lv
+            print "dist to lv", dist_to_lv, "distmax", dist_max
             if dist_to_lv  > dist_max:
                 print "source too far from lv"
                 #define the end pointas the one on gdt vector line, at dist_max
@@ -250,7 +251,7 @@ class Forest:
                 ins_s, val_s = self.inside_heart(source_coord)
                 ins, val = self.inside_heart(new_location)   
                 print "result of short segmt end", new_location, "h", val, "vals", val_s
-                if (val > val_s):
+                if (val >= val_s):
                     print "short segmt end found", new_location, "dist to source", cco_3df.length(new_location-source_coord, self.voxel_size), "dist max", dist_max                       
                     print "short end", current_tree.get_w(new_location)                    
                     return True, new_location, d_tresh_factorized
@@ -259,11 +260,13 @@ class Forest:
             else:
                 print "close enough to lv"
         else: #source is in lv
-            dist_to_lv_surf = self.measure_dist_to_lv_from_inside(source_coord)
-            if (dist_to_lv_surf > dist_max):
+            dist_to_lv = self.measure_dist_to_lv_from_inside(source_coord)
+            if (dist_to_lv > dist_max):
                 new_location = self.short_segmt_end(source_coord, dist_max, False)
-                print "weird situation", dist_to_lv_surf, "dist max", dist_max
-                return False, np.zeros(3, d_tresh_factorized)                
+                print "weird situation but keep going", dist_to_lv, "dist max", dist_max
+                return False, new_location, d_tresh_factorized  
+
+                
                 
         while (meet_criteria == False and ind < max_it):        
             new_pos = self.new_pos_inside_sqr(source_coord, dist_max)
@@ -277,23 +280,46 @@ class Forest:
                 if (val < 1.):#if source inside heart and out lv
                     #print "proj failed, changing method" #or should use the sampling method between these 2 points
                     #need to find another point because projection failed
-                    if current_tree.inside_perf_territory(new_pos) == True:            
-                        new_loc = self.dist_to_lv_via_sampling(source_coord, new_pos)
+                    if current_tree.inside_perf_territory(new_pos) == True:   
+                        if dist_to_lv == 0.:
+                            if current_tree.is_on_surface(new_pos, LV_OUTER_WALL):
+                                new_loc = new_pos
+                            else:
+                                print "not on surface"
+                                continue                           
+                        else:
+                            new_loc = self.dist_to_lv_via_sampling(source_coord, new_pos)
                         if new_loc[0] == 0. and new_loc[1] ==0.:
                             print "failed to get dist to lv via sampling, continue to get new loc"
                             continue
+                        if dist_to_lv == 0.:#source is on surface, need to make sure we didnt pick the source point
+                            if np.all(new_loc == source_coord):
+                                print "exact same location, skipped!"
+                                continue
                         n = current_tree.calculate_sampling(self.max_curv_rad, new_loc, source_coord, LV_OUTER_WALL)
                         if current_tree.sample_and_test(new_loc, source_coord, n, val, False, surface_tol) == True:
-                            print "source end found for surface heart", "lv", current_tree.get_w(new_loc)
+                            print "source end found for surface heart", "lv", current_tree.get_w(new_loc), new_loc
                             return True, new_loc, d_tresh_factorized
                         
                 else: #if source already in lv
 
                     if current_tree.inside_perf_territory(new_pos) == False:
-                        new_loc = self.dist_to_lv_via_sampling(new_pos, source_coord)
+                        if dist_to_lv == 0.:
+                            #new_loc = current_tree.newton_algo(new_pos, LV_OUTER_WALL, EPS, 0, MAX_ITER_NEWTON, INITIAL_FAC)
+                            if current_tree.is_on_surface(new_pos, LV_OUTER_WALL):
+                                new_loc = new_pos
+                            else:
+                                print "not on surface"
+                                continue   
+                        else:
+                            new_loc = self.dist_to_lv_via_sampling(new_pos, source_coord)
                         if new_loc[0] == 0. and new_loc[1] ==0.:
                             print "failed to get dist to lv via sampling, continue to get new loc"
                             continue
+                        if dist_to_lv == 0.:#source is on surface, need to make sure we didnt pick the source point
+                            if np.all(new_loc == source_coord):
+                                print "exact same location, skipped!"
+                                continue
                         n = current_tree.calculate_sampling(self.max_curv_rad, new_loc, source_coord, LV_INNER_WALL)
                         if current_tree.sample_and_test(new_loc, source_coord, n, val, False, surface_tol) == True:
                             print "source end found for surface heart", "lv", current_tree.get_w(new_loc)

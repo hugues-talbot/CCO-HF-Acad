@@ -36,7 +36,7 @@ if os.path.isfile(source_path):
     sources = np.load(source_path)
 else:
     print "generate sources"
-    sources = cv.get_data_fp("./Inputs/LADLCXPressureAndFlowInputs.txt") 
+    sources = cv.get_data_fp("./Inputs/SourcesWithSideBranches.txt") #LADLCXPressureAndFlowInputs
     np.save(source_path, sources)
        
 # dtype_r=[("WorldCoordX", float),("WorldCoordY", float), ("WorldCoordZ", float),
@@ -100,7 +100,7 @@ im_size_max = np.max(heart_potential.shape)
 
 timing = True
 store_data = False
-parallelized = False
+parallelized = True
 filename = "./Results/TestWithLCXAllSources"
 
 if timing:
@@ -121,7 +121,7 @@ if True:
     #### Parameters to define: ##
     ## About tree
     NTerm = 500 
-    InterTerm = 50
+    InterTerm = 200
     P_term = 8.38e3 #(Pa)
     Q_term = Q_perf / NTerm
     N_con = 20
@@ -159,6 +159,7 @@ if True:
          
     while forest.get_fk_term() < NTerm:
         kterm = forest.get_fk_term()
+
         if kterm < InterTerm:          
             surface = True
         else: 
@@ -218,8 +219,8 @@ if True:
                 print "k termmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm is now ", forest.get_fk_term()
                 kterm=forest.get_fk_term()
                 d_tresh_factor = 1.
-                if (kterm == 50):
-                    break
+#                if (kterm == 110):
+#                    break
 #                if kterm%10 == 0:
 #                    name =filename+"_F_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)
 #                    pickle.dump(forest, open(name + ".p", "wb"))
@@ -236,7 +237,10 @@ if True:
                 print "dead end: decrease d_tresh of 20% to look for new location", d_tresh_factor
 
         #keep going until reach Nterm!
-    
+    for tree in forest.trees:
+        c = tree.nodes[0].coord
+        d= tree.nodes[1].coord
+        print tree.tree_index, cco_3df.length(c-d, vox_size), forest.dist_max[tree.tree_index]
     
     print "CCO done"
     name = filename+"_Nt%i_kt%i_s%i" %(NTerm, forest.get_fk_term(),seed)  

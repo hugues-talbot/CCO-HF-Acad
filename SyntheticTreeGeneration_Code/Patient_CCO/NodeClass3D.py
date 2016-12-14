@@ -332,6 +332,12 @@ class Tree:
             return True
         return False
 
+    def is_on_surface(self, location, target):
+        pot_val = round(self.get_h(location),3)
+        if pot_val < (target + 5*EPS) and pot_val > (target - 5*EPS):
+            return True
+        return False
+        
         
     def inside_heart(self, location):
         pot_val = round(self.get_h(location),3)
@@ -457,7 +463,7 @@ class Tree:
                 radius_i_rescaled = self.get_radius(i.index) * inv_length_factor
                 new_branches_radii_rescaled = new_branches_radii * inv_length_factor
                 #print "testing connection with segment", "parent", parent_i.coord, "child", i.coord
-                if (cco_3df.no_overlap(i.coord, parent_i.coord, new_child_location, branching_location, radius_i_rescaled, new_branches_radii_rescaled[2]) == False):
+                if (cco_3df.no_overlap(i.coord, parent_i.coord, new_child_location, branching_location, radius_i_rescaled, new_branches_radii_rescaled[2], self.voxel_size) == False):
                     return False
                     
                 old_parent_index = old_child.parent()
@@ -465,13 +471,13 @@ class Tree:
                 siblings = old_parent.children()
                 old_child_sibling = siblings[0] if (old_child_index == siblings[1]) else siblings[1]
                 if (i.index != old_parent_index) and (i.index != old_child_sibling): 
-                    if (cco_3df.no_overlap(i.coord, parent_i.coord, branching_location, old_parent.coord, radius_i_rescaled, new_branches_radii_rescaled[0]) ==  False):
+                    if (cco_3df.no_overlap(i.coord, parent_i.coord, branching_location, old_parent.coord, radius_i_rescaled, new_branches_radii_rescaled[0], self.voxel_size) ==  False):
                         return False
                         
                 if (old_child.is_leaf() == False):
                     old_child_children = old_child.children()
                     if (i.index != old_child_children[0]) and (i.index != old_child_children[1]):
-                        if (cco_3df.no_overlap(i.coord, parent_i.coord, old_child.coord, branching_location, radius_i_rescaled, new_branches_radii_rescaled[1]) ==  False):
+                        if (cco_3df.no_overlap(i.coord, parent_i.coord, old_child.coord, branching_location, radius_i_rescaled, new_branches_radii_rescaled[1], self.voxel_size) ==  False):
                             return False
         return True
         
@@ -482,13 +488,13 @@ class Tree:
                 inv_length_factor = 1./self.length_factor
                 radius_i_rescaled = self.get_radius(i.index) * inv_length_factor
                 #print "testing connection with segment", "parent", parent_i.coord, "child", i.coord
-                if (cco_3df.no_overlap(i.coord, parent_i.coord, new_child_location, branching_location, radius_i_rescaled, new_branches_radii_rescaled[2]) == False):
+                if (cco_3df.no_overlap(i.coord, parent_i.coord, new_child_location, branching_location, radius_i_rescaled, new_branches_radii_rescaled[2], self.voxel_size) == False):
                     return False
                     
-                if (cco_3df.no_overlap(i.coord, parent_i.coord, branching_location, parent_location, radius_i_rescaled, new_branches_radii_rescaled[0]) ==  False):
+                if (cco_3df.no_overlap(i.coord, parent_i.coord, branching_location, parent_location, radius_i_rescaled, new_branches_radii_rescaled[0], self.voxel_size) ==  False):
                     return False
                         
-                if (cco_3df.no_overlap(i.coord, parent_i.coord, old_child_location, branching_location, radius_i_rescaled, new_branches_radii_rescaled[1]) ==  False):
+                if (cco_3df.no_overlap(i.coord, parent_i.coord, old_child_location, branching_location, radius_i_rescaled, new_branches_radii_rescaled[1], self.voxel_size) ==  False):
                     return False
         return True
           
@@ -529,11 +535,17 @@ class Tree:
     def test_vessel_direction(self, node_coord, new_location):
         gdt = np.array([self.get_fmm_gx(node_coord), self.get_fmm_gy(node_coord), self.get_fmm_gz(node_coord)])
         gdt_l = cco_3df.length(gdt, self.voxel_size)
+        print "new location", new_location, "node coord", node_coord, "gdt", gdt
+#        if gdt_l == 0. or if np.all():
+#            "gdt issssssue for test vessel direction"
+#            return False
         gdt_norm = gdt/gdt_l
         dirction_l = cco_3df.length(new_location-node_coord, self.voxel_size)
         dirction_norm = (new_location-node_coord) / dirction_l
-        print "test vessel direction", gdt
+        print "test vessel direction", dirction_norm, gdt_norm
+        
         dot_pdt = cco_3df.dot(gdt_norm, dirction_norm)
+        print "new loc", new_location
         if dot_pdt < 0:
             print "vessel going in wrong direction", dot_pdt
             return False
