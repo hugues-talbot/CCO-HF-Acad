@@ -39,16 +39,22 @@ class Forest:
         self.lv_w = chamber_w
         self.empty_grid=(np.arange(0,im_size[0]*vox_size[0],vox_size[0]),np.arange(0,im_size[1]*vox_size[1],vox_size[1]), np.arange(0,im_size[2]*vox_size[2],vox_size[2]))
         self.interp_w =  RegularGridInterpolator(self.empty_grid,chamber_w,bounds_error=False, fill_value = -2.)
-        self.interp_gx = RegularGridInterpolator(self.empty_grid,np.gradient(chamber_w)[0])
-        self.interp_gy = RegularGridInterpolator(self.empty_grid,np.gradient(chamber_w)[1])
-        self.interp_gz = RegularGridInterpolator(self.empty_grid,np.gradient(chamber_w)[2])
+        self.gdt_w = np.gradient(chamber_w)
+        self.interp_gx = RegularGridInterpolator(self.empty_grid,self.gdt_w[0])
+        self.interp_gy = RegularGridInterpolator(self.empty_grid,self.gdt_w[1])
+        self.interp_gz = RegularGridInterpolator(self.empty_grid,self.gdt_w[2])
         self.interp_h =   RegularGridInterpolator(self.empty_grid,heart_w + chamber_w_z, bounds_error=False, fill_value = -2.)
-        self.interp_ghx = RegularGridInterpolator(self.empty_grid,np.gradient(heart_w + chamber_w_z)[0])
-        self.interp_ghy = RegularGridInterpolator(self.empty_grid,np.gradient(heart_w + chamber_w_z)[1])
-        self.interp_ghz = RegularGridInterpolator(self.empty_grid,np.gradient(heart_w + chamber_w_z)[2])
+        self.gdt_h = np.gradient(heart_w + chamber_w_z)
+        self.interp_ghx = RegularGridInterpolator(self.empty_grid,self.gdt_h[0])
+        self.interp_ghy = RegularGridInterpolator(self.empty_grid,self.gdt_h[1])
+        self.interp_ghz = RegularGridInterpolator(self.empty_grid,self.gdt_h[2])
         self.v_dist_map = RegularGridInterpolator(self.empty_grid,vs_dist, bounds_error=False, fill_value = -2.)
+        self.dm_gdt = np.gradient(vs_dist)
+        self.dm_gx = RegularGridInterpolator(self.empty_grid, self.dm_gdt[0])
+        self.dm_gy = RegularGridInterpolator(self.empty_grid, self.dm_gdt[1])
+        self.dm_gz = RegularGridInterpolator(self.empty_grid, self.dm_gdt[2])
         self.dist_max=np.zeros((1,1))
-        self.interp_list=[self.interp_w, self.interp_gx, self.interp_gy, self.interp_gz, self.interp_h, self.interp_ghx, self.interp_ghy, self.interp_ghz, self.v_dist_map]
+        self.interp_list=[self.interp_w, self.interp_gx, self.interp_gy, self.interp_gz, self.interp_h, self.interp_ghx, self.interp_ghy, self.interp_ghz, self.v_dist_map, self.dm_gx, self.dm_gy, self.dm_gz]
     ##trees should be created according to increasing flow 
     def create_tree(self, source_location, q_perf, p_perf):
         tree_index = len(self.trees)

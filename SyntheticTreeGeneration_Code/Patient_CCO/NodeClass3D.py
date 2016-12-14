@@ -130,9 +130,12 @@ class Tree:
         self.interp_hgy = interpolators[6]
         self.interp_hgz = interpolators[7]
         self.interp_fmm = interpolators[8]
+        self.interp_fmm_gx = interpolators[9]
+        self.interp_fmm_gy = interpolators[10]
+        self.interp_fmm_gz = interpolators[11]
 
     def __deepcopy__(self, tree):
-        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[self.interp_w, self.interp_gx, self.interp_gy, self.interp_gz, self.interp_h, self.interp_hgx, self.interp_hgy, self.interp_hgz, self.interp_fmm],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma )    		
+        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[self.interp_w, self.interp_gx, self.interp_gy, self.interp_gz, self.interp_h, self.interp_hgx, self.interp_hgy, self.interp_hgz, self.interp_fmm, self.interp_fmm_gx, self.interp_fmm_gy, self.interp_fmm_gz],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma )    		
     
     def __copy__(self):
         return Tree(self.tree_index, copy.deepcopy(self.nodes), self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[0,0,0,0,0,0,0,0,0],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma)
@@ -147,6 +150,9 @@ class Tree:
         self.interp_hgy = interpolators[6]
         self.interp_hgz = interpolators[7] 
         self.interp_fmm = interpolators[8]
+        self.interp_fmm_gx = interpolators[9]
+        self.interp_fmm_gy = interpolators[10]
+        self.interp_fmm_gz = interpolators[11]
          
     def nodes(self):
         return self.nodes
@@ -321,8 +327,8 @@ class Tree:
         return False     
            
     def inside_perf_territory(self, location):
-        pot_val = round(self.get_h(location),3)
-        if (pot_val> LV_OUTER_WALL) and (pot_val < LV_INNER_WALL):
+        pot_val = round(self.get_w(location),3)
+        if (pot_val> 0) and (pot_val < LV_OUTER_WALL):
             return True
         return False
 
@@ -364,6 +370,15 @@ class Tree:
         
     def get_fmm(self, location):
         return float(self.interp_fmm(location*self.voxel_size))
+        
+    def get_fmm_gx(self, location):
+        return float(self.interp_fmm_gx(location*self.voxel_size))
+        
+    def get_fmm_gy(self, location):
+        return float(self.interp_fmm_gy(location*self.voxel_size))
+    
+    def get_fmm_gz(self, location):
+        return float(self.interp_fmm_gz(location*self.voxel_size))
         
     # add bifurcation on tree structure, and set the two children new resistances 
     # beta has been calculated with child_0/child_1 radius ratio where child_0 is old_child         
@@ -510,6 +525,15 @@ class Tree:
             self.balancing_ratios(parent_index)
         else : 
             print "root reached"
+            
+    def test_vessel_direction(self, node_coord, new_location):
+        gdt = np.array([self.get_fmm_gx(node_coord), self.get_fmm_gy(node_coord), self.get_fmm_gz(node_coord)])
+        gdt_norm = cco_3df.normalize(gdt)
+        dirction = cco_3df.normalize(new_location-node_coord)
+        dot_pdt = cco_3df.dot(gdt_norm, dirction)
+        if dot_pdt < 0:
+            return False
+        return True
 
         
     def local_nh(self, seg_1, seg_2, target):

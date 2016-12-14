@@ -294,7 +294,7 @@ def normalize(vector):
         return vector
         
 def dot(vec_a, vec_b):
-    return vec_a[0]*vec_b[0] + vec_a[1]*vec_b[1]    
+    return np.sum(vec_a*vec_b)    
     
     
 def determinant(pt_a, pt_b,pt_c,pt_d):

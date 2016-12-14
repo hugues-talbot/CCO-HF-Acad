@@ -219,7 +219,7 @@ if True:
                 print "k termmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm is now ", forest.get_fk_term()
                 kterm=forest.get_fk_term()
                 d_tresh_factor = 1.
-                if (kterm == 52):
+                if (kterm == 50):
                     break
 #                if kterm%10 == 0:
 #                    name =filename+"_F_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)
