@@ -149,7 +149,7 @@ class Forest:
                 if (ins):#if source inside heart and out lv
                     target = 1.
                     print "source in heart surface point"
-                    position = tree.newton_algo_heart(position, LV_OUTER_WALL, EPS, 0, MAX_ITER_NEWTON, INITIAL_FAC)
+                    position = tree.newton_algo_heart(position, target, EPS, 0, MAX_ITER_NEWTON, INITIAL_FAC)
                     if position[0] == 0. and position[1] == 0.:
                         continue
                     n = tree.calculate_sampling(self.max_curv_rad, position, source_loc, LV_OUTER_WALL)
@@ -163,7 +163,7 @@ class Forest:
                     #lv_val = tree.get_w(source_loc)
                     print "source in lv surface point" 
                     target = 0.01
-                    position = tree.newton_algo_heart(position, LV_OUTER_WALL, EPS, 0, MAX_ITER_NEWTON, INITIAL_FAC)
+                    position = tree.newton_algo(position, target, EPS, 0, MAX_ITER_NEWTON, INITIAL_FAC)
                     n = tree.calculate_sampling(self.max_curv_rad, position, source_loc, LV_INNER_WALL)
                     if tree.sample_and_test(position, source_loc, n, -1., False, surface_tol) == True:
                         print "first source end found for surface lv", tree.get_h(position)
