@@ -77,6 +77,7 @@ def write_json(forest, matrix, filename):
         fdict["Trees"][tree.tree_index]["Nodes"]= {}
         for node in tree.nodes:
             fdict["Trees"][tree.tree_index]["Nodes"][node.index]={}
+            print "index", node.index, "node.coord", node.coord           
             fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Location" : (voxel_to_world(node.coord[::-1], matrix)).tolist()})
             fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Parent" : node.parent_index})
             fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Children" : node.children_index.tolist()})
@@ -113,6 +114,68 @@ if False:
     
 
 import SimpleITK as sitk
+
+def generate_lv_potential(filepath):
+    lv = open_mha(filepath)
+    ###generate outer marker (smooth lv with light closing)
+    lv_int = lv.astype(int)
+    lv_im = sitk.GetImageFromArray(lv_int)
+    lv_smooth = sitk.BinaryMorphologicalClosing(lv_im, 5)
+    lv_smth = sitk.GetArrayFromImage(lv_smooth)
+
+    ###generate inner marker:  light opening(outermarker -heavy closing(lv))
+    closing_fac = 100
+    rsult = sitk.BinaryMorphologicalClosing(lv_im, closing_fac)
+    sub = rsult - lv
+    sub_im = sitk.GetImageFromArray(sub.astype(int))
+    sub_open = sitk.BinaryMorphologicalOpening(sub_im, 5)
+    sub_a = sitk.GetArrayFromImage(sub_open)
+    
+    #generate lv potential
+    out_inv = lv_smth +1
+    out_inv[np.where(out_inv>1)]=0
+    out_marker = lv_smth[40:200,100:,150:]
+    in_marker = sub_a[40:200,100:,150:]
+    
+    mask = (in_marker + out_marker) +1
+    mask[np.where(mask>1)]=0 
+    cc3df.generate_potential(mask, inner[40:200,100:,150:], out_inv[40:200,100:,150:])
+    dimb = inner.shape
+    final_size = np.zeros(dimb)-1
+    final_size[40:200,100:,150:] = pot
+    return final_size
+    
+def generate_heart_potential(filepath1, filepath2):
+    from skimage.segmentation import random_walker
+    from skimage.morphology import binary_dilation, binary_erosion
+    lv = open_mha(filepath2)
+    heart = open_mha(filepath1)  
+    dim_h = lv.shape
+
+    heart_dil = binary_dilation(heart[10:int(dim_h[0]) -2,100:int(dim_h[1])-65, 32:int(dim_h[2])-50], np.ones((15,15,15)))    
+    heart_mask=heart_dil+1
+    heart_mask[np.where(heart_mask>1)]=0     
+    lv_mask = binary_erosion(lv[10:int(dim_h[0]) -2,100:int(dim_h[1])-65, 32:int(dim_h[2])-50], np.ones((5,5,5)))
+    mask = (lv_mask + heart_mask) 
+
+    
+    inner_marker = lv[10:int(dim_h[0]) -2,100:int(dim_h[1])-65, 32:int(dim_h[2])-50]
+    heart_small_dil =  binary_dilation(heart, np.ones((10,10,10)))
+    heart_marker = heart_small_dil +1
+    heart_marker[np.where(heart_marker>1)]=0 
+    outer_marker = heart_marker[10:int(dim_h[0]) -2,100:int(dim_h[1])-65, 32:int(dim_h[2])-50]
+    markers = outer_marker*2 + inner_marker
+    
+    result = random_walker(mask, markers, copy =True, return_full_prob = True, mode= 'cg_mg')
+    
+    result[0][np.where(result[0] == 0.)] = -1 
+    final_size = np.zeros(dim_h)-1
+    final_size[10:int(dim_h[0]) -2,100:int(dim_h[1])-65, 32:int(dim_h[2])-50] = result[0]
+    return final_size
+ 
+
+
+   
 if False:
     #generate markers for lv potential
     

@@ -23,12 +23,14 @@ GLOBAL_INCREMENT = True
 #   also we didn't change the index of the nodes, which helps us keeping track of the growth step  
 
 
-EPS = 0.001 #parameter of tolerance related to the target w value to reach for Newton Algo
-MAX_ITER_NEWTON = 100 #max number of iteration for Newton algo
+EPS = 0.001*5 #parameter of tolerance related to the target w value to reach for Newton Algo
+MAX_ITER_NEWTON = 50 #max number of iteration for Newton algo
 INITIAL_FAC = 0.5
 UPDATED_FAC = 0.01
 UPDATED_DOUBLE_FAC = UPDATED_FAC *0.5
 DIST_TO_CENTERLINE = 1.5
+LV_INNER_WALL = 2.0
+LV_OUTER_WALL = 1.0
 
 TARGET_SURFACE = 0.02
 class Node:
@@ -306,7 +308,7 @@ class Tree:
                         if self.activ == False:
                             if sgmt.parent() == -1:
                                 dist = cco_3df.length(sgmt.coord-location, self.voxel_size)#self.vec_length(sgmt.coord-location)
-                                print "dist to other source", dist
+                                #print "dist to other source", dist
                                 if (dist < d_tresh):
                                     print "too close of source location"
                                     return False
@@ -319,46 +321,19 @@ class Tree:
         return False     
            
     def inside_perf_territory(self, location):
-        pot_val = round(self.get_w(location),3)
-        if (pot_val> 0.) and (pot_val < 1.0):
-            #print "inside perf", pot_val
+        pot_val = round(self.get_h(location),3)
+        if (pot_val> LV_OUTER_WALL) and (pot_val < LV_INNER_WALL):
             return True
-        else:
-            print "out", pot_val
-#        test =False
-#        if location[2] < 0. or location[1] < 0. or location[0] < 0.:
-#            print "location out volume"
-#            test=True
-#            return False
-#        if location[2] < (self.im_size[2]-1) and location[1] < (self.im_size[0]-1) and location[0] < (self.im_size[1]-1): 
-#            pot_val = round(self.get_w(location),3)
-#            print "location inside volume"
-#            if (pot_val> 0.) and (pot_val < 1.0): 
-#                print "inside both", pot_val
-#                return True
-#            else:
-#                test=True
-#                print "location inside vol but outside perf", pot_val
-#        if test == False:
-#            print "not entwering"
         return False
+
         
     def inside_heart(self, location):
         pot_val = round(self.get_h(location),3)
-        if (pot_val> 0.) and (pot_val < 1.0):
+        if (pot_val> 0.) and (pot_val < LV_OUTER_WALL):
             return True, pot_val
         else: 
             return False, pot_val
-#        if location[2] < 0. or location[1] < 0. or location[0] < 0.:
-#            return False, -1.
-#        print "location", location, "im_size", self.im_size
-#        if location[2] < (self.im_size[0]-1) and location[1] < (self.im_size[2]-1) and location[0] < (self.im_size[1]-1): 
-#            pot_val = round(self.get_h(location),3)
-#            if (pot_val> 0.) and (pot_val < 1.0): 
-#                return True, pot_val
-#            else:
-#                return False, pot_val
-#        return False, -1.
+
         
     def get_w(self, location):
         return float(self.interp_w(location*self.voxel_size))
@@ -535,16 +510,17 @@ class Tree:
             self.balancing_ratios(parent_index)
         else : 
             print "root reached"
-               
-    def local_n(self, seg_1, seg_2):
-        wp1 = self.get_w(seg_1)
-        wp2 = self.get_w(seg_2)
-        gdt_p1 = np.array([self.get_gx(seg_1), self.get_gy(seg_1), self.get_gz(seg_1)])
-        gdt_p2 = np.array([self.get_gx(seg_2), self.get_gy(seg_2), self.get_gz(seg_1)])
+
+        
+    def local_nh(self, seg_1, seg_2, target):
+        wp1 = self.get_h(seg_1)
+        wp2 = self.get_h(seg_2)
+        gdt_p1 = np.array([self.get_hgx(seg_1), self.get_hgy(seg_1), self.get_hgz(seg_1)])
+        gdt_p2 = np.array([self.get_hgx(seg_2), self.get_hgy(seg_2), self.get_hgz(seg_1)])
         p1p2_vec = seg_2 - seg_1
 
-        l1 = - wp1 * (1. / np.sum(gdt_p1* p1p2_vec))
-        l2 = - wp2 * (1. / np.sum(gdt_p2* -p1p2_vec))
+        l1 = (target - wp1) * (1. / np.sum(gdt_p1* p1p2_vec))
+        l2 = (target - wp2) * (1. / np.sum(gdt_p2* -p1p2_vec))
         #print "l1", l1, "l2", l2
         lbda = min(l1,l2)    
         splg_n = np.ceil(np.abs(1./lbda))
@@ -558,35 +534,42 @@ class Tree:
         #gdt_vec = np.array([self.get_gx(midp), self.get_gy(midp)])
         #print "gdt vec",gdt_vec
         #find on this line the point p where w(p) = 0.5 * (w(seg_pt1) + w(seg_pt2))
-        target_w = 0.5 * (self.get_w(seg_pt1) + self.get_w(seg_pt2))
+        #target_w = 0.5 * (self.get_w(seg_pt1) + self.get_w(seg_pt2))
+        target_w = 0.5 * (self.get_h(seg_pt1) + self.get_h(seg_pt2))
+
         #print "test", new_location, gdt_vec, target_w, eps
         #print "midp", midp
-        print "segments points are", seg_pt1, seg_pt2, "with w", self.get_w(seg_pt1), " ", self.get_w(seg_pt2)
-
+        print "segments points are", seg_pt1, seg_pt2, "with w", self.get_h(seg_pt1), " ", self.get_h(seg_pt2)
+        print "mid point location",  self.get_h(midp), "target_w", target_w
         if self.get_w(midp) < 0:
-            target_w = 1.0
+            target_w = LV_OUTER_WALL
             print "heart newton algo"
             starting_point = self.newton_algo_heart(midp, target_w, EPS,0,MAX_ITER_NEWTON,INITIAL_FAC)
         else:
-            starting_point = self.newton_algo(midp, target_w, EPS,0,MAX_ITER_NEWTON,INITIAL_FAC)
+            #mid point is inside lv
+            if target_w < 0.: #but the target is not good, shall use the midpoint as starting point
+                print "mid point inside lv but targetw negativ, use directly midpoint"
+                return midp
+            else:
+                starting_point = self.newton_algo_heart(midp, target_w, EPS,0,MAX_ITER_NEWTON,INITIAL_FAC)
         print "starting point", starting_point
         return starting_point
         
     def newton_algo_heart(self, point, target, eps, count, max_iter, fac):
         gdt = np.array([self.get_hgx(point), self.get_hgy(point), self.get_hgz(point)])
         projpt = self.newton_step_heart(point,gdt,target,fac)
-        #print "projpt", projpt,"gdt", gdt, "gdt length", self.vec_length(gdt)
+        #print "projpt", projpt#,"gdt", gdt, "gdt length", cco_3df.length(gdt, self.voxel_size)
         ins, val = self.inside_heart(projpt)
         if ins:           
-            #print "wproj",self.get_w(projpt)
-            w_proj = self.get_h(projpt)
+            #print "hproj",self.get_h(projpt)
+            h_proj = self.get_h(projpt)
             #print "w_proj", w_proj, "target", target
-            if w_proj < target + eps and w_proj > target - eps:
-                print "success","factor", fac, "projection",projpt, "h(projection)", w_proj, "nber of iterations", count
+            if h_proj < target + eps and h_proj > target - eps:
+                print "success","factor", fac, "projection",projpt, "h(projection)", h_proj, "nber of iterations", count
                 return projpt
             else:
                 if count < max_iter:
-                    if fac < 0.04: #if we just escaped a dead end, we need to reset the gdt factor so that to move fast enough
+                    if fac < 0.04: #if we just escaped a dead end, we need to reset the gdt factor so that to move fast enough                     
                         return self.newton_algo_heart(projpt,target,eps,count +1, max_iter,INITIAL_FAC)
                     else:
                         return self.newton_algo_heart(projpt,target,eps,count +1, max_iter,fac)
@@ -599,123 +582,201 @@ class Tree:
                 return np.zeros(3)
             print "decreasing the gap to", fac*0.5
             return self.newton_algo_heart(point, target, eps, count+1, max_iter,fac * 0.5)
-       
+ 
     
     def newton_step_heart(self, point, gdt, target,fac):
         proj_pt = point + (target -self.get_h(point)) / gdt *fac
-        print "orginal point",point , "w(point)",self.get_h(point) 
-        print "target w", target, "gradient vector", gdt
-        print "projection", proj_pt, "w(projection)", self.get_h(proj_pt), "factor",fac
+        #print "orginal point",point , "w(point)",self.get_h(point) 
+        #print "target w", target, "gradient vector", gdt
+        #print "projection", proj_pt, "w(projection)", self.get_h(proj_pt), "factor",fac
         return proj_pt
         
-    def newton_algo(self, point, target, eps, count, max_iter, fac):
-        gdt = np.array([self.get_gx(point), self.get_gy(point), self.get_gz(point)])
-        projpt = self.newton_step(point,gdt,target,fac)
-        #print "projpt", projpt,"gdt", gdt, "gdt length", self.vec_length(gdt)
-        
-        if self.inside_perf_territory(projpt):           
-            #print "wproj",self.get_w(projpt)
-            w_proj = self.get_w(projpt)
-            #print "w_proj", w_proj, "target", target
-            if w_proj < target + eps and w_proj > target - eps:
-                print "success","factor", fac, "projection",projpt, "w(projection)", w_proj, "nber of iterations", count
-                return projpt
-            else:
-                if count < max_iter:
-                    if fac < 0.04: #if we just escaped a dead end, we need to reset the gdt factor so that to move fast enough
-                        return self.newton_algo(projpt,target,eps,count +1, max_iter,INITIAL_FAC)
-                    else:
-                        return self.newton_algo(projpt,target,eps,count +1, max_iter,fac)
-                else:
-                    print "failed because over number of iterations", count
-                    return np.zeros(3)
-        else:
-            if count > max_iter:
-                print "dead end"
-                return np.zeros(3)
-            print "decreasing the gap to", fac*0.5
-            return self.newton_algo(point, target, eps, count+1, max_iter,fac * 0.5)
-       
-    
-    def newton_step(self, point, gdt, target,fac):
-        proj_pt = point + (target -self.get_w(point)) / gdt *fac
-        print "orginal point",point , "w(point)",self.get_w(point) 
-        print "target w", target, "gradient vector", gdt
-        print "projection", proj_pt, "w(projection)", self.get_w(proj_pt), "factor",fac
-        return proj_pt
+#    def newton_algo(self, point, target, eps, count, max_iter, fac):
+#        #print "point", point
+#        gdt = np.array([self.get_gx(point), self.get_gy(point), self.get_gz(point)])
+#        projpt = self.newton_step(point,gdt,target,fac)
+#        #print "projpt", projpt,"gdt", gdt, "gdt length", self.vec_length(gdt)
+#        
+#        if self.inside_perf_territory(projpt):           
+#            #print "wproj",self.get_w(projpt)
+#            w_proj = self.get_w(projpt)
+#            if w_proj < target + eps and w_proj > target - eps:
+#                #print "success","factor", fac, "projection",projpt, "w(projection)", w_proj, "nber of iterations", count
+#                return projpt
+#            else:
+#                if count < max_iter:
+#                    if fac < 0.04: #if we just escaped a dead end, we need to reset the gdt factor so that to move fast enough
+#                        return self.newton_algo(projpt,target,eps,count +1, max_iter,INITIAL_FAC)
+#                    else:
+#                        return self.newton_algo(projpt,target,eps,count +1, max_iter,fac)
+#                else:
+#                    print "failed because over number of iterations", count
+#                    return np.zeros(3)
+#        else:
+#            if count > max_iter:
+#                print "dead end"
+#                return np.zeros(3)
+#            print "decreasing the gap to", fac*0.5
+#            return self.newton_algo(point, target, eps, count+1, max_iter,fac * 0.5)
+#       
+#    
+#    def newton_step(self, point, gdt, target,fac):
+#        proj_pt = point + (target -self.get_w(point)) / gdt *fac
+#        #print "orginal point",point , "w(point)",self.get_w(point) 
+#        #print "target w", target, "gradient vector", gdt
+#        #print "projection", proj_pt, "w(projection)", self.get_w(proj_pt), "factor",fac
+#        return proj_pt
             
             
-    def calculate_sampling(self, max_curv_radius, seg_1, seg_2):
+    def calculate_sampling(self, max_curv_radius, seg_1, seg_2, target_surface):
         tolerance = 0.05*max_curv_radius
-        loc_n = self.local_n(seg_1, seg_2)
+
+        loc_n = self.local_nh(seg_1, seg_2, target_surface)
+
         #r_star = max_curv_radius - tolerance
         c= np.sqrt(max_curv_radius**2 - (max_curv_radius-tolerance)**2)
         global_n = np.ceil(cco_3df.length(seg_2-seg_1, self.voxel_size) / c)
         #print "global n", global_n
+        print "local n", loc_n
         if (loc_n >= global_n):
             print "n is local one", loc_n
             return loc_n
         else:
             print "final n is global", global_n
             return global_n
-            
-    #sample, and test along but not final point (no need to test it because location already tested previously, as a new location)
-    def sample_and_test(self, seg_pt1, seg_pt2, n, parent_h, parent_out_centerline):
+    
+
+
+
+    def sample_and_test(self, seg_pt1, seg_pt2, n, parent_h, parent_out_centerline, surface_tol):
         p1p2_vec = seg_pt2 - seg_pt1
+        print "parnet_h",parent_h, "surface_tol", surface_tol
         for i in range (1,int(n)):
-            loc = seg_pt1 + (i / n) * p1p2_vec
-            #print "location test",loc
-            if (parent_h > 0.): #the parent of bifurcation is outside the lv, so just need to check we are still in the heart
-                inside, val = self.inside_heart(loc)
-                if (inside):
-                    print "val", val, "parent", parent_h
-                    if (val > parent_h):
-                        #print "segmt inside heart close to lv"
-                        continue
-                    else: 
-                        print "segmt inside heart but too far from lv"
+            loc = seg_pt1 + (i / float(n)) * p1p2_vec
+            inside, val = self.inside_heart(loc)
+            #print "spl and test", val
+            if surface_tol > 0.: # staged growth
+                if parent_h < LV_OUTER_WALL : #parent out lv
+#                    if val < parent_h*1.2:
+#                        print "going awway from lv", val, "parnet h", parent_h
+#                        return False
+                    if parent_out_centerline:
+                        if val > surface_tol:
+                            print "going over surface tol", val, "parnet h", parent_h
+                            return False
+                    else:
+                        if val > LV_INNER_WALL:
+                            print "going inside lv", val
+                            return False
+                else: #parent inside lv
+                    if val > surface_tol:
+                        print "going too deep in lv", val
                         return False
-                else:
-                    if (round(val, 3) == 1.):
-                        #print "segmt out heart but inside lv"
-                        continue
-                    else: 
-                        print "segmt outside heart or far from lv", val
-                        return False
-            else:    
-                if (self.inside_perf_territory(loc)) == False:
-                    print "segment outside of perfusion territory"
+            else: # classic cco
+                if val < parent_h or val > LV_INNER_WALL:
+                    print "going away from lv or crossing concavity", val, "parent", parent_h
                     return False
             if (parent_out_centerline):
                 if (self.outside_segmented_vessels(loc, DIST_TO_CENTERLINE) == False):
                     print "inside segmented vessels"
                     return False
-        return True 
+        return True
+                    
+                    
+                
             
-    def concavity_test_for_segments(self, branching_location, c0, c1, c2, sampling_n, far_from_centerline):
+            
+
+        
+
+        
+
+            
+    def concavity_test_for_segments(self, branching_location, c0, c1, c2, sampling_n, far_from_centerline, surface_tol):
+        print "concavity test for segment", sampling_n, "far from cl",far_from_centerline, "surf tol", surface_tol
+        print "length", cco_3df.length(c0-branching_location, self.voxel_size), cco_3df.length(c1-branching_location, self.voxel_size), cco_3df.length(c2-branching_location, self.voxel_size) 
         inside_territory = True
         ins, val = self.inside_heart(c0)
-        if self.sample_and_test(branching_location, c0, sampling_n, val, far_from_centerline) == False:
-            inside_territory = False
+        if self.sample_and_test(branching_location, c0, sampling_n, val, far_from_centerline, surface_tol) == False:
+            return False
         ins, val = self.inside_heart(c1)
-        if self.sample_and_test(branching_location, c1, sampling_n, val, True) == False:
-            inside_territory = False
+        if self.sample_and_test(branching_location, c1, sampling_n, val, True, surface_tol) == False:
+            return False
         ins, val = self.inside_heart(c2)
-        if self.sample_and_test(branching_location, c2, sampling_n, val, True) == False:
-            inside_territory = False
+        if self.sample_and_test(branching_location, c2, sampling_n, val, True, surface_tol) == False:
+            return False
         return inside_territory 
         
-    def calculate_official_sampling(self, c0, c1, c2, xy):
-        sampling_n1 = self.calculate_sampling(self.max_curv_rad, c0, xy)
-        sampling_n2 = self.calculate_sampling(self.max_curv_rad, xy, c1)
-        sampling_n3 = self.calculate_sampling(self.max_curv_rad, xy, c2)
+    def calculate_official_sampling(self, c0, c1, c2, xyz, target_surface):
+        sampling_n1 = self.calculate_sampling(self.max_curv_rad, c0, xyz, target_surface)
+        sampling_n2 = self.calculate_sampling(self.max_curv_rad, xyz, c1, target_surface)
+        sampling_n3 = self.calculate_sampling(self.max_curv_rad, xyz, c2, target_surface)
         sampling_n = max(sampling_n1, sampling_n2, sampling_n3)
         print "official smapling n", sampling_n
         return sampling_n
+    
+    def dist_to_lv_via_sampling(self, start_point,end_point):
+        n=40
+        p1p2_vec = end_point - start_point
+        previous_val = 0.
+        for i in range (n):
+            loc = start_point + (i / float(n)) * p1p2_vec
+            ins, val= self.inside_heart(loc)
+            #print "dist to lv via sampling", val
+            if val < (1. + 5*EPS) and val > (1. - 5*EPS):
+                print "found", val
+                return (start_point + (float(i)/n)*p1p2_vec)
+            else:
+                if (val >= previous_val and val < 1.):
+                    previous_val = val   
+                    #print "continue"
+                    continue
+                else:
+                    if val > LV_OUTER_WALL:
+                        print "zooming", val
+                        return self.dist_to_lv_via_sampling(start_point + (float(i-1)/n)*p1p2_vec, start_point + (float(i)/n)*p1p2_vec)   
+                    else:
+                        print "errroor: previous val:", previous_val, "val", val
+                        return np.zeros(3)
+        print "rror"
+        return np.zeros(3)    
+    
+    def short_segmt_end(self, source_point, max_dist, gdt_dir):
+        gdt = np.array([self.get_hgx(source_point), self.get_hgy(source_point), self.get_hgz(source_point)])
+        #get the gdt
+        if gdt_dir == False:
+            gdt = -gdt
+        length_gdt= cco_3df.length(gdt, self.voxel_size)
+        #print "gdt", gdt, "gdt norm lengt", cco_3df.length(gdt/length_gdt, self.voxel_size)
+        seg_end = source_point + gdt/length_gdt* max_dist
+        outside =  (self.interp_h(seg_end*self.voxel_size) < 0.)
+        if outside:
+            i = 1.2
+            while (outside):               
+                seg_end = source_point + gdt/length_gdt* max_dist *(1./i)
+                outside = (self.interp_h(seg_end*self.voxel_size) < 0.)
+                i = i + 0.1 
+        return seg_end
                     
+    def find_surface_projection(self, point):
+        #get the point on surface
+        ins, val = self.inside_heart(point)
+        n_l = 40
+        if val > 0.:
+            if val > 1.: #inside lv
+                print "find surf proj in lv"
+                seg_end = self.short_segmt_end(point, n_l, False)
+                surf_point = self.dist_to_lv_via_sampling(seg_end, point)
+            else: #inside heart
+                print "find surf proj in heart"
+                seg_end = self.short_segmt_end(point, n_l, True)
+                surf_point = self.dist_to_lv_via_sampling(point, seg_end)
+            return surf_point
+        print "out of heart"
+        return np.zeros(3)
     
     # testing the connection between the new_child_location and the segment made of "old_child_index" and its parent       
-    def test_connection(self, old_child_index, new_child_location):
+    def test_connection(self, old_child_index, new_child_location, surface_tol):
         # update flow values in tree
         f= np.zeros(3)
         f[1] = self.get_terms(old_child_index) * self.q_term
@@ -747,11 +808,18 @@ class Tree:
         print "tesing with node index", old_child_index, "coord", self.nodes[old_child_index].coord
         print "new_child_location",new_child_location
         xyz = self.starting_point(c0, c1, c2, eps)
-        if self.inside_perf_territory(xyz) == False:
-            print "branching location starting point out of territory: unplausible location"
+        ins, val = self.inside_heart(xyz)
+        if val > LV_INNER_WALL or val < 0.:
+            print "starting point out lvand heart : unplausible location", val
             return code, False, 0., result, old_child_index, new_radii    
         
         far_from_centerlines = (self.nodes[old_child_index]).parent() > 0
+        target_surface = LV_INNER_WALL
+        if surface_tol > 0:
+            ins, val = self.inside_heart(c0)
+            if ins == True:
+                target_surface = LV_OUTER_WALL
+            
         #calculate original tree volume or take a bigger approximation (easier because no need of adding segment)
         initial_tree_vol = self.volume() * 10.        
         lengths = kami.calculate_segment_lengths(c0,c1,c2,xyz,self.length_factor)
@@ -768,6 +836,16 @@ class Tree:
                     return code, False, 0., result, old_child_index, new_radii
     
                 branching_location = xyz_c
+                ins, val = self.inside_heart(branching_location)
+                if val > LV_INNER_WALL or val < 0.:
+                    print "Kamiya output out of heart and lv", val
+                    return code, False, 0., result, old_child_index, new_radii
+
+                if surface_tol > 0. :
+                    branching_location = self.find_surface_projection(branching_location)
+                    if branching_location[0] == 0. and branching_location[1] == 0.:
+                        print "issue finding projection on surface"
+                        return code, False, 0., result, old_child_index, new_radii
                 
                 #create copy of tree and connect new branch given Kamyia's results
                 tree_copy = copy.deepcopy(self)
@@ -797,13 +875,13 @@ class Tree:
                         result=[correct_beta, branching_location]  
                         print "connection test reaching concavity test" 
                         #compute concavity crossing test:
-                        sampling_n = self.calculate_official_sampling(c0,c1,c2,xy)
+                        sampling_n = self.calculate_official_sampling(c0,c1,c2,xyz, target_surface)
                         inside_territory = False
                         if self.inside_perf_territory(branching_location) ==  False:
-                            print "kmiya result is out territory", self.get_w(branching_location)
+                            print "kmiya result is out territory", self.get_h(branching_location)
                             return code, False, 0., result, old_child_index, new_radii
                         
-                        inside_territory = self.concavity_test_for_segments(branching_location, c0,c1,c2, sampling_n, far_from_centerlines)
+                        inside_territory = self.concavity_test_for_segments(branching_location, c0,c1,c2, sampling_n, far_from_centerlines, surface_tol)
                         if (inside_territory == True): 
                             print "connection test succeeed and bifurcation inside territory"                                               
                             return 1, True, tree_vol, result, old_child_index, new_radii* (1./self.length_factor)  
@@ -831,8 +909,8 @@ class Tree:
             
         else:      
             #calculate n = number of sampling for concavity test during process
-            sampling_n = self.calculate_official_sampling(c0,c1,c2,xyz)
-    
+            sampling_n = self.calculate_official_sampling(c0,c1,c2,xyz, target_surface)
+            print "starting kamiya"
             while (iterat < iter_max):
                 #call Kamiya : local optimization of the single bifurcation
                 conv, xyz_c, r_c, l = kami.kamiya_loop_r2(xyz, c0, c1, c2, f, r, self.length_factor, self.nu,self.gamma)
@@ -844,11 +922,24 @@ class Tree:
                 
                 inside_territory = True
                 # test intersection with concavity along the n samplings
-                print "branching location",branching_location,  self.get_w(branching_location)
-                if self.inside_perf_territory(branching_location) ==  False:
-                    print "kmiya result is out territory", self.get_w(branching_location)
-                    return code, False, 0., result, old_child_index, new_radii                   
-                inside_territory = self.concavity_test_for_segments(branching_location, c0,c1,c2, sampling_n,far_from_centerlines)
+                print "branching location",branching_location,  self.get_h(branching_location)
+                
+                ins, val = self.inside_heart(branching_location)
+                if val > LV_INNER_WALL or val < 0.:
+                    print "Kamiya output out of heart and lv", val
+                    return code, False, 0., result, old_child_index, new_radii
+                    
+                if surface_tol > 0.:
+                    branching_location = self.find_surface_projection(branching_location)
+                    if branching_location[0] == 0. and branching_location[1] == 0.:
+                        print "issue finding projection on surface"
+                        return code, False, 0., result, old_child_index, new_radii
+                else:
+                    if self.inside_perf_territory(branching_location) ==  False:
+                        print "kmiya result is out territory", self.get_h(branching_location)
+                        return code, False, 0., result, old_child_index, new_radii  
+                        
+                inside_territory = self.concavity_test_for_segments(branching_location, c0,c1,c2, sampling_n,far_from_centerlines, surface_tol)
                 
                 #create copy of tree and connect new branch given Kamyia's results
                 tree_copy = copy.deepcopy(self)

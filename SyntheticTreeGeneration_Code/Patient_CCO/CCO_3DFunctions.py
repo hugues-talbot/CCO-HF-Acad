@@ -22,12 +22,12 @@ import mpl_toolkits.mplot3d as a3
 #outer surface potential value is 0
 
     
-def generate_potential(mask, inner_marker,outer_marker, filename):
+def generate_potential(mask, inner_marker,outer_marker):
     markers = outer_marker*2 + inner_marker
     result = random_walker(mask, markers, copy =True, return_full_prob = True, mode= 'cg_mg')
     result[1][np.where(result[1] == 0.)] = -1
-    if (filename != ""):
-        np.save(filename,result[1])
+#    if (filename != ""):
+#        np.save(filename,result[1])
     return result[1]
     
 

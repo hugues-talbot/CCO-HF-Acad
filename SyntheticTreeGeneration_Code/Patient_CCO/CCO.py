@@ -26,9 +26,19 @@ import copy
 
 ############################################################
 ### LOADING INPUTS
+#for each input should make test: if npy file exist load it otherwise create data and save them
 
 # Location of sources with flow and pressure -> obtained from centerline, mssing branched statistics
-sources = np.load("./Inputs/SourcesCor.npy") 
+print "loading sources location"
+
+source_path = "./Inputs/Sources_LADLCX.npy"
+if os.path.isfile(source_path):
+    sources = np.load(source_path)
+else:
+    print "generate sources"
+    sources = cv.get_data_fp("./Inputs/LADLCXPressureAndFlowInputs.txt") 
+    np.save(source_path, sources)
+       
 # dtype_r=[("WorldCoordX", float),("WorldCoordY", float), ("WorldCoordZ", float),
 #          ("Diameter",float), ("Pressure", float),("Flow", float), 
 #          ("VoxelCoordX", float),("VoxelCoordY", float), ("VoxelCoordZ", float)]
@@ -48,18 +58,37 @@ vox_volume = vox_size[0]*vox_size[1]*vox_size[2]
 #should test if find correspondance between 
 
 # Whole segmented heart-LV potential -> obtained from LargeStructureSegmentationTool
-heart_potential = np.load("./Inputs/Heart_potential.npy")
+hp_path = "./Inputs/heart_potential.npy"
+if os.path.isfile(hp_path):
+    heart_potential = np.load(hp_path)
+else:
+    print "generate heart potential"
+    heart_potential = cv.generate_heart_potential("./Inputs/heart.mha","./Inputs/lv.mha")
+    np.save(hp_path, heart_potential)
+    
 # LV inner vs outer surface potential
-lv_potential = np.load("./Inputs/LV_potential.npy")
-
+lv_path = "./Inputs/LV_potential.npy"
+if os.path.isfile(lv_path):
+    lv_potential = np.load(lv_path)
+else:
+    print "generate lv potential"
+    lv_potential = cv.generate_lv_potential("./Inputs/lv.mha")
+    np.save(lv_path, lv_potential)
+lv_pot_zero = np.zeros(lv_potential.shape) + lv_potential
+lv_pot_zero[np.where(lv_pot_zero<0.)] = 0.
+lv_pot_zero[np.where(lv_pot_zero>0.999999)] = 2.
 lv_max_curvature_r = 9. # empirical estimation from mesh measures
 
 vox_perf=np.array(np.where(np.logical_and(lv_potential>0.0, lv_potential < 1.0)))
 lv_volume = vox_perf.shape[1] * vox_volume
 
 # Segmented vessels distance map 
-segm_vessel_dist = np.load("./Inputs/DistMapFromCenterlines.npy")
-
+sgm_vess_path = "./Inputs/DistMapFromCenterlines.npy"
+if os.path.isfile(sgm_vess_path):
+    segm_vessel_dist = np.load(sgm_vess_path)
+else:
+    segm_vessel_dist = cv.open_mha("./Inputs/fmm_from_centerline_with_LCX.mha")
+    np.save(sgm_vess_path, segm_vessel_dist)
 
 ##CHECK ALL IMAGE SIZES
 im_size_max = np.max(heart_potential.shape)
@@ -70,9 +99,9 @@ im_size_max = np.max(heart_potential.shape)
 ############# INITIALIZATION ####################
 
 timing = True
-store_data = True
+store_data = False
 parallelized = False
-filename = "./Results/Test"
+filename = "./Results/TestWithLCXAllSources"
 
 if timing:
     debut = time.time()
@@ -85,51 +114,59 @@ if store_data:
 
 if True:
   
-    seed = 42
+    seed = 43
     np.random.seed(seed)
     process_nb = 16
  
     #### Parameters to define: ##
     ## About tree
-    NTerm = 250 
-    InterTerm = 0
+    NTerm = 500 
+    InterTerm = 50
     P_term = 8.38e3 #(Pa)
     Q_term = Q_perf / NTerm
     N_con = 20
 
     r_f = np.power(3*lv_volume /(4*np.pi),1./3)
-    forest = fclass.Forest([], NTerm, Q_perf, P_term, viscosity, lv_volume, r_f, vox_size, heart_potential, lv_potential,segm_vessel_dist, lv_max_curvature_r, lv_potential.shape, gamma)
+    forest = fclass.Forest([], NTerm, Q_perf, P_term, viscosity, lv_volume, r_f, vox_size, heart_potential, lv_potential, lv_pot_zero,segm_vessel_dist, lv_max_curvature_r, lv_potential.shape, gamma)
     print "forest created"
     #check all sources location are inside perf territory
     #then add them to forest
-    for source in sources:
-        forest.create_tree(np.array([source["VoxelCoordZ"], source["VoxelCoordY"], source["VoxelCoordX"]]), source["Flow"], source["Pressure"])
-
+    ind = 0
+    for source in sources: #check if they are inside heart or lv
+        ins=True
+        if ind >0 :
+            ins, val = forest.inside_heart(np.array([source["VoxelCoordZ"], source["VoxelCoordY"], source["VoxelCoordX"]]))
+        if (ins==True or (val > 0.999)):
+            forest.create_tree(np.array([source["VoxelCoordZ"], source["VoxelCoordY"], source["VoxelCoordX"]]), source["Flow"], source["Pressure"])
+            ind = ind + 1 
+        else:
+            print "source out of heart and lv, need to update the potential to integrate it", val
+            break
     print "trees added"
     #first segment end: randomly picked inside perfusion surface
     if InterTerm >0:          
         surface = True
-        surface_tol = 0.75 #from inside lv?
+        surface_tol = 1.75 #value in (heart+lv) potential
     else: 
         surface = False
-        surface_tol = 0.
+        surface_tol = -1.
             
     
-    forest.first_segment_end(surface, surface_tol) #need to update the ffunction when will do stage growth
+    forest.first_segment_end(surface_tol) #need to update the ffunction when will do stage growth
     print "first segment assigned"
     dead_end_counter = 0
     d_tresh_factor = 1
          
     while forest.get_fk_term() < NTerm:
         kterm = forest.get_fk_term()
-            
+
         if kterm < InterTerm:          
             surface = True
         else: 
             surface = False
             surface_tol = 0.
         
-        success, new_child_location, d_tresh = forest.get_new_location(d_tresh_factor)
+        success, new_child_location, d_tresh = forest.get_new_location(d_tresh_factor, surface_tol)
         if (success == False):
             print "impossible to satisfy distance criteria", "d_tresh", d_tresh
             break       
@@ -182,7 +219,7 @@ if True:
                 print "k termmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm is now ", forest.get_fk_term()
                 kterm=forest.get_fk_term()
                 d_tresh_factor = 1.
-                if kterm == 50:
+                if (kterm == 52):
                     break
 #                if kterm%10 == 0:
 #                    name =filename+"_F_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)
@@ -194,7 +231,7 @@ if True:
             print "location doesn't provide an optimal connection, testing new location"
             dead_end_counter = dead_end_counter +1
             print "dead_end_counter = ", dead_end_counter
-            if dead_end_counter == 10: #if too small doesn't produce homogeneous tree?
+            if dead_end_counter == 5: #if too small doesn't produce homogeneous tree?
                 dead_end_counter = 0
                 d_tresh_factor = d_tresh_factor *0.85
                 print "dead end: decrease d_tresh of 20% to look for new location", d_tresh_factor
@@ -209,9 +246,9 @@ if True:
     #pickle.dump(forest.trees,open(name + ".p", "wb"))
     pickle.dump([copy.copy(i) for i in forest.trees],open(name + ".p", "wb"))
     #print "forest saved"
-    cv.write_json(forest,model_matrix,"C:/Users/cjaquet/Documents/SynthTreeData/3c9e679d-2eab-480c-acaa-31da12301b0a/Forest.json")
+    cv.write_json(forest,model_matrix,"C:/Users/cjaquet/Documents/SynthTreeData/3c9e679d-2eab-480c-acaa-31da12301b0a/ResultsForMaya/Forest.json")
     #print "json generated"
-    
+    #print "sources", sources
 if store_data:
     sys.stdout=old_stdout # here we restore the default behavior
     fd.close() # to not forget to close your file
