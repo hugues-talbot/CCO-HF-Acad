@@ -63,7 +63,7 @@ if os.path.isfile(hp_path):
     heart_potential = np.load(hp_path)
 else:
     print "generate heart potential"
-    heart_potential = cv.generate_heart_potential("./Inputs/heart.mha","./Inputs/lv.mha")
+    heart_potential = cv.generate_heart_potential("./Inputs/heart.mha","./Inputs/heart.mha")
     np.save(hp_path, heart_potential)
     
 # LV inner vs outer surface potential
@@ -102,6 +102,7 @@ timing = True
 store_data = False
 parallelized = True
 filename = "./Results/LastV"
+path_out = "C:/Users/cjaquet/Documents/SynthTreeData/3c9e679d-2eab-480c-acaa-31da12301b0a/ResultsForMaya/"
 ktermbreak = 300
 NTerm = 500 
 InterTerm = 200
@@ -117,7 +118,7 @@ if store_data:
 
 if True:
   
-    seed = 43
+    seed = 42
     np.random.seed(seed)
     process_nb = 16
  
@@ -224,7 +225,7 @@ if True:
                 if (kterm == ktermbreak):
                     break
                 if kterm%10 == 0:
-                        cv.write_json(forest,model_matrix,"C:/Users/cjaquet/Documents/SynthTreeData/3c9e679d-2eab-480c-acaa-31da12301b0a/ResultsForMaya/Forest%i.json" %kterm)
+                        cv.write_json(forest,model_matrix,path_out + "Forest%i.json" %kterm)
 
 #                    name =filename+"_F_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)
 #                    pickle.dump(forest, open(name + ".p", "wb"))
@@ -253,7 +254,7 @@ if True:
     #pickle.dump(forest.trees,open(name + ".p", "wb"))
     pickle.dump([copy.copy(i) for i in forest.trees],open(name + ".p", "wb"))
     #print "forest saved"
-    cv.write_json(forest,model_matrix,"C:/Users/cjaquet/Documents/SynthTreeData/3c9e679d-2eab-480c-acaa-31da12301b0a/ResultsForMaya/Forest.json")
+    cv.write_json(forest,model_matrix,path_out +"Forest.json")
     #print "json generated"
     #print "sources", sources
 if store_data:

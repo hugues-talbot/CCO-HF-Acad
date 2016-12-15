@@ -8,7 +8,6 @@ Created on Wed Nov 16 16:32:18 2016
 import numpy as np
 import vtk
 from vtk.util.numpy_support import vtk_to_numpy
-import matplotlib.pyplot as plt
 import CCO_3DFunctions as cc3df
 
 def open_mha(mha_file):    
@@ -273,7 +272,7 @@ if False :
     final_size[10:int(dim_h[0]) -2,100:int(dim_h[1])-65, 32:int(dim_h[2])-50] = result[0]
     np.save("heart_potential.npy", final_size)
 
-from skimage.morphology import medial_axis    
+#from skimage.morphology import medial_axis    
 if False:
     inner = np.load("lv_inner_marker.npy")
     # Compute the medial axis (skeleton) and the distance transform

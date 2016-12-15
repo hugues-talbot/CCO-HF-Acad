@@ -9,10 +9,8 @@ import numpy as np
 import sys
 import copy
 from skimage.segmentation import random_walker
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import pylab as pl
-import mpl_toolkits.mplot3d as a3
+
+
 
 #from pyamg import *
 
@@ -31,74 +29,7 @@ def generate_potential(mask, inner_marker,outer_marker):
     return result[1]
     
 
-def potential_ellipsoid(center, r_int, r_ext, half,cut_top, cutop_val):
-    print "starting potential generation"
-    #initialization
-    rz,ry,rx = int(r_ext[0]), int(r_ext[1]), int(r_ext[2])# r_ext[0] is smallest radius
-    riz,riy,rix = int(r_int[0]), int(r_int[1]), int(r_int[2])#r_int[0] is smallest radius
-    cx,cy,cz = int(center[0]), int(center[1]),int(center[2])
-    im = np.zeros((cx+rx*2, cy+rx*2,cz+rx*2)).astype('uint8')
-    markers = np.zeros((cx+rx*2, cy+rx*2, cz+rx*2)).astype('uint8')
-    margin = int(np.ceil(rx/10.))
-    # grids of index   
-    z,y,x = np.ogrid[-rz-margin: rz+margin, -ry-margin: ry+margin, -rx-margin:rx+margin]  
-    z_i, y_i, x_i = np.ogrid[-riz: riz, -riy: riy,-rix: rix]
-    
-    #mask creation
-    # a point is inside an ellipsoid if (x/a)2 + (y/b)2 + (z/c)2 <= 1
-    index = (x/float(rx))**2 + (y/float(ry))**2 + (z/float(rz))**2 <= 1
-    im[cz-rz-margin:cz+rz+margin, cy-ry-margin:cy+ry+margin, cx-rx-margin:cx+rx+margin][index] = 1
-    index_int = (x_i/float(rix))**2 + (y_i/float(riy))**2 + (z_i/float(riz))**2 <= 1   
-    im[cz-riz:cz+riz, cy-riy:cy+riy, cx-rix:cx+rix][index_int] = 0
 
-    #marker creation
-    #external
-    index = (x/float(rx))**2 + (y/float(ry))**2 + (z/float(rz))**2 > 1   
-    markers[cz-rz-margin:cz+rz+margin, cy-ry-margin:cy+ry+margin, cx-rx-margin:cx+rx+margin][index] = 2
-    #internal
-    index_int = (x_i/float(rix))**2 + (y_i/float(riy))**2 + (z_i/float(riz))**2 <= 1
-    markers[cz-riz:cz+riz, cy-riy:cy+riy, cx-rix:cx+rix][index_int] = 3
-
-    #random_walker    
-    print "starting random walker"   
-    result = random_walker(im, markers, copy =True, return_full_prob = True, mode= 'cg_mg')   
-    print "rdm walker shape",result.shape
-    
-    #updating final shape: 
-    result[1][np.where(result[1] == 0.)] = -1
-    if half :
-        result[1][0:center[0],:,:] = -1
-    if cut_top:
-        thresh = center[2]+rx - cutop_val
-        result[1][:,:,thresh:result[1].shape[2]] = -1
-    
-    #printing option
-#    slicing = center[2]+5
-#    ax = a3.Axes3D(pl.figure(figsize=(8, 8)))
-#    xx, yy = pl.ogrid[0:im.shape[1], 0:im.shape[2]]
-#    #xx, yy = np.meshgrid(np.linspace(0,1,12), np.linspace(0,1,13))
-#    # create vertices for a rotated mesh (3D rotation matrix)
-#    X =  xx 
-#    Y =  yy
-#    Z =  slicing*np.ones(X.shape)
-#
-#    #cmap for random walker
-#    N=50
-#    colors = [(1.0,1.0,1.0)]
-#    colors.extend(plt.cm.jet(np.linspace(0., 1., N)))
-#    colors.extend([(1.0,1.0,1.0)])
-#    cmap =mpl.colors.ListedColormap(colors) #plt.cm.jet
-#    
-#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(result[1][slicing,:,:,].transpose()),shade=False)
-#    slicing = center[2] +1
-#    Z =  slicing*np.ones(X.shape)
-#    ax.plot_surface(Z,Y,X, rstride=1, cstride=1, facecolors=cmap(result[1][slicing,:,:,].transpose()),shade=False)
-#    ax.set_xlabel('X axis')
-#    ax.set_ylabel('Y axis')
-#    ax.set_zlabel('Z axis')
-#    plt.show()
-    
-    return result[1]
 
 
 def length(vect, vox_size):
