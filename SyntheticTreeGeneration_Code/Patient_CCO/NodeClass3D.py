@@ -103,10 +103,11 @@ class Tree:
     "v_perf: total perfusion volume of the final tree"
     "r_f: real radius (mm) of the total perfusion area"
 
-    def __init__(self, tree_index, nodes, q_term, q_perf, p_drop, visc, a_perf, r_f, interpolators, vox_size, im_size, max_curv_radius,real_radius, gamma):
+    def __init__(self, tree_index, nodes, direct_vect, q_term, q_perf, p_drop, visc, a_perf, r_f, interpolators, vox_size, im_size, max_curv_radius,real_radius, gamma):
         self.activ = False
         self.tree_index = tree_index        
         self.nodes = nodes
+        self.direct_vect = direct_vect
         self.q_term = q_term #q_perf / float(n_term)
         self.final_q_perf = q_perf
         self.p_drop = p_drop
@@ -135,10 +136,10 @@ class Tree:
         self.interp_fmm_gz = interpolators[11]
 
     def __deepcopy__(self, tree):
-        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[self.interp_w, self.interp_gx, self.interp_gy, self.interp_gz, self.interp_h, self.interp_hgx, self.interp_hgy, self.interp_hgz, self.interp_fmm, self.interp_fmm_gx, self.interp_fmm_gy, self.interp_fmm_gz],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma )    		
+        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.direct_vect, self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[self.interp_w, self.interp_gx, self.interp_gy, self.interp_gz, self.interp_h, self.interp_hgx, self.interp_hgy, self.interp_hgz, self.interp_fmm, self.interp_fmm_gx, self.interp_fmm_gy, self.interp_fmm_gz],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma )    		
     
     def __copy__(self):
-        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[0,0,0,0,0,0,0,0,0,0,0,0],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma)
+        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.direct_vect, self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[0,0,0,0,0,0,0,0,0,0,0,0],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma)
       
     def set_interpolators(self,interpolators):
         self.interp_w = interpolators[0] #lv, lvgx, lvgy, lvgz, then heart
@@ -532,8 +533,14 @@ class Tree:
         else : 
             print "root reached"
             
-    def test_vessel_direction(self, node_coord, new_location):
-        gdt = np.array([self.get_fmm_gx(node_coord), self.get_fmm_gy(node_coord), self.get_fmm_gz(node_coord)])
+    def test_vessel_direction(self, node_index, new_location, surface_tol):
+        node_coord = self.nodes[node_index].coord
+        if surface_tol > 0.:
+            print "using direction vector"
+            gdt = self.direct_vect
+            print "gdt", gdt
+        else:
+            gdt = np.array([self.get_fmm_gx(node_coord), self.get_fmm_gy(node_coord), self.get_fmm_gz(node_coord)])
         gdt_l = cco_3df.length(gdt, self.voxel_size)
         print "new location", new_location, "node coord", node_coord, "gdt", gdt
 #        if gdt_l == 0. or if np.all():
@@ -579,10 +586,17 @@ class Tree:
         #print "midp", midp
         print "segments points are", seg_pt1, seg_pt2, "with w", self.get_w(seg_pt1), " ", self.get_w(seg_pt2)
         print "mid point location",  self.get_w(midp), "target_w", target_w
+        if self.is_on_surface(midp, target_w):
+            print "already on surface"
+            return midp
         if self.get_w(midp) < 0:
             target_w = LV_OUTER_WALL
-            print "heart newton algo"
+            print "midp via sampling"
+            #print "heart newton algo"
             starting_point = self.newton_algo_heart(midp, target_w, EPS,0,MAX_ITER_NEWTON,INITIAL_FAC)
+            #seg_end = self.short_segmt_end(midp,40, True)
+            #starting_point = self.dist_to_target_via_sampling(midp, seg_end, target_w)
+            
         else:
             #mid point is inside lv
             if target_w < 0.: #but the target is not good, shall use the midpoint as starting point
@@ -821,6 +835,32 @@ class Tree:
                         return np.zeros(3)
         print "rror"
         return np.zeros(3)    
+        
+    def dist_to_target_via_sampling(self, start_point_small_pot,end_point, target):
+        n=40
+        p1p2_vec = end_point - start_point_small_pot
+        previous_val = 0.
+        for i in range (n):
+            loc = start_point_small_pot + (i / float(n)) * p1p2_vec
+            ins, val= self.inside_heart(loc)
+            #print "dist to lv via sampling", val
+            if val < (target + 5*EPS) and val > (target - 5*EPS):
+                print "found", val
+                return (start_point_small_pot + (float(i)/n)*p1p2_vec)
+            else:
+                if (val >= previous_val and val < target):
+                    previous_val = val   
+                    #print "continue", val
+                    continue
+                else:
+                    if val > target:
+                        print "zooming", val
+                        return self.dist_to_lv_via_sampling(start_point_small_pot + (float(i-1)/n)*p1p2_vec, start_point_small_pot + (float(i)/n)*p1p2_vec)   
+                    else:
+                        print "errroor: previous val:", previous_val, "val", val
+                        return np.zeros(3)
+        print "rror"
+        return np.zeros(3)
     
     def short_segmt_end(self, source_point, max_dist, gdt_dir):
         gdt = np.array([self.get_hgx(source_point), self.get_hgy(source_point), self.get_hgz(source_point)])

@@ -51,7 +51,7 @@ def get_data_fp(input_file):
         for j in content: 
             a= [float(i) for i in j]
             tb.append(tuple(a))
-    dtype_r=[("WorldCoordX", float),("WorldCoordY", float), ("WorldCoordZ", float),("Diameter",float), ("Pressure", float),("Flow", float), ("VoxelCoordX", float),("VoxelCoordY", float), ("VoxelCoordZ", float)]
+    dtype_r=[("WorldCoordX", float),("WorldCoordY", float), ("WorldCoordZ", float),("Diameter",float), ("Pressure", float),("Flow", float), ("VoxelCoordX", float),("VoxelCoordY", float), ("VoxelCoordZ", float),("VectVoxelCoordX", float),("VectVoxelCoordY", float), ("VectVoxelCoordZ", float)]
     array = np.array(tb, dtype = dtype_r )
     array_sorted = np.sort(array, order = "Flow")[::-1]  
     return array_sorted
@@ -77,7 +77,7 @@ def write_json(forest, matrix, filename):
         fdict["Trees"][tree.tree_index]["Nodes"]= {}
         for node in tree.nodes:
             fdict["Trees"][tree.tree_index]["Nodes"][node.index]={}
-            print "index", node.index, "node.coord", node.coord           
+            print "index", node.index, "node.coord", node.coord    
             fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Location" : (voxel_to_world(node.coord[::-1], matrix)).tolist()})
             fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Parent" : node.parent_index})
             fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Children" : node.children_index.tolist()})

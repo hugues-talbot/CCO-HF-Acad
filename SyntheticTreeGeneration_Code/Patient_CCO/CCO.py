@@ -36,7 +36,7 @@ if os.path.isfile(source_path):
     sources = np.load(source_path)
 else:
     print "generate sources"
-    sources = cv.get_data_fp("./Inputs/SourcesWithSideBranches.txt") #LADLCXPressureAndFlowInputs
+    sources = cv.get_data_fp("./Inputs/SourcesCorrected.txt") #LADLCXPressureAndFlowInputs
     np.save(source_path, sources)
        
 # dtype_r=[("WorldCoordX", float),("WorldCoordY", float), ("WorldCoordZ", float),
@@ -100,8 +100,8 @@ im_size_max = np.max(heart_potential.shape)
 
 timing = True
 store_data = False
-parallelized = True
-filename = "./Results/TestWithLCXAllSources"
+parallelized = False
+filename = "./Results/TestWithLCXAllSourcesOrientedByVec"
 
 if timing:
     debut = time.time()
@@ -121,7 +121,7 @@ if True:
     #### Parameters to define: ##
     ## About tree
     NTerm = 500 
-    InterTerm = 200
+    InterTerm = 100
     P_term = 8.38e3 #(Pa)
     Q_term = Q_perf / NTerm
     N_con = 20
@@ -137,7 +137,7 @@ if True:
         if ind >0 :
             ins, val = forest.inside_heart(np.array([source["VoxelCoordZ"], source["VoxelCoordY"], source["VoxelCoordX"]]))
         if (ins==True or (val > 0.999)):
-            forest.create_tree(np.array([source["VoxelCoordZ"], source["VoxelCoordY"], source["VoxelCoordX"]]), source["Flow"], source["Pressure"])
+            forest.create_tree(np.array([source["VoxelCoordZ"], source["VoxelCoordY"], source["VoxelCoordX"]]), np.array([source["VectVoxelCoordZ"], source["VectVoxelCoordY"], source["VectVoxelCoordX"]]), source["Flow"], source["Pressure"])
             ind = ind + 1 
         else:
             print "source out of heart and lv, need to update the potential to integrate it", val
@@ -159,7 +159,6 @@ if True:
          
     while forest.get_fk_term() < NTerm:
         kterm = forest.get_fk_term()
-
         if kterm < InterTerm:          
             surface = True
         else: 
@@ -197,7 +196,8 @@ if True:
                 pool.close()
         else:
             for n_index in range(len(neighbors)):
-                res= forest.test_forest_connection(neighbors[n_index][0], neighbors[n_index][1], new_child_location, surface, surface_tol)                 
+                res= forest.test_forest_connection(neighbors[n_index][0], neighbors[n_index][1], new_child_location, surface, surface_tol) 
+                print "n_index", n_index, len(neighbors), N_con                
                 cet[n_index] = res
                 print "res", res                 
 
@@ -219,8 +219,8 @@ if True:
                 print "k termmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm is now ", forest.get_fk_term()
                 kterm=forest.get_fk_term()
                 d_tresh_factor = 1.
-#                if (kterm == 110):
-#                    break
+                if (kterm == 100):
+                    break
 #                if kterm%10 == 0:
 #                    name =filename+"_F_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)
 #                    pickle.dump(forest, open(name + ".p", "wb"))
