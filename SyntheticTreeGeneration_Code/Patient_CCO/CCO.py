@@ -100,8 +100,11 @@ im_size_max = np.max(heart_potential.shape)
 
 timing = True
 store_data = False
-parallelized = False
-filename = "./Results/TestWithLCXAllSourcesOrientedByVec"
+parallelized = True
+filename = "./Results/LastV"
+ktermbreak = 300
+NTerm = 500 
+InterTerm = 200
 
 if timing:
     debut = time.time()
@@ -120,8 +123,7 @@ if True:
  
     #### Parameters to define: ##
     ## About tree
-    NTerm = 500 
-    InterTerm = 100
+
     P_term = 8.38e3 #(Pa)
     Q_term = Q_perf / NTerm
     N_con = 20
@@ -219,9 +221,11 @@ if True:
                 print "k termmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm is now ", forest.get_fk_term()
                 kterm=forest.get_fk_term()
                 d_tresh_factor = 1.
-                if (kterm == 100):
+                if (kterm == ktermbreak):
                     break
-#                if kterm%10 == 0:
+                if kterm%10 == 0:
+                        cv.write_json(forest,model_matrix,"C:/Users/cjaquet/Documents/SynthTreeData/3c9e679d-2eab-480c-acaa-31da12301b0a/ResultsForMaya/Forest%i.json" %kterm)
+
 #                    name =filename+"_F_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)
 #                    pickle.dump(forest, open(name + ".p", "wb"))
             else:
