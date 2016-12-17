@@ -6,12 +6,13 @@ Created on Wed Nov 16 16:32:18 2016
 """
 
 import numpy as np
-import vtk
+from vtk import vtkMetaImageReader
 from vtk.util.numpy_support import vtk_to_numpy
 import CCO_3DFunctions as cc3df
+import matplotlib.pyplot as plt
 
 def open_mha(mha_file):    
-    img_reader = vtk.vtkMetaImageReader()
+    img_reader = vtkMetaImageReader()
     img_reader.SetFileName(mha_file)
     img_reader.Update()
     vtk_marker = img_reader.GetOutput()

@@ -792,10 +792,10 @@ class Tree:
         print "length", cco_3df.length(c0-branching_location, self.voxel_size), cco_3df.length(c1-branching_location, self.voxel_size), cco_3df.length(c2-branching_location, self.voxel_size) 
         inside_territory = True
         ins, val = self.inside_heart(c0)
-        if self.sample_and_test(branching_location, c0, sampling_n, val, far_from_centerline, surface_tol) == False:
+        if self.sample_and_test(branching_location, c0, sampling_n, val, far_from_centerline[0], surface_tol) == False:
             return False
         ins, val = self.inside_heart(c1)
-        if self.sample_and_test(branching_location, c1, sampling_n, val, True, surface_tol) == False:
+        if self.sample_and_test(branching_location, c1, sampling_n, val, far_from_centerline[1], surface_tol) == False:
             return False
         ins, val = self.inside_heart(c2)
         if self.sample_and_test(branching_location, c2, sampling_n, val, True, surface_tol) == False:
@@ -934,7 +934,12 @@ class Tree:
             print "starting point out lvand heart : unplausible location", val
             return code, False, 0., result, old_child_index, new_radii    
         
-        far_from_centerlines = (self.nodes[old_child_index]).parent() > 0
+         
+        
+        far_from_centerlines =np.array([False, False])
+        far_from_centerlines[0] = self.outside_segmented_vessels(c1, DIST_TO_CENTERLINE)
+        far_from_centerlines[1] = self.outside_segmented_vessels(c2, DIST_TO_CENTERLINE)
+
         target_surface = LV_INNER_WALL
         if surface_tol > 0:
             ins, val = self.inside_heart(c0)

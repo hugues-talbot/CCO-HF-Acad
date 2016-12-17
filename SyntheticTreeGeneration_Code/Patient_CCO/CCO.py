@@ -87,7 +87,7 @@ sgm_vess_path = "./Inputs/DistMapFromCenterlines.npy"
 if os.path.isfile(sgm_vess_path):
     segm_vessel_dist = np.load(sgm_vess_path)
 else:
-    segm_vessel_dist = cv.open_mha("./Inputs/fmm_from_centerline_with_LCX.mha")
+    segm_vessel_dist = cv.open_mha("./Inputs/fmm_path_with_LCX_and_proj.mha")
     np.save(sgm_vess_path, segm_vessel_dist)
 
 ##CHECK ALL IMAGE SIZES
@@ -101,9 +101,9 @@ im_size_max = np.max(heart_potential.shape)
 timing = True
 store_data = False
 parallelized = True
-filename = "./Results/LastV"
-path_out = "C:/Users/cjaquet/Documents/SynthTreeData/3c9e679d-2eab-480c-acaa-31da12301b0a/ResultsForMaya/"
-ktermbreak = 300
+filename = "./Results/NewDistMap"
+path_out = "C:/Users/cjaquet/Documents/SynthTreeData/3c9e679d-2eab-480c-acaa-31da12301b0a/ResultsForMaya/New"
+ktermbreak = 58
 NTerm = 500 
 InterTerm = 200
 
@@ -162,6 +162,7 @@ if True:
          
     while forest.get_fk_term() < NTerm:
         kterm = forest.get_fk_term()
+        break
         if kterm < InterTerm:          
             surface = True
         else: 

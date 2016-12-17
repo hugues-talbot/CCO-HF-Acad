@@ -289,6 +289,7 @@ class Forest:
             new_pos = self.new_pos_inside_sqr(source_coord, dist_max)
             if dist_max > DIST_TO_CENTERLINE:
                 if self.outside_segmented_vessels(new_pos, DIST_TO_CENTERLINE) == False:
+                    print "out 0"
                     continue
             if current_tree.test_vessel_direction(0, new_pos, surface_tol) == False:
                 print "wrong direction"
@@ -318,6 +319,8 @@ class Forest:
                         if current_tree.sample_and_test(new_loc, source_coord, n, val, False, surface_tol) == True:
                             print "source end found for surface heart", "lv", current_tree.get_w(new_loc), new_loc
                             return True, new_loc, d_tresh_factorized
+                        else:
+                            print "out 1: failed sample and test"
                         
                 else: #if source already in lv
                     print "source in lv"
