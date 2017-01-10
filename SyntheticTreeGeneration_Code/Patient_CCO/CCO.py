@@ -30,7 +30,6 @@ import copy
 
 # Location of sources with flow and pressure -> obtained from centerline, mssing branched statistics
 print "loading sources location"
-
 source_path = "./Inputs/Sources_LADLCX.npy"
 if os.path.isfile(source_path):
     sources = np.load(source_path)
@@ -51,6 +50,7 @@ gamma = 3.0
 
 
 # matrix to convert between world and voxel coordinates
+print "loading matrices"
 model_matrix = np.load("./Inputs/ImMatrix.npy")
 inv_model_matrix = np.load("./Inputs/ImInvMatrix.npy")
 vox_size = np.array([model_matrix[0][0],model_matrix[1][1],model_matrix[2][2]])
@@ -58,6 +58,8 @@ vox_volume = vox_size[0]*vox_size[1]*vox_size[2]
 #should test if find correspondance between 
 
 # Whole segmented heart-LV potential -> obtained from LargeStructureSegmentationTool
+print "loading potential images"
+
 hp_path = "./Inputs/heart_potential.npy"
 if os.path.isfile(hp_path):
     heart_potential = np.load(hp_path)
@@ -83,11 +85,12 @@ vox_perf=np.array(np.where(np.logical_and(lv_potential>0.0, lv_potential < 1.0))
 lv_volume = vox_perf.shape[1] * vox_volume
 
 # Segmented vessels distance map 
+print "loading distance map"
 sgm_vess_path = "./Inputs/DistMapFromCenterlines.npy"
 if os.path.isfile(sgm_vess_path):
     segm_vessel_dist = np.load(sgm_vess_path)
 else:
-    segm_vessel_dist = cv.open_mha("./Inputs/fmm_path_with_LCX_and_proj.mha")
+    segm_vessel_dist = cv.open_mha("./Inputs/fmm_path_with_LCX_and_proj_and_inner5_and3.mha")
     np.save(sgm_vess_path, segm_vessel_dist)
 
 ##CHECK ALL IMAGE SIZES
@@ -99,13 +102,15 @@ im_size_max = np.max(heart_potential.shape)
 ############# INITIALIZATION ####################
 
 timing = True
-store_data = False
-parallelized = True
-filename = "./Results/NewDistMap"
-path_out = "C:/Users/cjaquet/Documents/SynthTreeData/3c9e679d-2eab-480c-acaa-31da12301b0a/ResultsForMaya/New"
-ktermbreak = 58
+store_data = True
+parallelized = False
+generate_obj = True
+filename = "./Results/MNi"
+name_filemaya = "MNF1_2"
+path_out = "C:/Users/cjaquet/Documents/SynthTreeData/3c9e679d-2eab-480c-acaa-31da12301b0a/ResultsForMaya/"
+ktermbreak = len(sources) +100
 NTerm = 500 
-InterTerm = 200
+InterTerm = len(sources) +100
 
 if timing:
     debut = time.time()
@@ -115,6 +120,18 @@ if store_data:
     old_stdout = sys.stdout   # store the default system handler to be able to restore it     
     sys.stdout = fd # Now your file is used by print as destination 
     
+
+if False:
+    #def regenerate_forest
+
+    P_term = 8.38e3 #(Pa) 
+    Q_term = Q_perf / NTerm
+    r_f = np.power(3*lv_volume /(4*np.pi),1./3)
+    forest = fclass.Forest(pickle.load(open("./Results/NewVersions_Nt500_kt79_s42.p")), NTerm, Q_perf, P_term, viscosity, lv_volume, r_f, vox_size, heart_potential, lv_potential, lv_pot_zero,segm_vessel_dist, lv_max_curvature_r, lv_potential.shape, gamma)
+    forest.update_forest_length_factor()    
+    cv.write_json(forest,model_matrix,path_out +"ForestNewRadius.json")
+
+
 
 if True:
   
@@ -149,7 +166,7 @@ if True:
     #first segment end: randomly picked inside perfusion surface
     if InterTerm >0:          
         surface = True
-        surface_tol = 1.75 #value in (heart+lv) potential
+        surface_tol = 1.2 #value in (heart+lv) potential
     else: 
         surface = False
         surface_tol = -1.
@@ -162,7 +179,6 @@ if True:
          
     while forest.get_fk_term() < NTerm:
         kterm = forest.get_fk_term()
-        break
         if kterm < InterTerm:          
             surface = True
         else: 
@@ -218,6 +234,7 @@ if True:
             added_location.append(cet_final.tolist())
            
         if (adding_location): # optimal connection found!
+            print "cet sorted", cet_sorted 
             opt = added_location[-1]   
             if (forest.add_connection([opt[2], opt[3]], opt[4], opt[5],new_child_location, opt[6])):
                 print "k termmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm is now ", forest.get_fk_term()
@@ -226,7 +243,8 @@ if True:
                 if (kterm == ktermbreak):
                     break
                 if kterm%10 == 0:
-                        cv.write_json(forest,model_matrix,path_out + "Forest%i.json" %kterm)
+#                if kterm > 66 :
+                    cv.write_json(forest,model_matrix,path_out + "NForest%i.json" %kterm)
 
 #                    name =filename+"_F_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)
 #                    pickle.dump(forest, open(name + ".p", "wb"))
@@ -247,7 +265,8 @@ if True:
         c = tree.nodes[0].coord
         d= tree.nodes[1].coord
         print tree.tree_index, cco_3df.length(c-d, vox_size), forest.dist_max[tree.tree_index]
-    
+    for tree in forest.trees:
+        print tree.tree_index,  tree.get_h(tree.nodes[0].coord),tree.get_h(tree.nodes[1].coord), "length",tree.length(1)
     print "CCO done"
     name = filename+"_Nt%i_kt%i_s%i" %(NTerm, forest.get_fk_term(),seed)  
     #cco_3df.plot_forest(forest, name)
@@ -255,7 +274,7 @@ if True:
     #pickle.dump(forest.trees,open(name + ".p", "wb"))
     pickle.dump([copy.copy(i) for i in forest.trees],open(name + ".p", "wb"))
     #print "forest saved"
-    cv.write_json(forest,model_matrix,path_out +"Forest.json")
+    cv.write_json(forest,model_matrix,path_out +name_filemaya+".json")
     #print "json generated"
     #print "sources", sources
 if store_data:
@@ -263,7 +282,16 @@ if store_data:
     fd.close() # to not forget to close your file
 
 if timing:
-    fin =time.time()
+    fin = time.time()
     print "duration = ", fin-debut, "secondes"
     
 
+if generate_obj:
+    os.chdir("C:\\home\\GitMod\\hfm\\install_build_Release\\bin")
+    seg_tool = "C:\\home\\GitMod\\hfm\\build_Release\\bin\\Release\\SyntheticTreeGeneration.exe"
+    input_zhf = "C:\\Users\\cjaquet\\Documents\\SynthTreeData\\3c9e679d-2eab-480c-acaa-31da12301b0a\\ResultsForMaya\\"+  name_filemaya+".json"
+    output_dir = "C:\\Users\\cjaquet\\Documents\\SynthTreeData\\3c9e679d-2eab-480c-acaa-31da12301b0a"
+    seg_args = "--input_zhf {0} --output_directory {1} ".format(input_zhf, output_dir)
+    print seg_args
+    os.system(seg_tool + " " + seg_args)
+    os.chdir("C:\\Users\\cjaquet\\Documents\\GitAcad\\HeartFlow\\SyntheticTreeGeneration_Code\\Patient_CCO")

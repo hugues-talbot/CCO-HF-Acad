@@ -194,13 +194,17 @@ def closestDistanceBetweenLines(a0,a1,b0,b1,clampAll=False,clampA0=False,clampA1
     if clampA0 or clampA1 or clampB0 or clampB1:
 
         if t0 < 0 and clampA0:
+            #print "case 1"
             pA = a0
         elif t0 > np.linalg.norm(A) and clampA1:
+            #print "case 2"
             pA = a1
 
         if t1 < 0 and clampB0:
+            #print "case 3"
             pB = b0
         elif t1 > np.linalg.norm(B) and clampB1:
+            #print "case 4"
             pB = b1
 
     d = np.linalg.norm(pA-pB)
@@ -211,7 +215,10 @@ def closestDistanceBetweenLines(a0,a1,b0,b1,clampAll=False,clampA0=False,clampA1
 def no_overlap(point_a, point_b, point_c, point_d, width_ab, width_cd, vox_size):
     p1,p0,dist = closestDistanceBetweenLines(point_a, point_b,point_c,point_d, True)
         
-    if np.all(dist / vox_size > (width_ab + width_cd)/vox_size):
+    #if np.all(dist / vox_size > (width_ab + width_cd)/vox_size):
+    if dist > (width_ab + width_cd):
+        #print "dist / vox size", dist / vox_size, "width (width_ab + width_cd)/vox_size", (width_ab + width_cd)/vox_size
+        #print "p1", p1 , "p0", p0 , "dist ", dist , "(width_ab + width_cd)", (width_ab + width_cd)
         return True
     else:
         return False

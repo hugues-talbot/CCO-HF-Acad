@@ -75,18 +75,18 @@ def write_json(forest, matrix, filename):
         fdict["Trees"][tree.tree_index].update({"Kterm" : tree.get_k_term()})
         fdict["Trees"][tree.tree_index].update({"Resistance": tree.resistance(tree.get_root_index())})
         fdict["Trees"][tree.tree_index]["Nodes"]= {}
+        inv_length_fac = 1./ tree.length_factor
         for node in tree.nodes:
             fdict["Trees"][tree.tree_index]["Nodes"][node.index]={}
             print "index", node.index, "node.coord", node.coord    
             fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Location" : (voxel_to_world(node.coord[::-1], matrix)).tolist()})
             fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Parent" : node.parent_index})
             fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Children" : node.children_index.tolist()})
-            fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Radius" : tree.get_radius(node.index)})
+            fdict["Trees"][tree.tree_index]["Nodes"][node.index].update({"Radius" : tree.get_radius(node.index)*inv_length_fac})
             
     json.dump(fdict, file_out, indent = 4, sort_keys = True)
     file_out.close()
     return True
-
 
 
 
