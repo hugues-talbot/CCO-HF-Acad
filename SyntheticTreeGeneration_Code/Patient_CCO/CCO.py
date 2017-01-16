@@ -35,7 +35,7 @@ if os.path.isfile(source_path):
     sources = np.load(source_path)
 else:
     print "generate sources"
-    sources = cv.get_data_fp("./Inputs/SourcesCorrected.txt") #LADLCXPressureAndFlowInputs
+    sources = cv.get_data_fp("./Inputs/SourcesCorrectedWithDiam.txt") #LADLCXPressureAndFlowInputs
     np.save(source_path, sources)
        
 # dtype_r=[("WorldCoordX", float),("WorldCoordY", float), ("WorldCoordZ", float),
