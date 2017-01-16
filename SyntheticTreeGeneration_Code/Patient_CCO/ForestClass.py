@@ -51,11 +51,27 @@ class Forest:
         self.dist_max=np.zeros((1,1))
         self.interp_list=[self.interp_h, self.interp_ghx, self.interp_ghy, self.interp_ghz, self.v_dist_map, self.dm_gx, self.dm_gy, self.dm_gz]
     ##trees should be created according to increasing flow 
-    def create_tree(self, source_location, vect_dir, q_perf, p_perf):
+    def create_tree(self, source_location, vect_dir, q_perf, p_perf, diam_ori):
         tree_index = len(self.trees)
         delta_p = p_perf - self.p_term
         print "delta p of tree", delta_p
         print "tree of index", tree_index
+        if q_perf == 16.2018 or q_perf == 12.0715:
+            #change source location
+            #if source outside lv use gdt potential vector direction
+            #else (inside lv) use inverse direction
+            #use diameter/2 distance
+            gdt = np.array([self.trees[0].get_hgx(source_location), self.trees[0].get_hgy(source_location), self.trees[0].get_hgz(source_location)])
+            gdt_norm = gdt / cco_3df.length(gdt, self.voxel_size)
+            pot = self.trees[0].get_h(source_location)
+            source_ortho_world = source_location*self.voxel_size
+            if pot < LV_OUTER_WALL:
+                new_source_ortho = source_ortho_world + 0.5*diam_ori*gdt_norm
+                source_location = new_source_ortho / self.voxel_size
+            else:               
+                new_source_ortho = source_ortho_world - 0.5*diam_ori*gdt_norm
+                source_location = new_source_ortho / self.voxel_size
+                
         tree = nclass.Tree(tree_index, [], vect_dir, self.q_term, q_perf, delta_p, self.nu, self.v_perf, self.final_perf_radius, self.interp_list, self.voxel_size, self.im_size,self.max_curv_rad, np.max(self.im_size), self.gamma)        
         root_node = nclass.Node(0,source_location, q_perf, -1)
         root_node.set_child_0_index(1)
@@ -81,8 +97,9 @@ class Forest:
 #
 #            first_node = nclass.Node(1, node_pos, tree.final_q_perf,0)
 #            tree.add_node(first_node)
+        print "look for first segmt node position"
         first_node_position = self.first_source_end(self.trees[first_added], dist_max[first_added][0]*dist_max[first_added][1],  surface_tol)
-
+        print "dirst node position found!"
         first_node = nclass.Node(1, first_node_position, (self.trees[0]).final_q_perf,0)
         (self.trees[first_added]).add_node(first_node)
         #updates
@@ -116,7 +133,7 @@ class Forest:
                 self.update_forest_tree_volumes(indexes, True)
                 self.node_nber = self.node_nber +1
                 indexes.append(current_index)  
-                
+                print "first seg found for tree of index ", tree.tree_index, result[1]
         self.update_activation()
         #print "dist_max", dist_max      
         print "sources initialized"
@@ -140,7 +157,7 @@ class Forest:
                 rdm_in_sqre = np.random.rand(3)*2.*dist_max
                 #print "rdm_in_sqre",rdm_in_sqre
                 new_pos = source_loc - (np.ones(3)*dist_max)/self.voxel_size + rdm_in_sqre/self.voxel_size
-                #print "length in square", cco_3df.length(new_pos-source_loc, self.voxel_size), "dist max", dist_max
+                print "length in square", cco_3df.length(new_pos-source_loc, self.voxel_size), "dist max", dist_max
                 if cco_3df.length(new_pos-source_loc, self.voxel_size) < dist_max:  
                     inf_dist_max = True
             return new_pos
@@ -232,7 +249,7 @@ class Forest:
         d_tresh_factorized = d_tresh / length_factor * d_tresh_factor#d_tresh is calculated in the current k_world dimensions
         meet_criteria = False
         ind = 0
-        max_it = 100
+        max_it = 500
         print "looking for a position respecting dist_max", dist_max, "and d_tresh", d_tresh_factorized
         #should test : dist_max < d_tresh!
         if (dist_max > d_tresh):
@@ -247,7 +264,7 @@ class Forest:
             dist_to_lv = self.measure_dist_to_lv(source_coord)
             #print "NEW DIST TO LV", dist_to_lv
             print "dist to lv", dist_to_lv, "distmax", dist_max
-            if dist_to_lv  > dist_max:
+            if dist_to_lv *2. > dist_max:
                 print "source too far from lv"
                 #define the end pointas the one on gdt vector line, at dist_max
                 #check its h is lower than source point
@@ -267,7 +284,7 @@ class Forest:
         else: #source is in lv
             print "source in lv"
             dist_to_lv = self.measure_dist_to_lv_from_inside(source_coord)
-            if (dist_to_lv > dist_max):
+            if (dist_to_lv *2. > dist_max):
                 new_location = self.short_segmt_end(source_coord, dist_max, False, current_tree.direct_vect) #should follow tree direction instead(risky)?
                 print "weird situation but keep going", dist_to_lv, "dist max", dist_max
                 return True, new_location, d_tresh_factorized  
@@ -277,67 +294,31 @@ class Forest:
                 
         while (meet_criteria == False and ind < max_it):        
             new_pos = self.new_pos_inside_sqr(source_coord, dist_max)
+            if surface_tol > 0:
+                if (current_tree.is_on_surface(new_pos, LV_OUTER_WALL)==False):
+                    print "n o s"
+                    continue
             if dist_max > DIST_TO_CENTERLINE:
                 if self.outside_segmented_vessels(new_pos, DIST_TO_CENTERLINE) == False:
-                    print "out 0"
+                    print "out 0 ", ind
+                    ind = ind + 1
                     continue
             if current_tree.test_vessel_direction(0, new_pos, surface_tol) == False:
                 print "wrong direction"
+                #ind = ind + 1
                 continue
-            if surface_tol > 0.:#staged growth protocol                
-                if (val < LV_OUTER_WALL):#if source inside heart and out lv
-                    #print "proj failed, changing method" #or should use the sampling method between these 2 points
-                    #need to find another point because projection failed
-                    print "source in heart out lv"
-                    if current_tree.inside_perf_territory(new_pos) == True:   
-                        if dist_to_lv == 0.:
-                            if current_tree.is_on_surface(new_pos, LV_OUTER_WALL):
-                                new_loc = new_pos
-                            else:
-                                print "not on surface"
-                                continue                           
-                        else:
-                            new_loc = self.dist_to_lv_via_sampling(source_coord, new_pos)
-                        if new_loc[0] == 0. and new_loc[1] ==0.:
-                            print "failed to get dist to lv via sampling, continue to get new loc"
-                            continue
-                        if dist_to_lv == 0.:#source is on surface, need to make sure we didnt pick the source point
-                            if np.all(new_loc == source_coord):
-                                print "exact same location, skipped!"
-                                continue
-                        n = current_tree.calculate_sampling(self.max_curv_rad, new_loc, source_coord, LV_OUTER_WALL)
-                        if current_tree.sample_and_test(new_loc, source_coord, n, val, False, surface_tol) == True:
-                            print "source end found for surface heart", "h", current_tree.get_h(new_loc), new_loc
-                            return True, new_loc, d_tresh_factorized
-                        else:
-                            print "out 1: failed sample and test"
+            
+            if surface_tol > 0.:#staged growth protocol 
+                if np.all(new_pos == source_coord):
+                    print "exact same location, skipped!"
+                    #ind = ind + 1
+                    continue
+                else: 
+                    n = current_tree.calculate_sampling(self.max_curv_rad, new_pos, source_coord, LV_OUTER_WALL)
+                    if current_tree.sample_and_test(new_pos, source_coord, n, val, False, surface_tol) == True:
+                        return True, new_pos, d_tresh_factorized
                         
-                else: #if source already in lv
-                    print "source in lv"
-                    insi, valu = current_tree.inside_heart(new_pos)
-                    if valu < LV_OUTER_WALL:
-                        print "new val out lv to be projected"
-                        if dist_to_lv == 0.:
-                            if current_tree.is_on_surface(new_pos, LV_OUTER_WALL):
-                                new_loc = new_pos
-                            else:
-                                print "not on surface"
-                                continue   
-                        else:
-                            new_loc = self.dist_to_lv_via_sampling_inv(source_coord, new_pos)
-                            print "new loc on surface", new_loc
-                        if new_loc[0] == 0. and new_loc[1] ==0.:
-                            print "failed to get dist to lv via sampling, continue to get new loc"
-                            continue
-                        if dist_to_lv == 0.:#source is on surface, need to make sure we didnt pick the source point
-                            if np.all(new_loc == source_coord):
-                                print "exact same location, skipped!"
-                                continue
-                        n = current_tree.calculate_sampling(self.max_curv_rad, new_loc, source_coord, LV_INNER_WALL)
-                        if current_tree.sample_and_test(new_loc, source_coord, n, val, False, surface_tol) == True:
-                            print "source end found for surface heart", "h lv", current_tree.get_h(new_loc)
-                            return True, new_loc, d_tresh_factorized    
-                    
+            # not Staged Growth:            
             else:  
                 print "surface neg"
                 if current_tree.inside_perf_territory(new_pos) : #and self.outside_segmented_vessels(new_pos, DIST_TO_CENTERLINE)
@@ -358,12 +339,23 @@ class Forest:
                 else:
                     print "location out, source coord", source_coord, "dist max", dist_max, "location", new_pos
                     current_tree.inside_perf_territory(source_coord)
+                    ind = ind + 1
                     continue
                 ind = ind + 1
                 if ind == max_it:
                     d_tresh_factorized = 0.9*d_tresh_factorized
                     print "using new value for d_tresh: ", d_tresh_factorized
                     ind = 0
+                    
+        if ind == max_it:
+            if val > LV_OUTER_WALL:
+                new_location = self.short_segmt_end(source_coord, dist_max, False, current_tree.direct_vect) #should follow tree direction instead(risky)?
+                print "stuck", dist_to_lv, "dist max", dist_max
+                return True, new_location, d_tresh_factorized
+            else:
+                new_location = self.short_segmt_end(source_coord, dist_max, True, current_tree.direct_vect)
+                print "stucl out lv", dist_to_lv, "dist max", dist_max
+                return True, new_location, d_tresh_factorized
            
         return False, np.zeros(3), d_tresh_factorized
     
@@ -497,9 +489,11 @@ class Forest:
                         seg_end = self.short_segmt_end(point, n_l, False, np.zeros(3))
                         surf_point = self.dist_to_lv_via_sampling_inv(point, seg_end)
                     if val < LV_OUTER_WALL: #inside heart
-                        seg_end = self.short_segmt_end(point, n_l, True, np.zeros(3))
-                        surf_point = self.dist_to_lv_via_sampling(point, seg_end)
-                    if val >= LV_OUTER_WALL:
+                         print "inside heart but out lv, skipped"
+                         continue
+#                        seg_end = self.short_segmt_end(point, n_l, True, np.zeros(3))
+#                        surf_point = self.dist_to_lv_via_sampling(point, seg_end)
+                    if val >= LV_INNER_WALL:
                         print "in concavity so skipped"
                         continue
                     print "surf_point", surf_point
@@ -600,7 +594,11 @@ class Forest:
             for tree in self.trees:
                 if tree.tree_index != tree_ind:
                     print "testing intersection with tree number", tree.tree_index
-                    intersect = tree.check_intersection_external_seg(old_child_coord, parent_coord, new_location, beta_and_bif_location[1], new_radii_rescaled)
+                    add_rad=np.ones(3)*3.5
+#                    if surface_tol > 0.:
+#                        add_rad = add_rad + current_tree.mid_point_dist_to_lv(beta_and_bif_location[1], np.array([parent_coord, old_child_coord, new_location]))
+                    
+                    intersect = tree.check_intersection_external_seg(old_child_coord, parent_coord, new_location, beta_and_bif_location[1], new_radii_rescaled, add_rad)
                     if (intersect == False):
                         no_intersection = False
                         break

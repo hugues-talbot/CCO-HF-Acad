@@ -132,7 +132,7 @@ class Tree:
         self.interp_fmm_gz = interpolators[7]
 
     def __deepcopy__(self, tree):
-        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.direct_vect, self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[ self.interp_h, self.interp_hgx, self.interp_hgy, self.interp_hgz, self.interp_fmm, self.interp_fmm_gx, self.interp_fmm_gy, self.interp_fmm_gz],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma )    		
+        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.direct_vect, self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[ self.interp_h, self.interp_hgx, self.interp_hgy, self.interp_hgz, self.interp_fmm, self.interp_fmm_gx, self.interp_fmm_gy, self.interp_fmm_gz],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma)    		
     
     def __copy__(self):
         return Tree(self.tree_index, copy.deepcopy(self.nodes), self.direct_vect, self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[0,0,0,0,0,0,0,0],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma)
@@ -436,7 +436,7 @@ class Tree:
     # test that none of the 3 segments composing the new bifurcation intersect with the other existing tree segments
     # this test will avoid the segments that we are trying to connect to 
     # because they will overlap at bifurcations (old_chil, old_parent and old_child_sibling)
-    def check_intersection(self, old_child_index, new_child_location, branching_location, new_branches_radii):
+    def check_intersection(self, old_child_index, new_child_location, branching_location, new_branches_radii, add_rad):
         old_child = self.nodes[old_child_index]
         for i in self.nodes:          
             if (i.index != old_child_index) and (i.index > 0): #also avoid source node (not a segment)
@@ -445,7 +445,9 @@ class Tree:
                 radius_i_rescaled = self.get_radius(i.index) * inv_length_factor
                 new_branches_radii_rescaled = new_branches_radii * inv_length_factor
                 #print "testing connection with segment", "parent", parent_i.coord, "child", i.coord
-                if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, new_child_location*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[2], self.voxel_size) == False):
+                print "rad to be added", add_rad
+                
+                if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, new_child_location*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[2]+add_rad[2], self.voxel_size) == False):
                     return False
                     
                 old_parent_index = old_child.parent()
@@ -453,32 +455,33 @@ class Tree:
                 siblings = old_parent.children()
                 old_child_sibling = siblings[0] if (old_child_index == siblings[1]) else siblings[1]
                 if (i.index != old_parent_index) and (i.index != old_child_sibling): 
-                    if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, branching_location*self.voxel_size, old_parent.coord*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[0], self.voxel_size) ==  False):
+                    if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, branching_location*self.voxel_size, old_parent.coord*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[0]+add_rad[0], self.voxel_size) ==  False):
                         return False
                         
                 if (old_child.is_leaf() == False):
                     old_child_children = old_child.children()
                     if (i.index != old_child_children[0]) and (i.index != old_child_children[1]):
-                        if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, old_child.coord*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[1], self.voxel_size) ==  False):
+                        if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, old_child.coord*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[1]+add_rad[1], self.voxel_size) ==  False):
                             return False
         return True
         
-    def check_intersection_external_seg(self, old_child_location, parent_location, new_child_location, branching_location, new_branches_radii_rescaled):       
+    def check_intersection_external_seg(self, old_child_location, parent_location, new_child_location, branching_location, new_branches_radii_rescaled, add_rad):       
         for i in self.nodes:          
             if (i.index > 0): #also avoid source node (not a segment)
                 print "testing node number", i.index
+                print "rad to be added", add_rad
                 parent_i = self.nodes[i.parent()]
                 inv_length_factor = 1./self.length_factor
                 radius_i_rescaled = self.get_radius(i.index) * inv_length_factor
                 #print "testing connection with segment", "parent", parent_i.coord, "child", i.coord
                 print "testing segment new_child - branching"
-                if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, new_child_location*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[2], self.voxel_size) == False):
+                if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, new_child_location*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[2]+add_rad[2], self.voxel_size) == False):
                     return False
                     
-                if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, branching_location*self.voxel_size, parent_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[0], self.voxel_size) ==  False):
+                if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, branching_location*self.voxel_size, parent_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[0]+add_rad[0], self.voxel_size) ==  False):
                     return False
                         
-                if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, old_child_location*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[1], self.voxel_size) ==  False):
+                if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, old_child_location*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[1]+add_rad[1], self.voxel_size) ==  False):
                     return False
         return True
           
@@ -535,10 +538,10 @@ class Tree:
         print "test vessel direction", dirction_norm, gdt_norm
         
         dot_pdt = cco_3df.dot(gdt_norm, dirction_norm)
-        print "new loc", new_location
         if dot_pdt < 0:
             print "vessel going in wrong direction", dot_pdt
             return False
+        print "good direction"
         return True
 
         
@@ -739,31 +742,7 @@ class Tree:
         print "official smapling n", sampling_n
         return sampling_n
     
-    def dist_to_lv_via_sampling(self, start_point,end_point):
-        n=40
-        p1p2_vec = end_point - start_point
-        previous_val = 0.
-        for i in range (n):
-            loc = start_point + (i / float(n)) * p1p2_vec
-            ins, val= self.inside_heart(loc)
-            #print "dist to lv via sampling", val
-            if val < (1. + 5*EPS) and val > (1. - 5*EPS):
-                print "found", val
-                return (start_point + (float(i)/n)*p1p2_vec)
-            else:
-                if (val >= previous_val and val < 1.):
-                    previous_val = val   
-                    print "continue", val
-                    continue
-                else:
-                    if val > LV_OUTER_WALL:
-                        print "zooming", val
-                        return self.dist_to_lv_via_sampling(start_point + (float(i-1)/n)*p1p2_vec, start_point + (float(i)/n)*p1p2_vec)   
-                    else:
-                        print "errroor: previous val:", previous_val, "val", val
-                        return np.zeros(3)
-        print "rror", val, "n", n,"start", start_point
-        return np.zeros(3)    
+   
         
     def dist_to_target_via_sampling(self, start_point_small_pot,end_point, target):
         n=40
@@ -838,6 +817,8 @@ class Tree:
                 i = i + 0.1 
         print "out of while", i
         return seg_end
+        
+
                     
     def find_surface_projection(self, point):
         #get the point on surface
@@ -909,12 +890,12 @@ class Tree:
             ins, val = self.inside_heart(c0)
             if ins == True:
                 target_surface = LV_OUTER_WALL
-            
+            add_rad = np.ones(3)*3.5
         #calculate original tree volume or take a bigger approximation (easier because no need of adding segment)
         initial_tree_vol = self.volume() * 10.        
         lengths = kami.calculate_segment_lengths(c0,c1,c2,xyz,self.length_factor)
         length_tol = 0.15*self.max_curv_rad*self.length_factor
-        if (lengths[0] < length_tol) and (lengths[1] < length_tol) and (lengths[2] < length_tol):
+        if (lengths[0] < length_tol) and (lengths[1] < length_tol) and (lengths[2] < length_tol): #if very small segments
             print "reaching boundary condition for concavity crossing test at node", self.get_k_term(),"with length_tol", length_tol
             code=2            
             #compute Kamiya iterqtion and apply concavity test only at the end
@@ -958,10 +939,15 @@ class Tree:
                         print "degenerated segments"
                         return code, False, 0., [[0.,0.], [0.,0.]], old_child_index, new_radii 
                 vol_gdt = initial_tree_vol - tree_vol
+#                if surface_tol > 0.:
+#                        #calculate for each seg the distance to lv at midpoint, and add it to the new radii (to avoid overlap)
+#                        add_rad = add_rad+self.mid_point_dist_to_lv(branching_location, np.array([c0,c1,c2]))
+#                        print "add_rad", add_rad
+#                        print "new_radii", new_radii
                 if np.abs(vol_gdt) < tolerance:
                     #if gradients is under tolerance, and iter_max not reached:                
                     #test intersection on the tree not connected to the new branch
-                    if self.check_intersection(old_child_index, c2, branching_location, new_radii) ==  True:
+                    if self.check_intersection(old_child_index, c2, branching_location, new_radii, add_rad) ==  True:
                         result=[correct_beta, branching_location]  
                         print "connection test reaching concavity test" 
                         #compute concavity crossing test:
@@ -983,7 +969,7 @@ class Tree:
                         print "intersection test failed"
                         return code, False, 0., result, old_child_index, new_radii
                 else:
-                    if self.check_intersection(old_child_index, c2, branching_location, new_radii) ==  True:
+                    if self.check_intersection(old_child_index, c2, branching_location, new_radii, add_rad) ==  True:
                         #provides Kamiya with current position and radii as new starting point
                         print "next iteration of Kamiya"
                         previous_result = [correct_beta, branching_location]
@@ -1053,10 +1039,16 @@ class Tree:
                         return code, False, 0., result, old_child_index, new_radii 
                 vol_gdt = initial_tree_vol - tree_vol
                 if inside_territory == True:
+                    
+#                    if surface_tol > 0.:
+#                        #calculate for each seg the distance to lv at midpoint, and add it to the new radii (to avoid overlap)
+#                        add_rad = add_rad+self.mid_point_dist_to_lv(branching_location, np.array([c0,c1,c2]))
+##                        print "add_rad", add_rad
+##                        print "new_radii", new_radii
                     if np.abs(vol_gdt) < tolerance:
                         #if gradients is under tolerance, and iter_max not reached:                
                         #test intersection on the tree not connected to the new branch
-                        if self.check_intersection(old_child_index, c2, branching_location, new_radii) ==  True:
+                        if self.check_intersection(old_child_index, c2, branching_location, new_radii, add_rad) ==  True:
                             result=[correct_beta, branching_location]  
                             print "connection test succeed!" 
                             nbr = iterat*sampling_n*3
@@ -1067,7 +1059,7 @@ class Tree:
                             print "intersection test failed"
                             return code, False, 0., result, old_child_index, new_radii
                     else:
-                        if self.check_intersection(old_child_index, c2, branching_location, new_radii) ==  True:
+                        if self.check_intersection(old_child_index, c2, branching_location, new_radii, add_rad) ==  True:
                             #provides Kamiya with current position and radii as new starting point
                             print "next iteration of Kamiya"
                             previous_result = [correct_beta, branching_location]
@@ -1091,7 +1083,89 @@ class Tree:
             print "connection test failed : iter max reached"
             return code, False, 0., result, old_child_index, new_radii        
         
+    def mid_point_dist_to_lv(self, brching,c0_c1_c2):
+       #add_rad= np.ones(3)*3.5
+       factor = np.zeros(3)
+       for i in range (len(c0_c1_c2)):
+           #midp = (c0_c1_c2[i]+brching)/2.
+           ratio = cco_3df.length(c0_c1_c2[i]-brching, self.voxel_size) / self.max_curv_rad
+           if ratio > 1:
+               factor[i] = 0.1*ratio
+               
+#           if self.inside_perf_territory(midp):
+#               add_rad[i] = self.measure_dist_to_lv_from_inside(midp)+factor*0.1
+#           else:
+#               add_rad[i] = self.measure_dist_to_lv(midp)+factor*0.1
+       print "factor", factor
+       return factor  
+    
+    
+    
+    def measure_dist_to_lv(self, source):
+        n=40
+        seg_end = self.short_segmt_end(source, n, True)
+        print "short seg emnd found"
+        closest_to_lv = self.dist_to_lv_via_sampling(source, seg_end)
+        print "closest point", closest_to_lv                 
+        return cco_3df.length(closest_to_lv - source, self.voxel_size)
+             
         
+    def dist_to_lv_via_sampling(self, start_point,end_point):
+        n=40
+        p1p2_vec = end_point - start_point
+        previous_val = 0.
+        for i in range (n):
+            loc = start_point + (i / float(n)) * p1p2_vec
+            ins, val= self.inside_heart(loc)
+            #print "dist to lv via sampling", val
+            if val < (LV_OUTER_WALL + 5*EPS) and val > (LV_OUTER_WALL - 5*EPS):
+                print "found", val
+                return (start_point + (float(i)/n)*p1p2_vec)
+            else:
+                if (val >= previous_val and val < LV_OUTER_WALL):
+                    previous_val = val   
+                    print "continue", val
+                    continue
+                else:
+                    if val > LV_OUTER_WALL:
+                        print "zooming", val
+                        return self.dist_to_lv_via_sampling(start_point + (float(i-1)/n)*p1p2_vec, start_point + (float(i)/n)*p1p2_vec)   
+                    else:
+                        print "errroor: previous val:", previous_val, "val", val
+                        return np.zeros(3)
+        print "rror", "forest", val, "start", start_point
+        return np.zeros(3)
+        
+    def dist_to_lv_via_sampling_inv(self, start_point, end_point): #startpoint inside lv
+        n=40
+        p1p2_vec = end_point - start_point
+        previous_val = 2.
+        for i in range (n):
+            loc = start_point + (i / float(n)) * p1p2_vec
+            ins, val= self.inside_heart(loc)
+            #print "dist to lv via sampling", val
+            if val < (LV_OUTER_WALL + 5*EPS) and val > (LV_OUTER_WALL - 5*EPS):
+                print "found", val
+                return (start_point + (float(i)/n)*p1p2_vec)
+            else:
+                if (val <= previous_val and val > LV_OUTER_WALL):
+                    previous_val = val   
+                    print "continue", val
+                    continue
+                else:
+                    if val < LV_OUTER_WALL:
+                        print "zooming", val
+                        return self.dist_to_lv_via_sampling_inv(start_point + (float(i-1)/n)*p1p2_vec, start_point + (float(i)/n)*p1p2_vec)   
+                    else:
+                        print "errroor: previous val:", previous_val, "val", val
+                        return np.zeros(3)
+        print "rror", "forest", val, "start", start_point
+        return np.zeros(3)
+     
+
+    
+    
+    
     
     # add the two nodes and update tree
     def add_connection(self, old_child_index, new_child_location, branching_location, betas, volume):

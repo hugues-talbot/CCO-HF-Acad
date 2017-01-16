@@ -12,8 +12,8 @@ import ConvertFunctions as cv
 import CCO_3DFunctions as cco_3df
 import ForestClass as fclass
 #import JsonWriter as jw
-from pylab import figure, gca, Line2D
-import pylab as pl
+#from pylab import figure, gca, Line2D
+#import pylab as pl
 import random
 import os
 import os.path
@@ -105,10 +105,10 @@ timing = True
 store_data = True
 parallelized = False
 generate_obj = True
-filename = "./Results/MNi"
-name_filemaya = "MNF1_2"
+filename = "./Results/PropLength"
+name_filemaya = "PropLengthF1_5"
 path_out = "C:/Users/cjaquet/Documents/SynthTreeData/3c9e679d-2eab-480c-acaa-31da12301b0a/ResultsForMaya/"
-ktermbreak = len(sources) +100
+ktermbreak = len(sources) + 100
 NTerm = 500 
 InterTerm = len(sources) +100
 
@@ -157,7 +157,7 @@ if True:
         if ind >0 :
             ins, val = forest.inside_heart(np.array([source["VoxelCoordZ"], source["VoxelCoordY"], source["VoxelCoordX"]]))
         if (ins==True or (val > 0.999)):
-            forest.create_tree(np.array([source["VoxelCoordZ"], source["VoxelCoordY"], source["VoxelCoordX"]]), np.array([source["VectVoxelCoordZ"], source["VectVoxelCoordY"], source["VectVoxelCoordX"]]), source["Flow"], source["Pressure"])
+            forest.create_tree(np.array([source["VoxelCoordZ"], source["VoxelCoordY"], source["VoxelCoordX"]]), np.array([source["VectVoxelCoordZ"], source["VectVoxelCoordY"], source["VectVoxelCoordX"]]), source["Flow"], source["Pressure"], source["Diameter"])
             ind = ind + 1 
         else:
             print "source out of heart and lv, need to update the potential to integrate it", val
@@ -166,7 +166,7 @@ if True:
     #first segment end: randomly picked inside perfusion surface
     if InterTerm >0:          
         surface = True
-        surface_tol = 1.2 #value in (heart+lv) potential
+        surface_tol = 1.5 #value in (heart+lv) potential
     else: 
         surface = False
         surface_tol = -1.
@@ -243,9 +243,10 @@ if True:
                 if (kterm == ktermbreak):
                     break
                 if kterm%10 == 0:
-#                if kterm > 66 :
+#                if kterm < 61 :
                     cv.write_json(forest,model_matrix,path_out + "NForest%i.json" %kterm)
-
+                if kterm>70 and kterm%5==0:
+                    cv.write_json(forest,model_matrix,path_out + "NForest%i.json" %kterm)
 #                    name =filename+"_F_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)
 #                    pickle.dump(forest, open(name + ".p", "wb"))
             else:
@@ -261,13 +262,14 @@ if True:
                 print "dead end: decrease d_tresh of 20% to look for new location", d_tresh_factor
 
         #keep going until reach Nterm!
-    for tree in forest.trees:
-        c = tree.nodes[0].coord
-        d= tree.nodes[1].coord
-        print tree.tree_index, cco_3df.length(c-d, vox_size), forest.dist_max[tree.tree_index]
-    for tree in forest.trees:
-        print tree.tree_index,  tree.get_h(tree.nodes[0].coord),tree.get_h(tree.nodes[1].coord), "length",tree.length(1)
+#    for tree in forest.trees:
+#        c = tree.nodes[0].coord
+#        d= tree.nodes[1].coord
+#        print tree.tree_index, cco_3df.length(c-d, vox_size), forest.dist_max[tree.tree_index]
+#    for tree in forest.trees:
+#        print tree.tree_index,  tree.get_h(tree.nodes[0].coord),tree.get_h(tree.nodes[1].coord), "length",tree.length(1)
     print "CCO done"
+    forest.printing()
     name = filename+"_Nt%i_kt%i_s%i" %(NTerm, forest.get_fk_term(),seed)  
     #cco_3df.plot_forest(forest, name)
     #pickle.dump(forest, open(name + ".p", "wb"))

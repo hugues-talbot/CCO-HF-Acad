@@ -218,7 +218,7 @@ def no_overlap(point_a, point_b, point_c, point_d, width_ab, width_cd, vox_size)
     #if np.all(dist / vox_size > (width_ab + width_cd)/vox_size):
     if dist > (width_ab + width_cd):
         #print "dist / vox size", dist / vox_size, "width (width_ab + width_cd)/vox_size", (width_ab + width_cd)/vox_size
-        #print "p1", p1 , "p0", p0 , "dist ", dist , "(width_ab + width_cd)", (width_ab + width_cd)
+        print "p1", p1 , "p0", p0 , "dist ", dist , "(width_ab + width_cd)", (width_ab + width_cd)
         return True
     else:
         return False
