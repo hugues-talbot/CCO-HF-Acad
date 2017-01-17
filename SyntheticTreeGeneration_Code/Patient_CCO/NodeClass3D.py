@@ -436,7 +436,7 @@ class Tree:
     # test that none of the 3 segments composing the new bifurcation intersect with the other existing tree segments
     # this test will avoid the segments that we are trying to connect to 
     # because they will overlap at bifurcations (old_chil, old_parent and old_child_sibling)
-    def check_intersection(self, old_child_index, new_child_location, branching_location, new_branches_radii, add_rad):
+    def check_intersection(self, old_child_index, new_child_location, branching_location, new_branches_radii, surface_tol):
         old_child = self.nodes[old_child_index]
         for i in self.nodes:          
             if (i.index != old_child_index) and (i.index > 0): #also avoid source node (not a segment)
@@ -445,44 +445,66 @@ class Tree:
                 radius_i_rescaled = self.get_radius(i.index) * inv_length_factor
                 new_branches_radii_rescaled = new_branches_radii * inv_length_factor
                 #print "testing connection with segment", "parent", parent_i.coord, "child", i.coord
-                print "rad to be added", add_rad
                 
-                if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, new_child_location*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[2]+add_rad[2], self.voxel_size) == False):
+                no_intersect, p0, p1 = cco_3df.no_intersection(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, new_child_location*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[2], self.voxel_size) 
+                if no_intersect == False:
                     return False
+                if surface_tol > 0:
+                    if (self.no_superposition(np.array([p0,p1]), new_branches_radii_rescaled[2]+radius_i_rescaled))==False:
+                        return False
                     
                 old_parent_index = old_child.parent()
                 old_parent = self.nodes[old_parent_index]
                 siblings = old_parent.children()
                 old_child_sibling = siblings[0] if (old_child_index == siblings[1]) else siblings[1]
                 if (i.index != old_parent_index) and (i.index != old_child_sibling): 
-                    if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, branching_location*self.voxel_size, old_parent.coord*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[0]+add_rad[0], self.voxel_size) ==  False):
+                    no_intersect, p0, p1 =  cco_3df.no_intersection(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, branching_location*self.voxel_size, old_parent.coord*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[0], self.voxel_size)
+                    if no_intersect ==  False:
                         return False
+                    if surface_tol > 0.:
+                        if (self.no_superposition(np.array([p0,p1]), new_branches_radii_rescaled[0] + radius_i_rescaled))==False:
+                            return False
                         
                 if (old_child.is_leaf() == False):
                     old_child_children = old_child.children()
                     if (i.index != old_child_children[0]) and (i.index != old_child_children[1]):
-                        if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, old_child.coord*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[1]+add_rad[1], self.voxel_size) ==  False):
+                        no_intersect, p0, p1 = cco_3df.no_intersection(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, old_child.coord*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[1], self.voxel_size) 
+                        if no_intersect ==  False:
                             return False
+                        if surface_tol > 0.:
+                            if (self.no_superposition(np.array([p0,p1]), new_branches_radii_rescaled[1]+radius_i_rescaled))==False:
+                                return False
         return True
         
-    def check_intersection_external_seg(self, old_child_location, parent_location, new_child_location, branching_location, new_branches_radii_rescaled, add_rad):       
+    def check_intersection_external_seg(self, old_child_location, parent_location, new_child_location, branching_location, new_branches_radii_rescaled, surface_tol):       
         for i in self.nodes:          
             if (i.index > 0): #also avoid source node (not a segment)
                 print "testing node number", i.index
-                print "rad to be added", add_rad
                 parent_i = self.nodes[i.parent()]
                 inv_length_factor = 1./self.length_factor
                 radius_i_rescaled = self.get_radius(i.index) * inv_length_factor
                 #print "testing connection with segment", "parent", parent_i.coord, "child", i.coord
                 print "testing segment new_child - branching"
-                if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, new_child_location*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[2]+add_rad[2], self.voxel_size) == False):
+                no_intersect, p0, p1 = cco_3df.no_intersection(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, new_child_location*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[2], self.voxel_size)
+                if no_intersect == False:
                     return False
-                    
-                if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, branching_location*self.voxel_size, parent_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[0]+add_rad[0], self.voxel_size) ==  False):
-                    return False
+                if surface_tol > 0.:
+                    if (self.no_superposition(np.array([p0,p1]), radius_i_rescaled + new_branches_radii_rescaled[2])) == False:
+                        return False
                         
-                if (cco_3df.no_overlap(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, old_child_location*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[1]+add_rad[1], self.voxel_size) ==  False):
+                no_intersect, p0, p1 = cco_3df.no_intersection(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, branching_location*self.voxel_size, parent_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[0], self.voxel_size)
+                if no_intersect ==  False:
                     return False
+                    if surface_tol > 0:
+                        if (self.no_superposition(np.array([p0,p1]), radius_i_rescaled + new_branches_radii_rescaled[0])) == False:
+                            return False
+                            
+                no_intersect, p0, p1 = cco_3df.no_intersection(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, old_child_location*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[1], self.voxel_size)
+                if no_intersect == False:
+                    return False
+                if surface_tol > 0.:
+                    if (self.no_superposition(np.array([p0,p1]), radius_i_rescaled + new_branches_radii_rescaled[1])) == False:
+                        return False
         return True
           
     #for each node, beta values related to each child are calculated 
@@ -947,7 +969,7 @@ class Tree:
                 if np.abs(vol_gdt) < tolerance:
                     #if gradients is under tolerance, and iter_max not reached:                
                     #test intersection on the tree not connected to the new branch
-                    if self.check_intersection(old_child_index, c2, branching_location, new_radii, add_rad) ==  True:
+                    if self.check_intersection(old_child_index, c2, branching_location, new_radii, surface_tol) ==  True:
                         result=[correct_beta, branching_location]  
                         print "connection test reaching concavity test" 
                         #compute concavity crossing test:
@@ -969,7 +991,7 @@ class Tree:
                         print "intersection test failed"
                         return code, False, 0., result, old_child_index, new_radii
                 else:
-                    if self.check_intersection(old_child_index, c2, branching_location, new_radii, add_rad) ==  True:
+                    if self.check_intersection(old_child_index, c2, branching_location, new_radii, surface_tol) ==  True:
                         #provides Kamiya with current position and radii as new starting point
                         print "next iteration of Kamiya"
                         previous_result = [correct_beta, branching_location]
@@ -1048,7 +1070,7 @@ class Tree:
                     if np.abs(vol_gdt) < tolerance:
                         #if gradients is under tolerance, and iter_max not reached:                
                         #test intersection on the tree not connected to the new branch
-                        if self.check_intersection(old_child_index, c2, branching_location, new_radii, add_rad) ==  True:
+                        if self.check_intersection(old_child_index, c2, branching_location, new_radii, surface_tol) ==  True:
                             result=[correct_beta, branching_location]  
                             print "connection test succeed!" 
                             nbr = iterat*sampling_n*3
@@ -1059,7 +1081,7 @@ class Tree:
                             print "intersection test failed"
                             return code, False, 0., result, old_child_index, new_radii
                     else:
-                        if self.check_intersection(old_child_index, c2, branching_location, new_radii, add_rad) ==  True:
+                        if self.check_intersection(old_child_index, c2, branching_location, new_radii, surface_tol) ==  True:
                             #provides Kamiya with current position and radii as new starting point
                             print "next iteration of Kamiya"
                             previous_result = [correct_beta, branching_location]
@@ -1164,9 +1186,25 @@ class Tree:
      
 
     
-    
-    
-    
+    def no_superposition(self, p0_p1, radii_sum):
+        proj = np.zeros((2,3))
+        for i in range (len(p0_p1)):
+            pot = round(self.get_h(p0_p1[i]),3)
+            if pot > LV_INNER_WALL or pot < 0.:
+                return False
+            if pot > LV_OUTER_WALL:
+                seg_end = self.short_segmt_end(p0_p1[i], 40, False)
+                proj[i] = self.dist_to_lv_via_sampling_inv(p0_p1[i], seg_end)
+            else:
+                seg_end =self.short_segmt_end(p0_p1[i], 40, True)
+                proj[i] = self.dist_to_lv_via_sampling(p0_p1[i], seg_end)
+        dist = cco_3df.length(proj[0]-proj[1], self.voxel_size)
+        print "dist between proj point", dist, "radii sum", radii_sum
+        if (dist > radii_sum):
+            return True
+        else:
+            return False
+                
     # add the two nodes and update tree
     def add_connection(self, old_child_index, new_child_location, branching_location, betas, volume):
 

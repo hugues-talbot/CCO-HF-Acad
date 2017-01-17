@@ -105,8 +105,8 @@ timing = True
 store_data = True
 parallelized = False
 generate_obj = True
-filename = "./Results/PropLength"
-name_filemaya = "PropLengthF1_5"
+filename = "./Results/SuperpDetec"
+name_filemaya = "SuperpDetec"
 path_out = "C:/Users/cjaquet/Documents/SynthTreeData/3c9e679d-2eab-480c-acaa-31da12301b0a/ResultsForMaya/"
 ktermbreak = len(sources) + 100
 NTerm = 500 
@@ -244,10 +244,10 @@ if True:
                     break
                 if kterm%10 == 0:
 #                if kterm < 61 :
-                    cv.write_json(forest,model_matrix,path_out + "NForest%i.json" %kterm)
-                if kterm>70 and kterm%5==0:
-                    cv.write_json(forest,model_matrix,path_out + "NForest%i.json" %kterm)
-#                    name =filename+"_F_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)
+                    cv.write_json(forest,model_matrix,path_out + "SpForest%i.json" %kterm)
+#                if kterm>70 and kterm%5==0:
+#                    cv.write_json(forest,model_matrix,path_out + "SpForest%i.json" %kterm)
+##                    name =filename+"_F_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)
 #                    pickle.dump(forest, open(name + ".p", "wb"))
             else:
                 print "failed to add connection on tree"

@@ -598,7 +598,7 @@ class Forest:
 #                    if surface_tol > 0.:
 #                        add_rad = add_rad + current_tree.mid_point_dist_to_lv(beta_and_bif_location[1], np.array([parent_coord, old_child_coord, new_location]))
                     
-                    intersect = tree.check_intersection_external_seg(old_child_coord, parent_coord, new_location, beta_and_bif_location[1], new_radii_rescaled, add_rad)
+                    intersect = tree.check_intersection_external_seg(old_child_coord, parent_coord, new_location, beta_and_bif_location[1], new_radii_rescaled, surface_tol)
                     if (intersect == False):
                         no_intersection = False
                         break

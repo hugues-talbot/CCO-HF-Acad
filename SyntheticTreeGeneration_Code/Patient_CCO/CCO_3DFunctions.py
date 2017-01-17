@@ -212,16 +212,16 @@ def closestDistanceBetweenLines(a0,a1,b0,b1,clampAll=False,clampA0=False,clampA1
     return pA,pB,d
     
 #test if segment ab intersect with cd considering their respective width
-def no_overlap(point_a, point_b, point_c, point_d, width_ab, width_cd, vox_size):
+def no_intersection(point_a, point_b, point_c, point_d, width_ab, width_cd, vox_size):
     p1,p0,dist = closestDistanceBetweenLines(point_a, point_b,point_c,point_d, True)
         
     #if np.all(dist / vox_size > (width_ab + width_cd)/vox_size):
     if dist > (width_ab + width_cd):
         #print "dist / vox size", dist / vox_size, "width (width_ab + width_cd)/vox_size", (width_ab + width_cd)/vox_size
         print "p1", p1 , "p0", p0 , "dist ", dist , "(width_ab + width_cd)", (width_ab + width_cd)
-        return True
+        return True, p0 / vox_size, p1 /vox_size
     else:
-        return False
+        return False, p0 / vox_size, p1 / vox_size
 #    if dist < (width_ab + width_cd):
 #        return False
 #    else :
