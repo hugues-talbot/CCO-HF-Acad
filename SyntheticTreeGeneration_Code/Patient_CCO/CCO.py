@@ -243,8 +243,8 @@ if True:
                 if (kterm == ktermbreak):
                     break
                 if kterm%10 == 0:
-#                if kterm > 59 :
-                    cv.write_json(forest,model_matrix,path_out + "SpForest%i.json" %kterm)
+#                if kterm > 70 :
+                    cv.write_json(forest,model_matrix,path_out + "DebugSpForest%i.json" %kterm)
 #                if kterm>70 and kterm%5==0:
 #                    cv.write_json(forest,model_matrix,path_out + "SpForest%i.json" %kterm)
 ##                    name =filename+"_F_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)

@@ -658,12 +658,15 @@ class Tree:
                     print "going away from lv or crossing concavity", val, "parent", parent_h
                     return False
             if (parent_out_centerline):
+                print "fmm val", self.get_fmm(loc), "rounded", np.round(self.get_fmm(loc),3)
                 if (self.outside_segmented_vessels(loc, DIST_TO_CENTERLINE) == False):
                     print "inside segmented vessels", "sample", i, "over", n
                     print "value", self.get_fmm(loc)
                     print "seg bchg val", self.get_fmm(seg_pt1), "c ", self.get_fmm(seg_pt2)
                     print "parent out centerline", parent_out_centerline
                     return False
+                else:
+                    print "outside segmented vessel"
         return True
                     
     def find_first_point_out_seg_vessels(self, seg_pt1, seg_pt2, n):
@@ -741,14 +744,16 @@ class Tree:
         print "concavity test old new location segment"
         if surface_tol > 0. and self.outside_segmented_vessels(branching_location, DIST_TO_CENTERLINE) == False:
             #find first point out , and test the rest of segment test half of segment
-            get_out, coord = self.find_first_point_out_seg_vessels(branching_location, c2, sampling_n)
+            subset = np.ceil(cco_3df.length(branching_location-c2, self.voxel_size) / 0.5)
+            get_out, coord = self.find_first_point_out_seg_vessels(branching_location, c2, subset)
             if get_out:
-                print "seg_goes out"
+                print "seg_goes out", "sampling n", sampling_n
+                print "whole seg",cco_3df.length(branching_location-c2, self.voxel_size),"out of vessel", cco_3df.length(coord-c2, self.voxel_size)
                 if (self.sample_and_test(coord, c2, sampling_n, val, True, surface_tol)) == False:
                     return False
             else:
                 print "test without dist map"            
-                if (self.sample_and_test(branching_location, c2, sampling_n/2, val, False, surface_tol)) == False:
+                if (self.sample_and_test(branching_location, c2, sampling_n, val, False, surface_tol)) == False:
                     return False
             
         else:
