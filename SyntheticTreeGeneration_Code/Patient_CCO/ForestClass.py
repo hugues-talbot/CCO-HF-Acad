@@ -146,8 +146,8 @@ class Forest:
             ratio = biggest_flow / tree.final_q_perf
             if tree.get_q_perf_k() * ratio <= current_flow :
                 tree.set_activity(True)
-	    else:
-		tree.set_activity(False)
+            else:
+                tree.set_activity(False)
 		 
     
     def new_pos_inside_sqr(self,source_loc, dist_max):

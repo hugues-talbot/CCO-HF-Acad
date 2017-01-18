@@ -1188,19 +1188,45 @@ class Tree:
     
     def no_superposition(self, p0_p1, radii_sum):
         proj = np.zeros((2,3))
-        for i in range (len(p0_p1)):
-            pot = round(self.get_h(p0_p1[i]),3)
+        target_spe = -1
+        if self.is_on_surface(p0_p1[0], LV_OUTER_WALL):
+            ref = self.get_h(p0_p1[0])
+            target_spe = 0
+            obj = 1
+        else:
+            if self.is_on_surface(p0_p1[1], LV_OUTER_WALL):
+                ref = self.get_h(p0_p1[1])
+                target_spe = 1
+                obj = 0
+        if target_spe >= 0: # if one point is already on surface try to get close to pot value
+            proj[target_spe] = p0_p1[target_spe]
+            pot = round(self.get_h(p0_p1[obj]),3)
             if pot > LV_INNER_WALL or pot < 0.:
                 return False
-            if pot > LV_OUTER_WALL:
-                seg_end = self.short_segmt_end(p0_p1[i], 40, False)
-                proj[i] = self.dist_to_lv_via_sampling_inv(p0_p1[i], seg_end)
+            if pot > ref:
+                seg_end = self.short_segmt_end(p0_p1[obj], 40, False)
+                proj[obj] = self.dist_to_target_via_sampling_inv(p0_p1[obj], seg_end, ref)
             else:
-                seg_end =self.short_segmt_end(p0_p1[i], 40, True)
-                proj[i] = self.dist_to_lv_via_sampling(p0_p1[i], seg_end)
+                seg_end = self.short_segmt_end(p0_p1[obj], 40, True)
+                proj[obj] = self.dist_to_target_via_sampling(p0_p1[obj], seg_end, ref)
+        else:                                  
+            for i in range (len(p0_p1)):
+                pot = round(self.get_h(p0_p1[i]),3)
+                if pot > LV_INNER_WALL or pot < 0.:
+                    return False
+                
+                if pot > LV_OUTER_WALL:
+                    seg_end = self.short_segmt_end(p0_p1[i], 40, False)
+                    proj[i] = self.dist_to_lv_via_sampling_inv(p0_p1[i], seg_end)
+                else:
+                    seg_end =self.short_segmt_end(p0_p1[i], 40, True)
+                    proj[i] = self.dist_to_lv_via_sampling(p0_p1[i], seg_end)
+        
         dist = cco_3df.length(proj[0]-proj[1], self.voxel_size)
         print "dist between proj point", dist, "radii sum", radii_sum
-        if (dist > radii_sum):
+        print "p0 proj h", self.get_h(proj[0]), "p1 proj h", self.get_h(proj[1]) 
+        
+        if (dist > 2 + np.abs(self.get_h(proj[0]) - self.get_h(proj[1]))*10):
             return True
         else:
             return False
