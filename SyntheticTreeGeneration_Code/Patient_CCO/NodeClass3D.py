@@ -31,6 +31,7 @@ UPDATED_DOUBLE_FAC = UPDATED_FAC *0.5
 DIST_TO_CENTERLINE = 1.5
 LV_INNER_WALL = 2.0
 LV_OUTER_WALL = 1.0
+RAY_LENGTH = 40
 
 TARGET_SURFACE = 0.02
 class Node:
@@ -495,9 +496,9 @@ class Tree:
                 no_intersect, p0, p1 = cco_3df.no_intersection(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, branching_location*self.voxel_size, parent_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[0], self.voxel_size)
                 if no_intersect ==  False:
                     return False
-                    if surface_tol > 0:
-                        if (self.no_superposition(np.array([p0,p1]), radius_i_rescaled + new_branches_radii_rescaled[0])) == False:
-                            return False
+                if surface_tol > 0:
+                    if (self.no_superposition(np.array([p0,p1]), radius_i_rescaled + new_branches_radii_rescaled[0])) == False:
+                        return False
                             
                 no_intersect, p0, p1 = cco_3df.no_intersection(i.coord*self.voxel_size, parent_i.coord*self.voxel_size, old_child_location*self.voxel_size, branching_location*self.voxel_size, radius_i_rescaled, new_branches_radii_rescaled[1], self.voxel_size)
                 if no_intersect == False:
@@ -597,12 +598,12 @@ class Tree:
             return midp
         if self.get_h(midp) < target_w:
             print "midp via sampling"
-            seg_end = self.short_segmt_end(midp,40, True)
-            starting_point = self.dist_to_target_via_sampling(midp, seg_end, target_w)
+            seg_end = self.short_segmt_end(midp,RAY_LENGTH, True)
+            starting_point = self.dist_to_target_via_sampling(midp, seg_end, target_w, RAY_LENGTH*2)
             
         else:
-            seg_end = self.short_segmt_end(midp,40, False)
-            starting_point = self.dist_to_target_via_sampling_inv(midp, seg_end, target_w)
+            seg_end = self.short_segmt_end(midp,RAY_LENGTH, False)
+            starting_point = self.dist_to_target_via_sampling_inv(midp, seg_end, target_w, RAY_LENGTH*2)
             
         print "starting point", starting_point
         return starting_point
@@ -658,7 +659,7 @@ class Tree:
                     print "going away from lv or crossing concavity", val, "parent", parent_h
                     return False
             if (parent_out_centerline):
-                print "fmm val", self.get_fmm(loc), "rounded", np.round(self.get_fmm(loc),3)
+                #print "fmm val", self.get_fmm(loc), "rounded", np.round(self.get_fmm(loc),3)
                 if (self.outside_segmented_vessels(loc, DIST_TO_CENTERLINE) == False):
                     print "inside segmented vessels", "sample", i, "over", n
                     print "value", self.get_fmm(loc)
@@ -671,8 +672,10 @@ class Tree:
                     
     def find_first_point_out_seg_vessels(self, seg_pt1, seg_pt2, n):
         p1p2_vec = seg_pt2 - seg_pt1
+        print "find first point out vessel, n", n
         for i in range (1,int(n)):
             loc = seg_pt1 + (i / float(n)) * p1p2_vec
+            print "val fmm", self.get_fmm(loc)
             if (self.outside_segmented_vessels(loc, DIST_TO_CENTERLINE) == True):
                 return True, loc
         return False, np.zeros(3)
@@ -744,7 +747,7 @@ class Tree:
         print "concavity test old new location segment"
         if surface_tol > 0. and self.outside_segmented_vessels(branching_location, DIST_TO_CENTERLINE) == False:
             #find first point out , and test the rest of segment test half of segment
-            subset = np.ceil(cco_3df.length(branching_location-c2, self.voxel_size) / 0.5)
+            subset = np.ceil(cco_3df.length(branching_location-c2, self.voxel_size) / 0.25)
             get_out, coord = self.find_first_point_out_seg_vessels(branching_location, c2, subset)
             if get_out:
                 print "seg_goes out", "sampling n", sampling_n
@@ -771,11 +774,12 @@ class Tree:
     
    
         
-    def dist_to_target_via_sampling(self, start_point_small_pot,end_point, target):
-        n=40
+    def dist_to_target_via_sampling(self, start_point_small_pot,end_point, target, nsub):
+        #n=40
         p1p2_vec = end_point - start_point_small_pot 
         starting_point = start_point_small_pot 
-            
+        length_vec = cco_3df.length(p1p2_vec, self.voxel_size)
+        n = nsub#int(np.ceil(length_vec/0.5 ))    
         previous_val = 0.
         for i in range (n):
             loc = starting_point + (i / float(n)) * p1p2_vec
@@ -792,16 +796,21 @@ class Tree:
                 else:
                     if val > target:
                         print "zooming", val
-                        return self.dist_to_target_via_sampling(starting_point + (float(i-1)/n)*p1p2_vec, starting_point + (float(i)/n)*p1p2_vec, target)   
+                        return self.dist_to_target_via_sampling(starting_point + (float(i-1)/n)*p1p2_vec, starting_point + (float(i)/n)*p1p2_vec, target, nsub)   
                     else:
-                        print "errroor: previous val:", previous_val, "val", val
-                        return np.zeros(3)
+                        print "found weird", val #need to reoriente
+                        new_end = self.short_segmt_end(starting_point + (float(i)/n)*p1p2_vec, length_vec, previous_val<1.)
+                        print "end point", end_point, "new end", new_end
+                        return self.dist_to_lv_via_sampling(starting_point + (float(i)/n)*p1p2_vec, new_end, nsub)   
+
         print "rror", val, "n", n, 
         return np.zeros(3)
         
-    def dist_to_target_via_sampling_inv(self, start_point_high_pot,end_point, target):
-        n=40
+    def dist_to_target_via_sampling_inv(self, start_point_high_pot,end_point, target, nsub):
+        #n=SUBSAMPLE
         p1p2_vec = end_point - start_point_high_pot 
+        length_vec = cco_3df.length(p1p2_vec, self.voxel_size)
+        n = nsub#int(np.ceil(length_vec/0.5 ))
         starting_point = start_point_high_pot
         previous_val = 2.
         for i in range (n):
@@ -819,7 +828,7 @@ class Tree:
                 else:
                     if val < target:
                         print "zooming", val
-                        return self.dist_to_target_via_sampling_inv(starting_point + (float(i-1)/n)*p1p2_vec, starting_point + (float(i)/n)*p1p2_vec, target)   
+                        return self.dist_to_target_via_sampling_inv(starting_point + (float(i-1)/n)*p1p2_vec, starting_point + (float(i)/n)*p1p2_vec, target, nsub)   
                     else:
                         print "errroor: previous val:", previous_val, "val", val
                         return np.zeros(3)
@@ -832,14 +841,14 @@ class Tree:
         #get the gdt
         if gdt_dir == False:
             gdt = -gdt
-        length_gdt= cco_3df.length(gdt, self.voxel_size)
+        length_gdt=  np.sqrt(np.sum(gdt**2))#cco_3df.length(gdt, self.voxel_size)
         #print "gdt", gdt, "gdt norm lengt", cco_3df.length(gdt/length_gdt, self.voxel_size)
-        seg_end = source_point + gdt/length_gdt* max_dist
+        seg_end = source_point + gdt/length_gdt* max_dist/self.voxel_size
         outside =  (self.interp_h(seg_end*self.voxel_size) < 0.)
         i = 1.2
         if outside:           
             while (outside):               
-                seg_end = source_point + gdt/length_gdt* max_dist *(1./i)
+                seg_end = source_point + gdt/length_gdt* max_dist /self.voxel_size*(1./i)
                 outside = (self.interp_h(seg_end*self.voxel_size) < 0.)
                 i = i + 0.1 
         print "out of while", i
@@ -850,16 +859,15 @@ class Tree:
     def find_surface_projection(self, point):
         #get the point on surface
         ins, val = self.inside_heart(point)
-        n_l = 40
         if val > 0.:
             if val > 1.: #inside lv
                 print "find surf proj in lv"
-                seg_end = self.short_segmt_end(point, n_l, False)
-                surf_point = self.dist_to_lv_via_sampling(seg_end, point)
+                seg_end = self.short_segmt_end(point, RAY_LENGTH, False)
+                surf_point = self.dist_to_lv_via_sampling_inv(point, seg_end, RAY_LENGTH*2)
             else: #inside heart
                 print "find surf proj in heart"
-                seg_end = self.short_segmt_end(point, n_l, True)
-                surf_point = self.dist_to_lv_via_sampling(point, seg_end)
+                seg_end = self.short_segmt_end(point, RAY_LENGTH, True)
+                surf_point = self.dist_to_lv_via_sampling(point, seg_end, RAY_LENGTH*2)
             return surf_point
         print "out of heart"
         return np.zeros(3)
@@ -1129,16 +1137,15 @@ class Tree:
     
     
     def measure_dist_to_lv(self, source):
-        n=40
-        seg_end = self.short_segmt_end(source, n, True)
+        seg_end = self.short_segmt_end(source, RAY_LENGTH, True)
         print "short seg emnd found"
-        closest_to_lv = self.dist_to_lv_via_sampling(source, seg_end)
+        closest_to_lv = self.dist_to_lv_via_sampling(source, seg_end, RAY_LENGTH*2)
         print "closest point", closest_to_lv                 
         return cco_3df.length(closest_to_lv - source, self.voxel_size)
              
         
-    def dist_to_lv_via_sampling(self, start_point,end_point):
-        n=40
+    def dist_to_lv_via_sampling(self, start_point,end_point, nsub):
+        n=nsub
         p1p2_vec = end_point - start_point
         previous_val = 0.
         for i in range (n):
@@ -1156,15 +1163,18 @@ class Tree:
                 else:
                     if val > LV_OUTER_WALL:
                         print "zooming", val
-                        return self.dist_to_lv_via_sampling(start_point + (float(i-1)/n)*p1p2_vec, start_point + (float(i)/n)*p1p2_vec)   
+                        return self.dist_to_lv_via_sampling(start_point + (float(i-1)/n)*p1p2_vec, start_point + (float(i)/n)*p1p2_vec, nsub)   
                     else:
-                        print "errroor: previous val:", previous_val, "val", val
-                        return np.zeros(3)
+                        print "found weird", val
+                        new_end = self.short_segmt_end(start_point + (float(i)/n)*p1p2_vec, cco_3df.length(p1p2_vec, self.voxel_size), previous_val<1.)
+                        print "end point", end_point, "new end", new_end
+                        return self.dist_to_lv_via_sampling(start_point + (float(i)/n)*p1p2_vec, new_end, nsub)   
+
         print "rror", "forest", val, "start", start_point
         return np.zeros(3)
         
-    def dist_to_lv_via_sampling_inv(self, start_point, end_point): #startpoint inside lv
-        n=40
+    def dist_to_lv_via_sampling_inv(self, start_point, end_point, nsub): #startpoint inside lv
+        n=nsub
         p1p2_vec = end_point - start_point
         previous_val = 2.
         for i in range (n):
@@ -1177,12 +1187,12 @@ class Tree:
             else:
                 if (val <= previous_val and val > LV_OUTER_WALL):
                     previous_val = val   
-                    print "continue", val
+                    print "continue dist_to_lv_via_sampling_inv", val
                     continue
                 else:
                     if val < LV_OUTER_WALL:
                         print "zooming", val
-                        return self.dist_to_lv_via_sampling_inv(start_point + (float(i-1)/n)*p1p2_vec, start_point + (float(i)/n)*p1p2_vec)   
+                        return self.dist_to_lv_via_sampling_inv(start_point + (float(i-1)/n)*p1p2_vec, start_point + (float(i)/n)*p1p2_vec, nsub)   
                     else:
                         print "errroor: previous val:", previous_val, "val", val
                         return np.zeros(3)
@@ -1194,13 +1204,16 @@ class Tree:
     def no_superposition(self, p0_p1, radii_sum):
         proj = np.zeros((2,3))
         target_spe = -1
+        h0_h1=np.zeros(2)
+        h0_h1[0] = self.get_h(p0_p1[0])
+        h0_h1[1] = self.get_h(p0_p1[1])
         if self.is_on_surface(p0_p1[0], LV_OUTER_WALL):
-            ref = self.get_h(p0_p1[0])
+            ref = h0_h1[0]
             target_spe = 0
             obj = 1
         else:
             if self.is_on_surface(p0_p1[1], LV_OUTER_WALL):
-                ref = self.get_h(p0_p1[1])
+                ref = h0_h1[1]
                 target_spe = 1
                 obj = 0
         if target_spe >= 0: # if one point is already on surface try to get close to pot value
@@ -1209,11 +1222,11 @@ class Tree:
             if pot > LV_INNER_WALL or pot < 0.:
                 return False
             if pot > ref:
-                seg_end = self.short_segmt_end(p0_p1[obj], 40, False)
-                proj[obj] = self.dist_to_target_via_sampling_inv(p0_p1[obj], seg_end, ref)
+                seg_end = self.short_segmt_end(p0_p1[obj], RAY_LENGTH, False)
+                proj[obj] = self.dist_to_target_via_sampling_inv(p0_p1[obj], seg_end, ref, RAY_LENGTH*2)
             else:
-                seg_end = self.short_segmt_end(p0_p1[obj], 40, True)
-                proj[obj] = self.dist_to_target_via_sampling(p0_p1[obj], seg_end, ref)
+                seg_end = self.short_segmt_end(p0_p1[obj], RAY_LENGTH, True)
+                proj[obj] = self.dist_to_target_via_sampling(p0_p1[obj], seg_end, ref,RAY_LENGTH*2)
         else:                                  
             for i in range (len(p0_p1)):
                 pot = round(self.get_h(p0_p1[i]),3)
@@ -1221,17 +1234,18 @@ class Tree:
                     return False
                 
                 if pot > LV_OUTER_WALL:
-                    seg_end = self.short_segmt_end(p0_p1[i], 40, False)
-                    proj[i] = self.dist_to_lv_via_sampling_inv(p0_p1[i], seg_end)
+                    seg_end = self.short_segmt_end(p0_p1[i], RAY_LENGTH, False)
+                    proj[i] = self.dist_to_lv_via_sampling_inv(p0_p1[i], seg_end, RAY_LENGTH*2)
                 else:
-                    seg_end =self.short_segmt_end(p0_p1[i], 40, True)
-                    proj[i] = self.dist_to_lv_via_sampling(p0_p1[i], seg_end)
+                    seg_end =self.short_segmt_end(p0_p1[i], RAY_LENGTH, True)
+                    proj[i] = self.dist_to_lv_via_sampling(p0_p1[i], seg_end, RAY_LENGTH*2)
         
         dist = cco_3df.length(proj[0]-proj[1], self.voxel_size)
         print "dist between proj point", dist, "radii sum", radii_sum
-        print "p0 proj h", self.get_h(proj[0]), "p1 proj h", self.get_h(proj[1]) 
-        
-        if (dist > 2 + np.abs(self.get_h(proj[0]) - self.get_h(proj[1]))*10):
+        #print "p0 proj h", self.get_h(proj[0]), "p1 proj h", self.get_h(proj[1]) 
+        print "h0h1", h0_h1
+        print "threshold", 1. + np.abs(h0_h1[0]-LV_OUTER_WALL)*5 + np.abs(h0_h1[1] - LV_OUTER_WALL)*5
+        if (dist > 1. + np.abs(h0_h1[0]-LV_OUTER_WALL)*5. + np.abs(h0_h1[1] - LV_OUTER_WALL)*5.):
             return True
         else:
             return False

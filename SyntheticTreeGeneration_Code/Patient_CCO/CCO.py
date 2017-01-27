@@ -35,7 +35,7 @@ if os.path.isfile(source_path):
     sources = np.load(source_path)
 else:
     print "generate sources"
-    sources = cv.get_data_fp("./Inputs/SourcesCorrectedWithDiam.txt") #LADLCXPressureAndFlowInputs
+    sources = cv.get_data_fp("./Inputs/SourcesCorrectedWithDiam.txt") #AllSourcesInit, #LADLCXPressureAndFlowInputs
     np.save(source_path, sources)
        
 # dtype_r=[("WorldCoordX", float),("WorldCoordY", float), ("WorldCoordZ", float),
@@ -65,8 +65,17 @@ if os.path.isfile(hp_path):
     heart_potential = np.load(hp_path)
 else:
     print "generate heart potential"
-    heart_potential = cv.generate_heart_potential("./Inputs/heart.mha","./Inputs/heart.mha")
+    heart_potential = cv.generate_heart_potential("./Inputs/heart.mha","./Inputs/lv.mha")
     np.save(hp_path, heart_potential)
+    
+la_path = "./Inputs/l_a.npy"
+if os.path.isfile(la_path):
+    left_a = np.load(la_path)
+else:
+    print "load left atrium mha"
+    left_a = cv.open_mha_mha("./Inputs/left_atrium.mha")
+    np.save(la_path, left_a)
+#heart_potential[np.where(left_a==1)]=2. #to avoid segments crossing at top of concavity
     
 # LV inner vs outer surface potential
 lv_path = "./Inputs/LV_potential.npy"
@@ -105,12 +114,12 @@ timing = True
 store_data = True
 parallelized = False
 generate_obj = True
-filename = "./Results/SuperpDetec"
-name_filemaya = "SuperpDetec"
+filename = "./Results/Dbg_f"
+name_filemaya = "Dbg_f"
 path_out = "C:/Users/cjaquet/Documents/SynthTreeData/3c9e679d-2eab-480c-acaa-31da12301b0a/ResultsForMaya/"
-ktermbreak = len(sources) + 100
+ktermbreak = len(sources) + 196
 NTerm = 500 
-InterTerm = len(sources) +100
+InterTerm = len(sources) + 196
 
 if timing:
     debut = time.time()
@@ -127,14 +136,14 @@ if False:
     P_term = 8.38e3 #(Pa) 
     Q_term = Q_perf / NTerm
     r_f = np.power(3*lv_volume /(4*np.pi),1./3)
-    forest = fclass.Forest(pickle.load(open("./Results/NewVersions_Nt500_kt79_s42.p")), NTerm, Q_perf, P_term, viscosity, lv_volume, r_f, vox_size, heart_potential, lv_potential, lv_pot_zero,segm_vessel_dist, lv_max_curvature_r, lv_potential.shape, gamma)
+    forest = fclass.Forest(pickle.load(open("./Results/NewVersions_Nt500_kt79_s42.p")), NTerm, Q_perf, P_term, viscosity, lv_volume, r_f, vox_size, heart_potential, left_a, lv_pot_zero,segm_vessel_dist, lv_max_curvature_r, lv_potential.shape, gamma)
     forest.update_forest_length_factor()    
     cv.write_json(forest,model_matrix,path_out +"ForestNewRadius.json")
 
 
 
 if True:
-  
+    
     seed = 42
     np.random.seed(seed)
     process_nb = 16
@@ -147,22 +156,57 @@ if True:
     N_con = 20
 
     r_f = np.power(3*lv_volume /(4*np.pi),1./3)
-    forest = fclass.Forest([], NTerm, Q_perf, P_term, viscosity, lv_volume, r_f, vox_size, heart_potential, lv_potential, lv_pot_zero,segm_vessel_dist, lv_max_curvature_r, lv_potential.shape, gamma)
+    forest = fclass.Forest([], NTerm, Q_perf, P_term, viscosity, lv_volume, r_f, vox_size, heart_potential, left_a, lv_pot_zero,segm_vessel_dist, lv_max_curvature_r, lv_potential.shape, gamma)
     print "forest created"
     #check all sources location are inside perf territory
+    # and at a max distance to lv:
+    
+        
+    
+    
     #then add them to forest
     ind = 0
+    source_to_be_deleted=[]
     for source in sources: #check if they are inside heart or lv
+        source_coord=np.array([source["VoxelCoordZ"], source["VoxelCoordY"], source["VoxelCoordX"]])
+        source_vect_coord=  np.array([source["VectVoxelCoordZ"], source["VectVoxelCoordY"], source["VectVoxelCoordX"]])
         ins=True
-        if ind >0 :
-            ins, val = forest.inside_heart(np.array([source["VoxelCoordZ"], source["VoxelCoordY"], source["VoxelCoordX"]]))
-        if (ins==True or (val > 0.999)):
-            forest.create_tree(np.array([source["VoxelCoordZ"], source["VoxelCoordY"], source["VoxelCoordX"]]), np.array([source["VectVoxelCoordZ"], source["VectVoxelCoordY"], source["VectVoxelCoordX"]]), source["Flow"], source["Pressure"], source["Diameter"])
+#        if ind >0 :
+#             ins, val = forest.inside_heart(np.array([source["VoxelCoordZ"], source["VoxelCoordY"], source["VoxelCoordX"]]))
+#        if (ins==True or (val > 0.999)):
+#             forest.create_tree(np.array([source["VoxelCoordZ"], source["VoxelCoordY"], source["VoxelCoordX"]]), np.array([source["VectVoxelCoordZ"], source["VectVoxelCoordY"], source["VectVoxelCoordX"]]), source["Flow"], source["Pressure"], source["Diameter"])
+#             ind = ind + 1 
+#        else:
+#            print "source out of heart and lv, need to update the potential to integrate it", val
+#            break
+        ins, val = forest.inside_heart(source_coord)
+#        if ind > ktermbreak:
+#            print "out source", ind
+#            break
+        if (val >=1):
+            forest.create_tree(source_coord,source_vect_coord, source["Flow"], source["Pressure"], source["Diameter"])
             ind = ind + 1 
         else:
-            print "source out of heart and lv, need to update the potential to integrate it", val
-            break
-    print "trees added"
+            if ins==True :
+                #test dist to lv
+                end= forest.short_segmt_end(source_coord, 50., True,np.zeros(3))
+                closest_to_lv = forest.dist_to_lv_via_sampling(source_coord, end, 100)
+                dist_lv = cco_3df.length(closest_to_lv - source_coord, vox_size)
+                print "ind", ind,"dist_lv", dist_lv
+                if dist_lv > 15:
+                    source_to_be_deleted.append(ind)
+                    ind = ind+1
+                else:
+                    forest.create_tree(source_coord,source_vect_coord, source["Flow"], source["Pressure"], source["Diameter"])
+                    ind = ind+1
+            else:
+                print "source out of heart and lv, need to update the potential to integrate it", val
+                source_to_be_deleted.append(ind)
+                ind = ind+1
+                break
+        
+    print "trees added", len(forest.trees)
+    print "source to be deleted", source_to_be_deleted
     #first segment end: randomly picked inside perfusion surface
     if InterTerm >0:          
         surface = True
@@ -242,9 +286,11 @@ if True:
                 d_tresh_factor = 1.
                 if (kterm == ktermbreak):
                     break
-                if kterm%10 == 0:
+                if kterm%10 == 0 :
 #                if kterm > 70 :
-                    cv.write_json(forest,model_matrix,path_out + "DebugSpForest%i.json" %kterm)
+                    cv.write_json(forest,model_matrix,path_out + "DbgF%i.json" %kterm)
+                if kterm == InterTerm:
+                    cv.write_json(forest,model_matrix,path_out + "DbgF%i.json" %kterm)                    
 #                if kterm>70 and kterm%5==0:
 #                    cv.write_json(forest,model_matrix,path_out + "SpForest%i.json" %kterm)
 ##                    name =filename+"_F_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)

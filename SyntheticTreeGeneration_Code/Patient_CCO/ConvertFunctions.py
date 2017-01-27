@@ -88,8 +88,10 @@ def write_json(forest, matrix, filename):
     file_out.close()
     return True
 
-
-
+def RnCoordToWorld(point, matrix, vox_size):
+    RoCoord= point/vox_size
+    world_coord = voxel_to_world(RoCoord[::-1], matrix)
+    return world_coord
 if False:
     N=50
     colors = [(1.0,1.0,1.0)]
@@ -126,7 +128,7 @@ def generate_lv_potential(filepath):
     ###generate inner marker:  light opening(outermarker -heavy closing(lv))
     closing_fac = 100
     rsult = sitk.BinaryMorphologicalClosing(lv_im, closing_fac)
-    sub = rsult - lv
+    sub = sitk.GetArrayFromImage(rsult) - lv
     sub_im = sitk.GetImageFromArray(sub.astype(int))
     sub_open = sitk.BinaryMorphologicalOpening(sub_im, 5)
     sub_a = sitk.GetArrayFromImage(sub_open)
@@ -139,8 +141,9 @@ def generate_lv_potential(filepath):
     
     mask = (in_marker + out_marker) +1
     mask[np.where(mask>1)]=0 
-    cc3df.generate_potential(mask, inner[40:200,100:,150:], out_inv[40:200,100:,150:])
-    dimb = inner.shape
+    mask =mask.astype('float64')
+    pot = cc3df.generate_potential(mask, in_marker, out_inv[40:200,100:,150:])
+    dimb = in_marker.shape
     final_size = np.zeros(dimb)-1
     final_size[40:200,100:,150:] = pot
     return final_size
@@ -157,15 +160,15 @@ def generate_heart_potential(filepath1, filepath2):
     heart_mask[np.where(heart_mask>1)]=0     
     lv_mask = binary_erosion(lv[10:int(dim_h[0]) -2,100:int(dim_h[1])-65, 32:int(dim_h[2])-50], np.ones((5,5,5)))
     mask = (lv_mask + heart_mask) 
+    mask =mask.astype('float64')
 
-    
     inner_marker = lv[10:int(dim_h[0]) -2,100:int(dim_h[1])-65, 32:int(dim_h[2])-50]
     heart_small_dil =  binary_dilation(heart, np.ones((10,10,10)))
     heart_marker = heart_small_dil +1
     heart_marker[np.where(heart_marker>1)]=0 
     outer_marker = heart_marker[10:int(dim_h[0]) -2,100:int(dim_h[1])-65, 32:int(dim_h[2])-50]
-    markers = outer_marker*2 + inner_marker
-    
+    markers = outer_marker*2. + inner_marker
+    print "markers type", markers.dtype
     result = random_walker(mask, markers, copy =True, return_full_prob = True, mode= 'cg_mg')
     
     result[0][np.where(result[0] == 0.)] = -1 

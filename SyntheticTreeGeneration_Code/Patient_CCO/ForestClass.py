@@ -19,7 +19,7 @@ LV_INNER_WALL = 2.0
 LV_OUTER_WALL = 1.0
 
 class Forest:
-    def __init__(self, trees, n_term, q_perf, p_term, visc, v_perf, r_f, vox_size, heart_w, chamber_w,chamber_w_z, vs_dist, max_curv_radius, im_size, gamma):
+    def __init__(self, trees, n_term, q_perf, p_term, visc, v_perf, r_f, vox_size, heart_w, left_a,chamber_w_z, vs_dist, max_curv_radius, im_size, gamma):
         self.trees = trees
         self.n_term = n_term
         self.final_q_perf = q_perf
@@ -36,9 +36,9 @@ class Forest:
         self.gamma = gamma
         self.voxel_size = vox_size
         self.heart_w = heart_w
-        self.lv_w = chamber_w
+        self.l_a = left_a
         self.empty_grid=(np.arange(0,im_size[0]*vox_size[0],vox_size[0]),np.arange(0,im_size[1]*vox_size[1],vox_size[1]), np.arange(0,im_size[2]*vox_size[2],vox_size[2]))
-        self.interp_h =   RegularGridInterpolator(self.empty_grid,heart_w + chamber_w_z, bounds_error=False, fill_value = -2.)
+        self.interp_h =   RegularGridInterpolator(self.empty_grid,heart_w + chamber_w_z + left_a*3., bounds_error=False, fill_value = -2.)
         self.gdt_h = np.gradient(heart_w + chamber_w_z)
         self.interp_ghx = RegularGridInterpolator(self.empty_grid,self.gdt_h[0])
         self.interp_ghy = RegularGridInterpolator(self.empty_grid,self.gdt_h[1])
@@ -56,20 +56,24 @@ class Forest:
         delta_p = p_perf - self.p_term
         print "delta p of tree", delta_p
         print "tree of index", tree_index
-        if q_perf == 16.2018 or q_perf == 12.0715:
+        if q_perf < 20.: #source along vessel
             #change source location
             #if source outside lv use gdt potential vector direction
             #else (inside lv) use inverse direction
             #use diameter/2 distance
             gdt = np.array([self.trees[0].get_hgx(source_location), self.trees[0].get_hgy(source_location), self.trees[0].get_hgz(source_location)])
-            gdt_norm = gdt / cco_3df.length(gdt, self.voxel_size)
+            gdt_norm_ortho = gdt / cco_3df.length(gdt, self.voxel_size)*self.voxel_size
             pot = self.trees[0].get_h(source_location)
             source_ortho_world = source_location*self.voxel_size
             if pot < LV_OUTER_WALL:
-                new_source_ortho = source_ortho_world + 0.5*diam_ori*gdt_norm
+                new_source_ortho = source_ortho_world + 0.5*diam_ori*gdt_norm_ortho
+                print "dist between ori and new source", cco_3df.length(source_location-new_source_ortho/self.voxel_size, self.voxel_size) 
+                print "0.5*diam", 0.5*diam_ori
                 source_location = new_source_ortho / self.voxel_size
             else:               
-                new_source_ortho = source_ortho_world - 0.5*diam_ori*gdt_norm
+                new_source_ortho = source_ortho_world - 0.5*diam_ori*gdt_norm_ortho
+                print "dist between ori and new source", cco_3df.length(source_location-new_source_ortho/self.voxel_size, self.voxel_size) 
+                print "0.5*diam", 0.5*diam_ori
                 source_location = new_source_ortho / self.voxel_size
                 
         tree = nclass.Tree(tree_index, [], vect_dir, self.q_term, q_perf, delta_p, self.nu, self.v_perf, self.final_perf_radius, self.interp_list, self.voxel_size, self.im_size,self.max_curv_rad, np.max(self.im_size), self.gamma)        
@@ -177,7 +181,7 @@ class Forest:
                 if (ins):#if source inside heart and out lv
                     print "source in heart surface point"
                     if (valu >= LV_OUTER_WALL and valu < LV_INNER_WALL):
-                        position = self.dist_to_lv_via_sampling(source_loc, position)
+                        position = self.dist_to_lv_via_sampling(source_loc, position, int(cco_3df.length(source_loc-position, self.voxel_size)*2))
                         if position[0] == 0. and position[1] == 0.:
                             continue
                         n = tree.calculate_sampling(self.max_curv_rad, position, source_loc, LV_OUTER_WALL)
@@ -363,23 +367,27 @@ class Forest:
         n=40
         seg_end = self.short_segmt_end(source, n, True, np.zeros(3))
         print "short seg emnd found"
-        closest_to_lv = self.dist_to_lv_via_sampling(source, seg_end)
+        closest_to_lv = self.dist_to_lv_via_sampling(source, seg_end,n*2)
         print "closest point", closest_to_lv                 
         return cco_3df.length(closest_to_lv - source, self.voxel_size)
              
         
-    def dist_to_lv_via_sampling(self, start_point,end_point):
-        n=40
+    def dist_to_lv_via_sampling(self, start_point,end_point, nsub):
+        n=nsub
         p1p2_vec = end_point - start_point
+        length_vec = cco_3df.length(p1p2_vec, self.voxel_size)
+        #n = int(np.ceil(length_vec/0.1 ))
         previous_val = 0.
-        for i in range (n):
+        print "n", n, "length_vec", length_vec
+        for i in range (int(n)):
             loc = start_point + (i / float(n)) * p1p2_vec
             ins, val= self.inside_heart(loc)
-            #print "dist to lv via sampling", val
+            print "dist to lv via sampling", val
             if val < (LV_OUTER_WALL + 5*EPS) and val > (LV_OUTER_WALL - 5*EPS):
                 print "found", val
                 return (start_point + (float(i)/n)*p1p2_vec)
             else:
+                print "previous_val", previous_val, "val", val
                 if (val >= previous_val and val < LV_OUTER_WALL):
                     previous_val = val   
                     print "continue", val
@@ -387,21 +395,26 @@ class Forest:
                 else:
                     if val > LV_OUTER_WALL:
                         print "zooming", val
-                        return self.dist_to_lv_via_sampling(start_point + (float(i-1)/n)*p1p2_vec, start_point + (float(i)/n)*p1p2_vec)   
+                        return self.dist_to_lv_via_sampling(start_point + (float(i-1)/n)*p1p2_vec, start_point + (float(i)/n)*p1p2_vec, nsub)   
                     else:
-                        print "errroor: previous val:", previous_val, "val", val
-                        return np.zeros(3)
-        print "rror", "forest", val, "start", start_point
+                        print "found weird", val
+                        new_end = self.short_segmt_end(start_point + (float(i)/n)*p1p2_vec, length_vec, previous_val<1., np.zeros(3))
+                        print "end point", end_point, "new end", new_end
+                        return self.dist_to_lv_via_sampling(start_point + (float(i)/n)*p1p2_vec, new_end, nsub)   
+               
+        print "rror", i, "forest", val, "start", start_point
         return np.zeros(3)
         
-    def dist_to_lv_via_sampling_inv(self, start_point, end_point): #startpoint inside lv
-        n=40
+    def dist_to_lv_via_sampling_inv(self, start_point, end_point, nsub): #startpoint inside lv
+        n=nsub
         p1p2_vec = end_point - start_point
+        #length_vec = cco_3df.length(p1p2_vec, self.voxel_size)
+        #n = int(np.ceil(length_vec/0.1 )) 
         previous_val = 2.
         for i in range (n):
             loc = start_point + (i / float(n)) * p1p2_vec
             ins, val= self.inside_heart(loc)
-            #print "dist to lv via sampling", val
+            print "dist to lv via sampling inv", val
             if val < (LV_OUTER_WALL + 5*EPS) and val > (LV_OUTER_WALL - 5*EPS):
                 print "found", val
                 return (start_point + (float(i)/n)*p1p2_vec)
@@ -413,7 +426,7 @@ class Forest:
                 else:
                     if val < LV_OUTER_WALL:
                         print "zooming", val
-                        return self.dist_to_lv_via_sampling_inv(start_point + (float(i-1)/n)*p1p2_vec, start_point + (float(i)/n)*p1p2_vec)   
+                        return self.dist_to_lv_via_sampling_inv(start_point + (float(i-1)/n)*p1p2_vec, start_point + (float(i)/n)*p1p2_vec, nsub)   
                     else:
                         print "errroor: previous val:", previous_val, "val", val
                         return np.zeros(3)
@@ -425,33 +438,42 @@ class Forest:
         n=40
         seg_end = self.short_segmt_end(source, n, False, np.zeros(3))
         #print "measure_dist_to_lv_from_inside"
-        closest_to_lv = self.dist_to_lv_via_sampling_inv(source, seg_end)
+        closest_to_lv = self.dist_to_lv_via_sampling_inv(source, seg_end, n*2)
         #print "closest point", closest_to_lv                 
         return cco_3df.length(closest_to_lv - source, self.voxel_size)
     
+    def get_hgx(self, location):
+        return float(self.interp_ghx(location*self.voxel_size))
+    
+    def get_hgy(self, location):
+        return float(self.interp_ghy(location*self.voxel_size))  
+        
+    def get_hgz(self, location):
+        return float(self.interp_ghz(location*self.voxel_size))  
         
     def short_segmt_end(self, source_point, max_dist, gdt_dir, tree_vect):
-        gdt = np.array([self.trees[0].get_hgx(source_point), self.trees[0].get_hgy(source_point), self.trees[0].get_hgz(source_point)])
-        gdt_norm = gdt / cco_3df.length(gdt, self.voxel_size)
+        gdt = np.array([self.get_hgx(source_point), self.get_hgy(source_point), self.get_hgz(source_point)])
+        #gdt = np.array([self.trees[0].get_hgx(source_point), self.trees[0].get_hgy(source_point), self.trees[0].get_hgz(source_point)])
+        gdt_norm = gdt / np.sqrt(np.sum(gdt**2))#because in non ortho world cco_3df.length(gdt, self.voxel_size)
         #get the gdt
-        print "short segment end"
+        #print "short segment end"
         if gdt_dir == False:
             gdt_norm = -gdt_norm
 
         if np.all(tree_vect== np.zeros(3)) == False:
-            gdt_norm = (gdt_norm + tree_vect/ cco_3df.length(tree_vect, self.voxel_size)) / 2.
-            
+            gdt_norm = (gdt_norm + tree_vect/np.sqrt(np.sum(tree_vect**2))) / 2.##because in non ortho world cco_3df.length(tree_vect, self.voxel_size
+            print "gdt norm", gdt_norm
 
         #print "gdt", gdt, "gdt norm lengt", cco_3df.length(gdt/length_gdt, self.voxel_size)
-        seg_end = source_point + gdt_norm* max_dist
+        seg_end = source_point + gdt_norm * (max_dist/self.voxel_size)#because in non ortho world
         outside =  (self.interp_h(seg_end*self.voxel_size) < 0.)
         i = 1.2
         if outside:       
             while (outside):               
-                seg_end = source_point + gdt_norm* max_dist *(1./i)
+                seg_end = source_point + gdt_norm* (max_dist/self.voxel_size) *(1./i)#because in non ortho world
                 outside = (self.interp_h(seg_end*self.voxel_size) < 0.)
                 i = i + 0.1 
-        print "out of while", i
+        #print "out of while", i
         return seg_end
         #normalize it
         
@@ -468,8 +490,12 @@ class Forest:
              
         
     def inside_heart(self,location):
-        return self.trees[0].inside_heart(location)
-       
+        pot_val = round(float(self.interp_h(location*self.voxel_size)),3)
+        if (pot_val> 0.) and (pot_val < LV_OUTER_WALL):
+            return True, pot_val
+        else: 
+            return False, pot_val
+#       
     def get_new_location(self, d_tresh_factor, surface_tol):   
         k_term = self.get_fk_term()
         d_tresh, r_pk = cco_3df.calculate_d_tresh_3D(self.r_supp, k_term)
@@ -483,11 +509,11 @@ class Forest:
             if surface_tol > 0.:
                 #get the point on surface
                 ins, val = self.inside_heart(point)
-                n_l = 40
+                n_l = 40.
                 if val > 0.:
                     if val >= LV_OUTER_WALL and val < LV_INNER_WALL: #inside lv
                         seg_end = self.short_segmt_end(point, n_l, False, np.zeros(3))
-                        surf_point = self.dist_to_lv_via_sampling_inv(point, seg_end)
+                        surf_point = self.dist_to_lv_via_sampling_inv(point, seg_end, int(n_l*2))
                     if val < LV_OUTER_WALL: #inside heart
                          print "inside heart but out lv, skipped"
                          continue
