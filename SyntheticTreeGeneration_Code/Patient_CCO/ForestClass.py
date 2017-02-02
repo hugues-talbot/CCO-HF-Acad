@@ -36,9 +36,9 @@ class Forest:
         self.gamma = gamma
         self.voxel_size = vox_size
         self.heart_w = heart_w
-        self.l_a = left_a
         self.empty_grid=(np.arange(0,im_size[0]*vox_size[0],vox_size[0]),np.arange(0,im_size[1]*vox_size[1],vox_size[1]), np.arange(0,im_size[2]*vox_size[2],vox_size[2]))
-        self.interp_h =   RegularGridInterpolator(self.empty_grid,heart_w + chamber_w_z + left_a*3., bounds_error=False, fill_value = -2.)
+        self.l_a =  RegularGridInterpolator(self.empty_grid,left_a*4., method ="nearest", bounds_error=False, fill_value = -2.)        
+        self.interp_h =   RegularGridInterpolator(self.empty_grid,heart_w + chamber_w_z, bounds_error=False, fill_value = -2.)
         self.gdt_h = np.gradient(heart_w + chamber_w_z)
         self.interp_ghx = RegularGridInterpolator(self.empty_grid,self.gdt_h[0])
         self.interp_ghy = RegularGridInterpolator(self.empty_grid,self.gdt_h[1])
@@ -49,7 +49,7 @@ class Forest:
         self.dm_gy = RegularGridInterpolator(self.empty_grid, self.dm_gdt[1])
         self.dm_gz = RegularGridInterpolator(self.empty_grid, self.dm_gdt[2])
         self.dist_max=np.zeros((1,1))
-        self.interp_list=[self.interp_h, self.interp_ghx, self.interp_ghy, self.interp_ghz, self.v_dist_map, self.dm_gx, self.dm_gy, self.dm_gz]
+        self.interp_list=[self.interp_h, self.interp_ghx, self.interp_ghy, self.interp_ghz, self.v_dist_map, self.dm_gx, self.dm_gy, self.dm_gz, self.l_a]
     ##trees should be created according to increasing flow 
     def create_tree(self, source_location, vect_dir, q_perf, p_perf, diam_ori):
         tree_index = len(self.trees)
@@ -408,7 +408,7 @@ class Forest:
     def dist_to_lv_via_sampling_inv(self, start_point, end_point, nsub): #startpoint inside lv
         n=nsub
         p1p2_vec = end_point - start_point
-        #length_vec = cco_3df.length(p1p2_vec, self.voxel_size)
+        #
         #n = int(np.ceil(length_vec/0.1 )) 
         previous_val = 2.
         for i in range (n):
@@ -428,8 +428,14 @@ class Forest:
                         print "zooming", val
                         return self.dist_to_lv_via_sampling_inv(start_point + (float(i-1)/n)*p1p2_vec, start_point + (float(i)/n)*p1p2_vec, nsub)   
                     else:
-                        print "errroor: previous val:", previous_val, "val", val
-                        return np.zeros(3)
+#                        print "errroor: previous val:", previous_val, "val", val
+#                        return np.zeros(3)
+                        print "found weird", val
+                        length_vec = cco_3df.length(p1p2_vec, self.voxel_size)
+                        print "n", n, "lenght", length_vec, "i", i
+                        new_end = self.short_segmt_end(start_point + (float(i)/n)*p1p2_vec, length_vec, previous_val<1., np.zeros(3))
+                        print "end point", end_point, "new end", new_end
+                        return self.dist_to_lv_via_sampling_inv(start_point + (float(i)/n)*p1p2_vec, new_end, nsub)   
         print "rror", "forest", val, "start", start_point
         return np.zeros(3)
      
@@ -511,6 +517,7 @@ class Forest:
                 ins, val = self.inside_heart(point)
                 n_l = 40.
                 if val > 0.:
+                    
                     if val >= LV_OUTER_WALL and val < LV_INNER_WALL: #inside lv
                         seg_end = self.short_segmt_end(point, n_l, False, np.zeros(3))
                         surf_point = self.dist_to_lv_via_sampling_inv(point, seg_end, int(n_l*2))
@@ -523,8 +530,12 @@ class Forest:
                         print "in concavity so skipped"
                         continue
                     print "surf_point", surf_point
-                    if surf_point[0] == 0. and surf_point[1] == 1.:
+                    if surf_point[0] == 0. and surf_point[1] == 0.:
+                        print "surf point zero"
                         return False, np.zeros(3), d_tresh_factorized
+#                    if float(self.l_a(surf_point*self.voxel_size)) > 3.5:
+#                        print "on left atrium surface"
+#                        continue
                     if (self.outside_segmented_vessels(surf_point, DIST_TO_CENTERLINE)):
                         respect_criteria = True
                         for tree in self.trees:

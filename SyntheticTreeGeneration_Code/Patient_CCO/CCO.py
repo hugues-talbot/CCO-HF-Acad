@@ -30,12 +30,12 @@ import copy
 
 # Location of sources with flow and pressure -> obtained from centerline, mssing branched statistics
 print "loading sources location"
-source_path = "./Inputs/Sources_LADLCX.npy"
+source_path = "./Inputs/Sources_LADLCXRCA.npy"
 if os.path.isfile(source_path):
     sources = np.load(source_path)
 else:
     print "generate sources"
-    sources = cv.get_data_fp("./Inputs/SourcesCorrectedWithDiam.txt") #AllSourcesInit, #LADLCXPressureAndFlowInputs
+    sources = cv.get_data_fp("./Inputs/AllSourcesInit.txt") #AllSourcesInit, #LADLCXPressureAndFlowInputs
     np.save(source_path, sources)
        
 # dtype_r=[("WorldCoordX", float),("WorldCoordY", float), ("WorldCoordZ", float),
@@ -51,8 +51,8 @@ gamma = 3.0
 
 # matrix to convert between world and voxel coordinates
 print "loading matrices"
-model_matrix = np.load("./Inputs/ImMatrix.npy")
-inv_model_matrix = np.load("./Inputs/ImInvMatrix.npy")
+model_matrix = np.load("./Inputs/ImModelMatrix.npy")
+inv_model_matrix = np.load("./Inputs/ImModelInvMatrix.npy")
 vox_size = np.array([model_matrix[0][0],model_matrix[1][1],model_matrix[2][2]])
 vox_volume = vox_size[0]*vox_size[1]*vox_size[2]
 #should test if find correspondance between 
@@ -95,11 +95,11 @@ lv_volume = vox_perf.shape[1] * vox_volume
 
 # Segmented vessels distance map 
 print "loading distance map"
-sgm_vess_path = "./Inputs/DistMapFromCenterlines.npy"
+sgm_vess_path = "./Inputs/DistMapFromCenterlinesWithRCA.npy"
 if os.path.isfile(sgm_vess_path):
     segm_vessel_dist = np.load(sgm_vess_path)
 else:
-    segm_vessel_dist = cv.open_mha("./Inputs/fmm_path_with_LCX_and_proj_and_inner5_and3.mha")
+    segm_vessel_dist = cv.open_mha("./Inputs/fmm_withRCA_and_proj_and_inner5_and3.mha")
     np.save(sgm_vess_path, segm_vessel_dist)
 
 ##CHECK ALL IMAGE SIZES
@@ -114,12 +114,12 @@ timing = True
 store_data = True
 parallelized = False
 generate_obj = True
-filename = "./Results/Dbg_f"
-name_filemaya = "Dbg_f"
+filename = "./Results/WRCAGMap"
+name_filemaya = "WRCAGMap"
 path_out = "C:/Users/cjaquet/Documents/SynthTreeData/3c9e679d-2eab-480c-acaa-31da12301b0a/ResultsForMaya/"
-ktermbreak = len(sources) + 196
-NTerm = 500 
-InterTerm = len(sources) + 196
+ktermbreak = 500
+NTerm = 1500 
+InterTerm = 500
 
 if timing:
     debut = time.time()
@@ -193,7 +193,7 @@ if True:
                 closest_to_lv = forest.dist_to_lv_via_sampling(source_coord, end, 100)
                 dist_lv = cco_3df.length(closest_to_lv - source_coord, vox_size)
                 print "ind", ind,"dist_lv", dist_lv
-                if dist_lv > 15:
+                if dist_lv > 10:
                     source_to_be_deleted.append(ind)
                     ind = ind+1
                 else:
@@ -288,9 +288,9 @@ if True:
                     break
                 if kterm%10 == 0 :
 #                if kterm > 70 :
-                    cv.write_json(forest,model_matrix,path_out + "DbgF%i.json" %kterm)
+                    cv.write_json(forest,model_matrix,path_out + "WRCAGMap%i.json" %kterm)
                 if kterm == InterTerm:
-                    cv.write_json(forest,model_matrix,path_out + "DbgF%i.json" %kterm)                    
+                    cv.write_json(forest,model_matrix,path_out + "WRCAGMap%i.json" %kterm)                    
 #                if kterm>70 and kterm%5==0:
 #                    cv.write_json(forest,model_matrix,path_out + "SpForest%i.json" %kterm)
 ##                    name =filename+"_F_Nt%i_kt%i_s%i_ellip" %(NTerm,kterm,seed)
@@ -320,10 +320,11 @@ if True:
     #cco_3df.plot_forest(forest, name)
     #pickle.dump(forest, open(name + ".p", "wb"))
     #pickle.dump(forest.trees,open(name + ".p", "wb"))
+    cv.write_json(forest,model_matrix,path_out +name_filemaya+".json")
+    print "json generated"
     pickle.dump([copy.copy(i) for i in forest.trees],open(name + ".p", "wb"))
     #print "forest saved"
-    cv.write_json(forest,model_matrix,path_out +name_filemaya+".json")
-    #print "json generated"
+
     #print "sources", sources
 if store_data:
     sys.stdout=old_stdout # here we restore the default behavior

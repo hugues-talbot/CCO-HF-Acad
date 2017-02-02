@@ -9,7 +9,7 @@ import numpy as np
 from vtk import vtkMetaImageReader
 from vtk.util.numpy_support import vtk_to_numpy
 import CCO_3DFunctions as cc3df
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 def open_mha(mha_file):    
     img_reader = vtkMetaImageReader()

@@ -126,17 +126,18 @@ class Tree:
         self.interp_h = interpolators[0]
         self.interp_hgx = interpolators[1]
         self.interp_hgy = interpolators[2]
-        self.interp_hgz = interpolators[3]
+        self.interp_hgz = interpolators[3]      
         self.interp_fmm = interpolators[4]
         self.interp_fmm_gx = interpolators[5]
         self.interp_fmm_gy = interpolators[6]
         self.interp_fmm_gz = interpolators[7]
+        self.interp_la = interpolators[8]
 
     def __deepcopy__(self, tree):
-        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.direct_vect, self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[ self.interp_h, self.interp_hgx, self.interp_hgy, self.interp_hgz, self.interp_fmm, self.interp_fmm_gx, self.interp_fmm_gy, self.interp_fmm_gz],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma)    		
+        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.direct_vect, self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[ self.interp_h, self.interp_hgx, self.interp_hgy, self.interp_hgz, self.interp_fmm, self.interp_fmm_gx, self.interp_fmm_gy, self.interp_fmm_gz, self.interp_la],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma)    		
     
     def __copy__(self):
-        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.direct_vect, self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[0,0,0,0,0,0,0,0],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma)
+        return Tree(self.tree_index, copy.deepcopy(self.nodes), self.direct_vect, self.q_term, self.final_q_perf, self.p_drop, self.nu, self.a_perf, self.final_perf_radius,[0,0,0,0,0,0,0,0,0],self.voxel_size, self.im_size, self.max_curv_rad, self.real_final_radius, self.gamma)
       
     def set_interpolators(self,interpolators):
         self.interp_h = interpolators[0]
@@ -147,6 +148,7 @@ class Tree:
         self.interp_fmm_gx = interpolators[5]
         self.interp_fmm_gy = interpolators[6]
         self.interp_fmm_gz = interpolators[7]
+        self.interp_la = interpolators[8]
          
     def nodes(self):
         return self.nodes
@@ -668,6 +670,9 @@ class Tree:
                     return False
                 else:
                     print "outside segmented vessel"
+            if (self.interp_la(loc* self.voxel_size))>3.:
+                print "crossing left atrium"
+                return False
         return True
                     
     def find_first_point_out_seg_vessels(self, seg_pt1, seg_pt2, n):
@@ -1180,7 +1185,7 @@ class Tree:
         for i in range (n):
             loc = start_point + (i / float(n)) * p1p2_vec
             ins, val= self.inside_heart(loc)
-            #print "dist to lv via sampling", val
+            print "dist to lv via sampling inv", val
             if val < (LV_OUTER_WALL + 5*EPS) and val > (LV_OUTER_WALL - 5*EPS):
                 print "found", val
                 return (start_point + (float(i)/n)*p1p2_vec)
@@ -1194,8 +1199,13 @@ class Tree:
                         print "zooming", val
                         return self.dist_to_lv_via_sampling_inv(start_point + (float(i-1)/n)*p1p2_vec, start_point + (float(i)/n)*p1p2_vec, nsub)   
                     else:
-                        print "errroor: previous val:", previous_val, "val", val
-                        return np.zeros(3)
+                        print "errroor: previous val:", previous_val, "val", val, 
+                        #return np.zeros(3)
+                        length_vec = cco_3df.length(p1p2_vec, self.voxel_size)
+                        print "n ", n, "length", length_vec
+                        new_end = self.short_segmt_end(start_point + (float(i-1)/n)*p1p2_vec, length_vec, previous_val<1., np.zeros(3))
+                        print "end point", end_point, "new end", new_end
+                        return self.dist_to_lv_via_sampling_inv(start_point + (float(i-1)/n)*p1p2_vec, new_end, nsub) 
         print "rror", "forest", val, "start", start_point
         return np.zeros(3)
      
