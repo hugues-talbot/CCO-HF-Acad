@@ -114,18 +114,19 @@ if False:
     array_sorted = np.sort(array, order = "Flow")[::-1]  
         
     
-
+from skimage.segmentation import random_walker
+from skimage.morphology import binary_dilation, binary_erosion    
 import SimpleITK as sitk
 
 def generate_lv_potential(filepath):
-    lv = open_mha(filepath)
-    ###generate outer marker (smooth lv with light closing)
+    lv = open_mha("./Inputs/lv.mha")
+    ####generate outer marker (smooth lv with light closing)
     lv_int = lv.astype(int)
     lv_im = sitk.GetImageFromArray(lv_int)
     lv_smooth = sitk.BinaryMorphologicalClosing(lv_im, 5)
     lv_smth = sitk.GetArrayFromImage(lv_smooth)
-
-    ###generate inner marker:  light opening(outermarker -heavy closing(lv))
+             
+    ####generate inner marker:  light opening(outermarker -heavy closing(lv))
     closing_fac = 100
     rsult = sitk.BinaryMorphologicalClosing(lv_im, closing_fac)
     sub = sitk.GetArrayFromImage(rsult) - lv
@@ -133,19 +134,32 @@ def generate_lv_potential(filepath):
     sub_open = sitk.BinaryMorphologicalOpening(sub_im, 5)
     sub_a = sitk.GetArrayFromImage(sub_open)
     
-    #generate lv potential
+    ##generate lv potential
     out_inv = lv_smth +1
     out_inv[np.where(out_inv>1)]=0
-    out_marker = lv_smth[40:200,100:,150:]
+    out_marker = out_inv[40:200,100:,150:]
+    #np.save("./Inputs/outter_marker.npy", out_inv)
     in_marker = sub_a[40:200,100:,150:]
+    #np.save("./Inputs/inner_marker.npy", sub_a)
+
+    #in_marker = np.load("./Inputs/inner_marker.npy")[40:200,100:,150:]
+    #out_marker = np.load("./Inputs/outter_marker.npy")[40:200,100:,150:]
+
     
-    mask = (in_marker + out_marker) +1
-    mask[np.where(mask>1)]=0 
-    mask =mask.astype('float64')
-    pot = cc3df.generate_potential(mask, in_marker, out_inv[40:200,100:,150:])
-    dimb = in_marker.shape
-    final_size = np.zeros(dimb)-1
-    final_size[40:200,100:,150:] = pot
+    lv_mask = lv.astype('float64')
+    lv_mask_dil_large = binary_dilation(lv_mask, np.ones((2,2,2)))
+    #np.save("./Inputs/mask_dil.npy", lv_mask_dil)
+    #lv_mask_dil_large = np.load("./Inputs/mask_dil.npy")
+    lv_mask_dil = lv_mask_dil_large[40:200,100:,150:]    
+    
+    result = random_walker(lv_mask_dil, (in_marker+out_marker).astype('float64'), copy =True, return_full_prob = True, mode= 'cg_mg')
+    #np.save("./Inputs/res1.npy", result[1])
+    
+    dimb = lv_mask_dil_large.shape
+    final_size = np.zeros(dimb)-1.
+    result[1][np.where(result[1] == 0.)] = -1
+    final_size[40:200,100:,150:] = result[1]
+    #np.save("./Inputs/LvPotcor.npy", final_size)
     return final_size
     
 def generate_heart_potential(filepath1, filepath2):
