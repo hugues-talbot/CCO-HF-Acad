@@ -1,0 +1,1081 @@
+
+%% bare_jrnl.tex
+%% V1.4b
+%% 2015/08/26
+%% by Michael Shell
+%% see http://www.michaelshell.org/
+%% for current contact information.
+%%
+%% This is a skeleton file demonstrating the use of IEEEtran.cls
+%% (requires IEEEtran.cls version 1.8b or later) with an IEEE
+%% journal paper.
+%%
+%% Support sites:
+%% http://www.michaelshell.org/tex/ieeetran/
+%% http://www.ctan.org/pkg/ieeetran
+%% and
+%% http://www.ieee.org/
+
+%%*************************************************************************
+%% Legal Notice:
+%% This code is offered as-is without any warranty either expressed or
+%% implied; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE! 
+%% User assumes all risk.
+%% In no event shall the IEEE or any contributor to this code be liable for
+%% any damages or losses, including, but not limited to, incidental,
+%% consequential, or any other damages, resulting from the use or misuse
+%% of any information contained here.
+%%
+%% All comments are the opinions of their respective authors and are not
+%% necessarily endorsed by the IEEE.
+%%
+%% This work is distributed under the LaTeX Project Public License (LPPL)
+%% ( http://www.latex-project.org/ ) version 1.3, and may be freely used,
+%% distributed and modified. A copy of the LPPL, version 1.3, is included
+%% in the base LaTeX documentation of all distributions of LaTeX released
+%% 2003/12/01 or later.
+%% Retain all contribution notices and credits.
+%% ** Modified files should be clearly indicated as such, including  **
+%% ** renaming them and changing author support contact information. **
+%%*************************************************************************
+
+
+% *** Authors should verify (and, if needed, correct) their LaTeX system  ***
+% *** with the testflow diagnostic prior to trusting their LaTeX platform ***
+% *** with production work. The IEEE's font choices and paper sizes can   ***
+% *** trigger bugs that do not appear when using other class files.       ***                          ***
+% The testflow support page is at:
+% http://www.michaelshell.org/tex/testflow/
+
+
+
+\documentclass[journal]{IEEEtran}
+%
+% If IEEEtran.cls has not been installed into the LaTeX system files,
+% manually specify the path to it like:
+% \documentclass[journal]{../sty/IEEEtran}
+\usepackage[backend=bibtex,firstinits=true,minbibnames=2,maxbibnames=2]{biblatex}
+
+\addbibresource{sample}
+
+
+
+% Some very useful LaTeX packages include:
+% (uncomment the ones you want to load)
+
+
+% *** MISC UTILITY PACKAGES ***
+%
+%\usepackage{ifpdf}
+% Heiko Oberdiek's ifpdf.sty is very useful if you need conditional
+% compilation based on whether the output is pdf or dvi.
+% usage:
+% \ifpdf
+%   % pdf code
+% \else
+%   % dvi code
+% \fi
+% The latest version of ifpdf.sty can be obtained from:
+% http://www.ctan.org/pkg/ifpdf
+% Also, note that IEEEtran.cls V1.7 and later provides a builtin
+% \ifCLASSINFOpdf conditional that works the same way.
+% When switching from latex to pdflatex and vice-versa, the compiler may
+% have to be run twice to clear warning/error messages.
+
+
+
+
+
+
+% *** CITATION PACKAGES ***
+%
+%\usepackage{cite}
+% cite.sty was written by Donald Arseneau
+% V1.6 and later of IEEEtran pre-defines the format of the cite.sty package
+% \cite{} output to follow that of the IEEE. Loading the cite package will
+% result in citation numbers being automatically sorted and properly
+% "compressed/ranged". e.g., [1], [9], [2], [7], [5], [6] without using
+% cite.sty will become [1], [2], [5]--[7], [9] using cite.sty. cite.sty's
+% \cite will automatically add leading space, if needed. Use cite.sty's
+% noadjust option (cite.sty V3.8 and later) if you want to turn this off
+% such as if a citation ever needs to be enclosed in parenthesis.
+% cite.sty is already installed on most LaTeX systems. Be sure and use
+% version 5.0 (2009-03-20) and later if using hyperref.sty.
+% The latest version can be obtained at:
+% http://www.ctan.org/pkg/cite
+% The documentation is contained in the cite.sty file itself.
+
+
+
+
+
+
+% *** GRAPHICS RELATED PACKAGES ***
+%
+\ifCLASSINFOpdf
+  % \usepackage[pdftex]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../pdf/}{../jpeg/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+\else
+  % or other class option (dvipsone, dvipdf, if not using dvips). graphicx
+  % will default to the driver specified in the system graphics.cfg if no
+  % driver is specified.
+  % \usepackage[dvips]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../eps/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.eps}
+\fi
+% graphicx was written by David Carlisle and Sebastian Rahtz. It is
+% required if you want graphics, photos, etc. graphicx.sty is already
+% installed on most LaTeX systems. The latest version and documentation
+% can be obtained at: 
+% http://www.ctan.org/pkg/graphicx
+% Another good source of documentation is "Using Imported Graphics in
+% LaTeX2e" by Keith Reckdahl which can be found at:
+% http://www.ctan.org/pkg/epslatex
+%
+% latex, and pdflatex in dvi mode, support graphics in encapsulated
+% postscript (.eps) format. pdflatex in pdf mode supports graphics
+% in .pdf, .jpeg, .png and .mps (metapost) formats. Users should ensure
+% that all non-photo figures use a vector format (.eps, .pdf, .mps) and
+% not a bitmapped formats (.jpeg, .png). The IEEE frowns on bitmapped formats
+% which can result in "jaggedy"/blurry rendering of lines and letters as
+% well as large increases in file sizes.
+%
+% You can find documentation about the pdfTeX application at:
+% http://www.tug.org/applications/pdftex
+
+
+
+
+
+% *** MATH PACKAGES ***
+%
+%\usepackage{amsmath}
+% A popular package from the American Mathematical Society that provides
+% many useful and powerful commands for dealing with mathematics.
+%
+% Note that the amsmath package sets \interdisplaylinepenalty to 10000
+% thus preventing page breaks from occurring within multiline equations. Use:
+%\interdisplaylinepenalty=2500
+% after loading amsmath to restore such page breaks as IEEEtran.cls normally
+% does. amsmath.sty is already installed on most LaTeX systems. The latest
+% version and documentation can be obtained at:
+% http://www.ctan.org/pkg/amsmath
+\usepackage{siunitx}
+\newcommand{\joinus}[2]{\ensuremath{#1_{\text{#2}}}}
+\newcommand{\joinup}[2]{\ensuremath{#1^{\text{#2}}}}
+\usepackage{amsmath,amsfonts,amsthm,bm}
+\newcommand{\joinuss}[3]{\ensuremath{#1_{\text{#2}}^{\text{#3}}}}
+\usepackage{xcolor}
+\newcommand{\clcg}[1]{\textcolor{red}{#1}}
+
+
+% *** SPECIALIZED LIST PACKAGES ***
+%
+%\usepackage{algorithmic}
+% algorithmic.sty was written by Peter Williams and Rogerio Brito.
+% This package provides an algorithmic environment fo describing algorithms.
+% You can use the algorithmic environment in-text or within a figure
+% environment to provide for a floating algorithm. Do NOT use the algorithm
+% floating environment provided by algorithm.sty (by the same authors) or
+% algorithm2e.sty (by Christophe Fiorio) as the IEEE does not use dedicated
+% algorithm float types and packages that provide these will not provide
+% correct IEEE style captions. The latest version and documentation of
+% algorithmic.sty can be obtained at:
+% http://www.ctan.org/pkg/algorithms
+% Also of interest may be the (relatively newer and more customizable)
+% algorithmicx.sty package by Szasz Janos:
+% http://www.ctan.org/pkg/algorithmicx
+
+
+
+
+% *** ALIGNMENT PACKAGES ***
+%
+%\usepackage{array}
+% Frank Mittelbach's and David Carlisle's array.sty patches and improves
+% the standard LaTeX2e array and tabular environments to provide better
+% appearance and additional user controls. As the default LaTeX2e table
+% generation code is lacking to the point of almost being broken with
+% respect to the quality of the end results, all users are strongly
+% advised to use an enhanced (at the very least that provided by array.sty)
+% set of table tools. array.sty is already installed on most systems. The
+% latest version and documentation can be obtained at:
+% http://www.ctan.org/pkg/array
+
+
+% IEEEtran contains the IEEEeqnarray family of commands that can be used to
+% generate multiline equations as well as matrices, tables, etc., of high
+% quality.
+
+
+
+
+% *** SUBFIGURE PACKAGES ***
+%\ifCLASSOPTIONcompsoc
+%  \usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+%\else
+%  \usepackage[caption=false,font=footnotesize]{subfig}
+%\fi
+% subfig.sty, written by Steven Douglas Cochran, is the modern replacement
+% for subfigure.sty, the latter of which is no longer maintained and is
+% incompatible with some LaTeX packages including fixltx2e. However,
+% subfig.sty requires and automatically loads Axel Sommerfeldt's caption.sty
+% which will override IEEEtran.cls' handling of captions and this will result
+% in non-IEEE style figure/table captions. To prevent this problem, be sure
+% and invoke subfig.sty's "caption=false" package option (available since
+% subfig.sty version 1.3, 2005/06/28) as this is will preserve IEEEtran.cls
+% handling of captions.
+% Note that the Computer Society format requires a larger sans serif font
+% than the serif footnote size font used in traditional IEEE formatting
+% and thus the need to invoke different subfig.sty package options depending
+% on whether compsoc mode has been enabled.
+%
+% The latest version and documentation of subfig.sty can be obtained at:
+% http://www.ctan.org/pkg/subfig
+
+
+
+
+% *** FLOAT PACKAGES ***
+%
+%\usepackage{fixltx2e}
+% fixltx2e, the successor to the earlier fix2col.sty, was written by
+% Frank Mittelbach and David Carlisle. This package corrects a few problems
+% in the LaTeX2e kernel, the most notable of which is that in current
+% LaTeX2e releases, the ordering of single and double column floats is not
+% guaranteed to be preserved. Thus, an unpatched LaTeX2e can allow a
+% single column figure to be placed prior to an earlier double column
+% figure.
+% Be aware that LaTeX2e kernels dated 2015 and later have fixltx2e.sty's
+% corrections already built into the system in which case a warning will
+% be issued if an attempt is made to load fixltx2e.sty as it is no longer
+% needed.
+% The latest version and documentation can be found at:
+% http://www.ctan.org/pkg/fixltx2e
+
+
+%\usepackage{stfloats}
+% stfloats.sty was written by Sigitas Tolusis. This package gives LaTeX2e
+% the ability to do double column floats at the bottom of the page as well
+% as the top. (e.g., "\begin{figure*}[!b]" is not normally possible in
+% LaTeX2e). It also provides a command:
+%\fnbelowfloat
+% to enable the placement of footnotes below bottom floats (the standard
+% LaTeX2e kernel puts them above bottom floats). This is an invasive package
+% which rewrites many portions of the LaTeX2e float routines. It may not work
+% with other packages that modify the LaTeX2e float routines. The latest
+% version and documentation can be obtained at:
+% http://www.ctan.org/pkg/stfloats
+% Do not use the stfloats baselinefloat ability as the IEEE does not allow
+% \baselineskip to stretch. Authors submitting work to the IEEE should note
+% that the IEEE rarely uses double column equations and that authors should try
+% to avoid such use. Do not be tempted to use the cuted.sty or midfloat.sty
+% packages (also by Sigitas Tolusis) as the IEEE does not format its papers in
+% such ways.
+% Do not attempt to use stfloats with fixltx2e as they are incompatible.
+% Instead, use Morten Hogholm'a dblfloatfix which combines the features
+% of both fixltx2e and stfloats:
+%
+% \usepackage{dblfloatfix}
+% The latest version can be found at:
+% http://www.ctan.org/pkg/dblfloatfix
+
+
+
+
+%\ifCLASSOPTIONcaptionsoff
+%  \usepackage[nomarkers]{endfloat}
+% \let\MYoriglatexcaption\caption
+% \renewcommand{\caption}[2][\relax]{\MYoriglatexcaption[#2]{#2}}
+%\fi
+% endfloat.sty was written by James Darrell McCauley, Jeff Goldberg and 
+% Axel Sommerfeldt. This package may be useful when used in conjunction with 
+% IEEEtran.cls'  captionsoff option. Some IEEE journals/societies require that
+% submissions have lists of figures/tables at the end of the paper and that
+% figures/tables without any captions are placed on a page by themselves at
+% the end of the document. If needed, the draftcls IEEEtran class option or
+% \CLASSINPUTbaselinestretch interface can be used to increase the line
+% spacing as well. Be sure and use the nomarkers option of endfloat to
+% prevent endfloat from "marking" where the figures would have been placed
+% in the text. The two hack lines of code above are a slight modification of
+% that suggested by in the endfloat docs (section 8.4.1) to ensure that
+% the full captions always appear in the list of figures/tables - even if
+% the user used the short optional argument of \caption[]{}.
+% IEEE papers do not typically make use of \caption[]'s optional argument,
+% so this should not be an issue. A similar trick can be used to disable
+% captions of packages such as subfig.sty that lack options to turn off
+% the subcaptions:
+% For subfig.sty:
+% \let\MYorigsubfloat\subfloat
+% \renewcommand{\subfloat}[2][\relax]{\MYorigsubfloat[]{#2}}
+% However, the above trick will not work if both optional arguments of
+% the \subfloat command are used. Furthermore, there needs to be a
+% description of each subfigure *somewhere* and endfloat does not add
+% subfigure captions to its list of figures. Thus, the best approach is to
+% avoid the use of subfigure captions (many IEEE journals avoid them anyway)
+% and instead reference/explain all the subfigures within the main caption.
+% The latest version of endfloat.sty and its documentation can obtained at:
+% http://www.ctan.org/pkg/endfloat
+%
+% The IEEEtran \ifCLASSOPTIONcaptionsoff conditional can also be used
+% later in the document, say, to conditionally put the References on a 
+% page by themselves.
+
+
+
+
+% *** PDF, URL AND HYPERLINK PACKAGES ***
+%
+%\usepackage{url}
+% url.sty was written by Donald Arseneau. It provides better support for
+% handling and breaking URLs. url.sty is already installed on most LaTeX
+% systems. The latest version and documentation can be obtained at:
+% http://www.ctan.org/pkg/url
+% Basically, \url{my_url_here}.
+
+
+
+
+% *** Do not adjust lengths that control margins, column widths, etc. ***
+% *** Do not use packages that alter fonts (such as pslatex).         ***
+% There should be no need to do such things with IEEEtran.cls V1.6 and later.
+% (Unless specifically asked to do so by the journal or conference you plan
+% to submit to, of course. )
+
+
+% correct bad hyphenation here
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+
+\begin{document}
+%
+% paper title
+% Titles are generally capitalized except for words such as a, an, and, as,
+% at, but, by, for, in, nor, of, on, or, the, to and up, which are usually
+% not capitalized unless they are the first or last word of the title.
+% Linebreaks \\ can be used within to get better formatting as desired.
+% Do not put math or special symbols in the title.
+\title{Coupling 1D coronary and porous models: myocardium perfusion simulation from patient-specific vasculature}
+%
+%
+% author names and IEEE memberships
+% note positions of commas and nonbreaking spaces ( ~ ) LaTeX will not break
+% a structure at a ~ so this keeps an author's name from being broken across
+% two lines.
+% use \thanks{} to gain access to the first footnote area
+% a separate \thanks must be used for each paragraph as LaTeX2e's \thanks
+% was not built to handle multiple paragraphs
+%
+
+\author{Michael~Shell,~\IEEEmembership{Member,~IEEE,}
+        John~Doe,~\IEEEmembership{Fellow,~OSA,}
+        and~Jane~Doe,~\IEEEmembership{Life~Fellow,~IEEE}% <-this % stops a space
+%\thanks{M. Shell was with the Department
+%of Electrical and Computer Engineering, Georgia Institute of Technology, Atlanta,
+%GA, 30332 USA e-mail: (see http://www.michaelshell.org/contact.html).}% <-this % stops a space
+%\thanks{J. Doe and J. Doe are with Anonymous University.}% <-this % stops a space
+%\thanks{Manuscript received April 19, 2005; revised August 26, 2015.}
+}
+
+% note the % following the last \IEEEmembership and also \thanks - 
+% these prevent an unwanted space from occurring between the last author name
+% and the end of the author line. i.e., if you had this:
+% 
+% \author{....lastname \thanks{...} \thanks{...} }
+%                     ^------------^------------^----Do not want these spaces!
+%
+% a space would be appended to the last name and could cause every name on that
+% line to be shifted left slightly. This is one of those "LaTeX things". For
+% instance, "\textbf{A} \textbf{B}" will typeset as "A B" not "AB". To get
+% "AB" then you have to do: "\textbf{A}\textbf{B}"
+% \thanks is no different in this regard, so shield the last } of each \thanks
+% that ends a line with a % and do not let a space in before the next \thanks.
+% Spaces after \IEEEmembership other than the last one are OK (and needed) as
+% you are supposed to have spaces between the names. For what it is worth,
+% this is a minor point as most people would not even notice if the said evil
+% space somehow managed to creep in.
+
+
+
+% The paper headers
+\markboth{Journal of \LaTeX\ Class Files,~Vol.~14, No.~8, August~2015}%
+{Shell \MakeLowercase{\textit{et al.}}: Bare Demo of IEEEtran.cls for IEEE Journals}
+% The only time the second header will appear is for the odd numbered pages
+% after the title page when using the twoside option.
+% 
+% *** Note that you probably will NOT want to include the author's ***
+% *** name in the headers of peer review papers.                   ***
+% You can use \ifCLASSOPTIONpeerreview for conditional compilation here if
+% you desire.
+
+
+
+
+% If you want to put a publisher's ID mark on the page you can do it like
+% this:
+%\IEEEpubid{0000--0000/00\$00.00~\copyright~2015 IEEE}
+% Remember, if you use this you must call \IEEEpubidadjcol in the second
+% column for its text to clear the IEEEpubid mark.
+
+
+
+% use for special paper notices
+%\IEEEspecialpapernotice{(Invited Paper)}
+
+
+
+
+% make the title area
+\maketitle
+
+% As a general rule, do not put math, special symbols or citations
+% in the abstract or keywords.
+\begin{abstract}
+The abstract goes here.
+\end{abstract}
+
+% Note that keywords are not normally used for peerreview papers.
+\begin{IEEEkeywords}
+coronary and porous model coupling, myocardium perfusion.
+\end{IEEEkeywords}
+
+
+
+
+
+
+% For peer review papers, you can put extra information on the cover
+% page as needed:
+% \ifCLASSOPTIONpeerreview
+% \begin{center} \bfseries EDICS Category: 3-BBND \end{center}
+% \fi
+%
+% For peerreview papers, this IEEEtran command inserts a page break and
+% creates the second title. It will be ignored for other modes.
+\IEEEpeerreviewmaketitle
+
+
+
+\section{Introduction}
+% The very first letter is a 2 line initial drop letter followed
+% by the rest of the first word in caps.
+% 
+% form to use if the first word consists of a single letter:
+% \IEEEPARstart{A}{demo} file is ....
+% 
+% form to use if you need the single drop letter followed by
+% normal text (unknown if ever used by the IEEE):
+% \IEEEPARstart{A}{}demo file is ....
+% 
+% Some journals put the first two words in caps:
+% \IEEEPARstart{T}{his demo} file is ....
+% 
+% Here we have the typical use of a "T" for an initial drop letter
+% and "HIS" in caps to complete the first word.
+\IEEEPARstart{C}{oronary} heart disease (CHD), affecting millions of people each year, is the leading cause of death world-wide.
+Range of cardiac exams are in clinical use for assessment of the disease severity, all relying on medical imaging to quantify anatomical and sometimes physiological characteristics at either macroscopic or microscopic scale. These measures are punctually obtained often with high cost procedures, and sometimes via invasive protocol putting patient at risk.
+%The complexity of the heart function induces difficulty in assessing severity of the disease without invasive procedures. 
+With advances of the last decades in medical imaging and functional modeling, personalized computational modeling (PCM) has emerged as a low invasive but rich informative solution. Defined as a generic computational model adapted to patient characteristics acquired from medical imaging, PCM is a powerful instrument for diagnostic, prediction of pathological evolution or therapy effect, and treatment planning guidance \cite{ayache2016medical}. %These models allow to simulate, learn and predict via single imaging exam, to improve patient care, with potentially lower cost .
+
+ %research effort in try to answer this   of PCM. with imaging progress and 
+%the last years, tremendous effort on  to produce.
+
+%Cardiovascular is a field where PCM has shown importance, because of the complexity of the system and . In particular coronary heart disease% combining electro - biomechanics and hemodynamics principles.  
+%Kayvan et al. demonstrates how relevant personalized models are to help in treatment planning for heart failure, hemodynamics and biomechanics . 
+PCM has gathered tremendous research efforts in the last years to be adapted to CHD.
+As pointed out by Zhang et al. \cite{zhang2016multi}, one of the greatest remaining challenge is to connect the disparate scales. This is particularly relevant for coronary arteries, which exhibit structural variation across space, and time dependant function, combined with scale-specific properties of blood, as anisotropic fluid. Consequences on flow at the tissue scale, namely perfusion, are not fully elucidated so far. Studies even point at metabolism responsibility in flow demand variations \cite{decking2002spatial}, involving molecular scale.
+
+%This is particularly relevant for coronary arteries, since the vasculature ranges from largest vessels to capillaries with a diameter factor of 1000. This high structural variation across space is combined with scale-specific properties of the blood, as an anisotropic fluid. In addition, the electro-biomechanics of the pumping heart is responsible for variations across time, complexifying the system with cross-talk phenomena \cite{westerhof2006cross}. Potentially induced by all these variations, the flow observed at the tissue scale in the myocardium, namely perfusion, exhibits a substantial regional heterogeneity. This spatial distribution has not been fully elucidated so far, but involves even the molecular scale, with protein metabolism responsibility in variations of flow demand \cite{decking2002spatial}. 
+
+%This challenge is found in particular for coronary arteries, which exhibit properties varying across both time and space. With a factor of 1000 between large vessels and capillary diameters, the structural and functional variations of the vasculature is combined with the anisotropic fluid properties variations of the blood. variations also impact 
+  
+Facing difficulty to connect all scales many PCM focus either on macro or micro vasculature. 
+%FFRct in large coronaries, porous model for perfusion
+Several methods model the flow inside large coronaries extracted from computed tomography imaging, to identify hemodynamically significant lesions via estimation of the Fractional Flow Reserve. They rely on Navier-Stokes modeling, that can be solved in 1D \cite{fossan2018uncertainty}, or 3D, \cite{kim2010patient},\cite{chung2017diagnostic}. One example of 3D modeling has reached clinical application under the name FFRct \cite{taylor2013computational}. However in all these PCM the functional analysis is limited to large vessels due to the image resolution: the microvasculature only appears as a boundary condition of the modeling.
+
+
+%Like Matthys et al., they also model the pressure loss at bifurcations. In addition, they characterize wall elasticity via a pressure-radius relationship. They obtain realistic flow rates (exhibiting fractal flow hetereogeneity) and pressure distribution demonstrating functional plausibility of the generated vasculature. 
+%They intend to adapt the model to physio-pathology using Stettler work \cite{stettler1981theoretical} to represent stenosed regions, relying on empirical models of viscous loss.% but viscous loss in these regions are estimated from empirical models. 
+
+
+ 
+Other PCM focusing on perfusion scale are still maturing. To handle the enormous amount of microvessels, these method rely on a porous model governed by Darcy's law. %It expresses flow from source terms to sink terms, as in a sponge.   
+%not PCM
+%Huygues et al. proposed a viscoelastic porous model including stress fibers to represent the beating left ventricle [42]. Chapelle et al. [15] applied and detailed a similar model to simulate drainage and swelling of ventricle under large deformation, which exhibit key phenomena of cardiac perfusion cycle. This model focuses again only on small artery and capillaries, and is applied on a .
+%is a PCM
+Michler et al. \cite{michler2013computationally} applied a porous model into porcine myocardium geometry. The data are extracted from cryomicrotome, an ex-vivo protocol providing vessel down to arteriole level and ventricle
+segmentations. This porous model contains several compartments, each of them describing a subset of embedded vessels based on radius range, and specifically parameterized. %They define a multi-compartment model that captures the microvascular structure acquired from cryomicrotome. %Each compartment contains a portion of the vasculature defined by diameter range, which indicates sources and sinks location, and a specific parameterization. 
+%In addition they use experimental values: outlet flows of the macrovasculature is estimated from microsphere count, and used to initialize the model. 
+Complexity of this porous model lies in the number of compartments and their respective parameterization. %A major clinical limitation is induced by the imaging acquisition protocol that prevents from application on living heart. %Influence of number of compartment and parameterization of the model?
+%The starting from Huyghes, Chapelle, Michler 2013,
+Alternatively, recent work of Alves et al. \cite{alves2019simulation} proposes a porous model representative of perfusion MRI exam, in 2D slices of the myocardium. This model is applied on human data to simulate contrast agent transport, and quantify perfusion. It takes into account tissue anatomical features, namely fibrosis, and correlates well with functional ground truth, showing thus a potential for clinical application. %However this PCM is partial of system (slices), and focuses only on perfusion.
+
+Only few multiscale PCM have been developed bridging functional analysis in large vessels to tissue perfusion. 
+A major limitation is the anatomical gap between macro and micro scales. 
+To extend the functional analysis, Smith et al. extrapolated a canine coronary anatomy from epicardial coronaries to arterioles based on statistics morphometry and optimization laws \cite{smith2000generation}. They use this same hybrid vasculature to stand for artery and veinous vasculature, on which they apply a $1D$ coronary model. A $0D$ model of the micro-circulation connect them. Their results exhibit realistic pressure distribution throughout arterial and veinous vessels, and inside the myocardium the spatial heterogeneity of flow follows a fractal pattern as described in the literature \cite{bassingthwaighte1989fractal}.
+The work of Hyde et al. \cite{hyde2014multi} relies again on cryomicrotome data, porcine or canine, to provide connection between epicardial and microvessels. %Their PCM is applied on porcine and dog vasculature of respectively 27000 and 43000 vessels. 
+%They  unidirectionalan invasive procedure to provide high resolution image of the anatomy.  extracted from cryomicrotome is unidirectional, and applied both on dog and porcine heart. 
+The computational modeling principle is a single iteration between a 1D coronary model and a multi-compartment porous model. The 1D coronary model is solved with experimental pressure boundary conditions %obtained by Chilian et al. \cite{chilian1991microvascular}. 
+and the resulting flows at the outlets are used as inputs for the porous model. They show that the inclusion of vascular data significantly improves the continuum perfusion results in comparison to a simplistically parameterised model. However, this is a unidirectional connection from coronary to porous model while Lo et al. brought evidences that knowledge of perfusion helps improving large coronary model boundary conditions \cite{Lo2019cmbe}. %,  of \cite{Han 2017}, . %However, this model is undirectional: only the coronary model impacts on the porous model. However, the number of compartment, and parameterization ?
+A PCM proposed by Lee et al. \cite{lee2015multiscale} enables a bi-directional exchange between coronary and porous models, relying on porcine heart geometry extracted from cryomicrotome. %They describe a framework to compute in silico perfusion and contraction analysis throughout whole porcine heart cycle from cryomicrotome extracted data. %(outlet diameters approximately \SI{200}{\micro\meter}). 
+It couples a single compartment poromechanical model and 1D coronary model. Inlet coronary pressure depends on the ventricle outflow. Mechanical stress %(passive filling or contraction)
+influences pore fluid pressure, which in turn contributes to vascular flow. This model reproduces layer-dependant perfusion pattern along whole heart cycle. % (including flow reversal). 
+They demonstrate this framework ability to simulate perfusion images, by adding contrast agent transport modeling, and successfully producing a perfusion deficit in neighbor of a simulated stenosis. 
+
+%They solve a 1D coronary model in large arteries using experimental pressure boundary condition, and use  adapt a multi-compartment model  
+%One way coupling: Hyde 2014. 
+%Full coupling Lee 2015. 
+
+So far all PCM connecting large coronary flow to myocardium perfusion have thus been developed on animal data. They demonstrate the expected characteristics of spatial flow distribution inside myocardium, but were not compared with ground-truth. Further more, when relying on destructive image acquisition such as cryomicrotome data, these methods have limited potential for clinical application.
+% were applied only on animal data, and no ground truth, study of stenosis impact?
+
+
+
+We propose a multi-scale PCM connecting large coronaries to tissue perfusion applied on patient data. This PCM is adapted to a patient-specific cardiac vascular network: a hybrid image based and geometric synthetic vasculature \cite{jaquet2019generation}. The computational modeling is a coupling between a 1D coronary model and a single compartment porous model. It simulates fluid behavior either in resting or hyperemic conditions. We demonstrate this method by applying it on 7 non stenotic patients, and 1 single stenosed patient. We analyze the fluid dynamics results both along vessels and inside myocardium with regards to the literature, and establish comparison of the simulated perfusion with water-PET perfusion exam. %In particular we assess the specific impact of the coupling by comparison with the 1D coronary model only. Also, we estimate the coupling sensitivity to the vasculature size, with networks ranging from 3000 to 12000 outlets. Finally, we establish comparison of the simulated perfusion with water-PET exam perfusion for each patient.
+ 
+
+\section{Methods}
+\subsection{Vascular network generation}
+
+The vascular networks are patient-specific hybrid vasculatures composed of segmented vessels extended with synthetic segments. They were generated using the method described by Jaquet et al. \cite{jaquet2018generation}. Briefly, synthetic trees roots are defined at each segmented vessel outlets and some are also distributed along the vessels according to patient branching pattern. Note that the extension of the vasculature focuses only on vessel estimated as perfusing the left ventricle. We estimate each synthetic tree a target flow based on its root diameter. A vascular growth simulating angiogenesis is computed minimizing the total vascular volume, and adapted to the patient priors, meaning the segmented vessels and myocardium. The competitive growth between multiple trees is driven by tree target flows. The vascular growth is achieved within two stages, first constraining segments to lie on the surface of the left ventricle, second allowing segments inside the whole ventricle.
+The resulting hybrid vasculature is composed of two binary trees corresponding to the left and right coronaries, and the total number of segments is calculated from the number of terminal segments \joinus{n}{term}:
+\begin{equation}
+n_{tot} = 2 n_{term} -1
+\end{equation}
+
+  
+
+\subsection{Assumptions for computational fluid dynamics}
+The blood is modeled as an incompressible, homogeneous Newtonian fluid, under a steady state. It is approximated as fully developed, unidirectional, axisymmetric flow in cylindrical geometry under laminar flow conditions. 
+The resistance $R$ and the pressure drop $\Delta p$ of a segment $j$ are defined according to Poiseuille's solution by:
+\begin{equation}\label{eq:resistance}
+R_j = \frac{8\mu}{\pi}\frac{l_j}{r_j^4} 
+\end{equation}
+%\text{ with } \mu \text{ the viscosity }
+
+\begin{equation}\label{Pdrop}
+\Delta p_j = R_j q_j
+\end{equation}
+with $\mu$ the viscosity, and $l$, $r$, $q$ respectively the segment length, radius and flow.
+%The total resistance of the tree is calculated recursively by tree decomposition into segments, considering parallel and serial arrangements.
+%The pressures at the distal ends of terminal segments, $\joinus{p}{term}$, are all equal and correspond to the inflow pressure to the micro-circulation.
+%The flows at all terminal segments $\joinus{q}{term}$ are equal, and delivered into the micro-circulation.
+%against $\joinus{p}{term}$. 
+The terminal segment outlets are identified with superscript $T,i$.
+Because of flow conservation, the sum of the $\joinup{q}{T,i}$ corresponds to the aortic flow $\joinus{Q}{tot}$. 
+
+\subsection{1D coronary model}
+
+\subsubsection{Model equation}
+
+The Navier-Stokes equations governing the isothermal flow of an incompressible fluid derives from conservation of motion quantity. They ensure mass conservation and momentum balance.
+%Mass conservation states that the variation of the mass of fluid with time is null.
+%The momentum equation states that the sum of all forces (here acceleration, inertia, pressure, and viscous forces) is null, in other words, the momentum is balanced.
+These equations are defined for a fluid of volumetric mass density $\rho$, of viscosity $\mu$, moving into the vessel with a longitudinal mean velocity $v$, within an Eulerian system. The $1D$ integration of Navier-Stokes equations, defined along the centerline axis of each vessel of coordinate $z$, can be written as:
+\begin{subequations}
+ \begin{equation} \label{masscon}
+ \frac{\partial S}{\partial t} + \frac{\partial Q}{\partial z} = 0
+ \end{equation}
+
+ \begin{equation}\label{mombal}
+ \frac{\partial Q}{\partial t} + \frac{\partial}{\partial z} (\alpha \frac{Q^{2}}{S}) + \frac{S}{\rho} \frac{\partial P}{dz} + \lambda \frac{Q}{S} = 0
+ \end{equation}
+ 
+ \end{subequations}
+ 
+  
+In the momentum equation, \ref{mombal}, the first term corresponds to the acceleration, which is neglected due to steady flow assumption. The second term represents inertia, and the third term refers to the pressure gradient along the vessel. Finally the fourth term expresses viscous losses, with $\lambda$ representing the viscous resistance of the flow per unit of length of the vessel. This constant $\lambda$ is derived from kinematic viscosity of blood by assuming here a parabolic velocity profile. %\lambda = 8 * \pi * kinematic viscosity of blood.(How is this constant estimated?) %relating to blood viscosity (
+The constant $\alpha = 4/3$ is obtained by integrating the parabolic velocity profile over the cross sectional area \cite{vignon2004outflow}. %\alpha=\int_{S} (u_{z}^{2}dS/S/(average velocity)^2 = \int_{S}(profile function)^2 dS/S
+
+
+At each bifurcation, conservation of mass and continuity of pressure provides a relationship between vessels, allowing to build a system of equations.
+
+The equation system must be solved in the whole hybrid model:
+in the synthetic segments, S is known and constant along z of each vessel, so with disappearance of the inertia term we can resolve directly with Poiseuille law. In the segmented vessels, S is  known and varies along z, so the inertia term is taken into account.  
+\subsubsection{Boundary conditions}
+At the inlet of each left and right coronary tree, we set the aortic pressure to $P_{AO}$ = \SI{93}{\mmHg}. This value can be derived from average systolic (\SI{120}{mmHg}) and diastolic pressure (\SI{80}{mmHg}), considering systole occurs during a third of heart cycle \cite{berne1967cardiovascular}, and was also calculated from a $400$ patient datasets by HeartFlow.
+
+At each of the segment outlets, we set a boundary condition corresponding to the terminal segment flow.
+This boundary condition is estimated and updated differently in rest and stress conditions.
+
+
+\clcg{handling right coronaries without synthetic extension? split flow between left and right coronary?}
+
+
+
+\subsubsection{Algorithm adaptation for rest and hyperemic conditions}
+
+\paragraph{Rest condition}
+The total myocardium baseline flow $Q_{rest}^{tot}$  is estimated from the myocardial mass $m$, following the relationship defined by Choi et al. \cite{choy2008scaling}:
+\begin{equation}
+Q_{rest}^{tot} = \zeta \times m^{\gamma}
+\end{equation}
+Currently $\gamma$ is set to $0.75$ \cite{choy2008scaling}. Note that the coefficient $\gamma$ can be tuned to better match experimental myocardial blood flow values. The coefficient $\zeta = \frac{3291}{60}$ corresponds to a normalization factor. It was obtained to compute a normal distribution with a median myocardial blood flow rate value of \SI{1.0}{\milli\liter\per\min\per\gram} at baseline using more than 400 patients.
+
+We initialize all terminal segment flows based on their diameter: 
+\begin{equation}\label{eq:qti}
+q^{T,i}_{rest} = \frac{(r^{T,i})^{2.7}}{\sum\limits_{i=1}^{N_{term}} (r^{T,i})^{2.7}}Q^{tot}_{rest}
+\end{equation}
+With these initialized flows we calculate the baseline resistance at each terminal segment:
+\begin{equation}
+R^{T,i}_{base}= \frac{P_{AO}}{q^{T,i}_{rest}}
+\end{equation}
+From this we can estimate a minimum resistance expected at each terminal segment end to be:
+\begin{equation}
+R^{T,i}_{min} = \frac{1}{4}R^{T,i}_{base}
+\end{equation}
+This minimum resistance is calculated once, and then values are fixed for the whole algorithm. This minimum resistance assumes a maximal radius dilation capacity of about 40\% ($\sqrt{2}$) as referenced in \cite{wilson1990effects}. It relates to the resistance given by the Poiseuille formula equation \ref{eq:resistance}. This radius dilation capacity is applied to synthetic trees to replicate dilation of arterioles. 
+
+Using the terminal segment flows as boundary condition for the first iteration, flow and pressure are simulated in the entire tree, by solving the 1D equations. With the resulting values for terminal segment pressures ($P^{T,i}$), and the known terminal segment flows ($q^{T,i}_{rest}$) we estimate the simulated terminal segment resistance $R^{T,i}_{sim}$:
+
+\begin{equation}
+R^{T,i}_{sim} = \frac{P^{T,i}}{q^{T,i}_{rest}}
+\end{equation}
+
+If the simulated terminal segment resistance falls below the minimum resistance value $R^{T,i}_{min}$, we update both geometry and flow. We compute the radii dilation of the terminal segment and its upstream synthetic segments using the factor $\left(\frac{R^{T,i}_{base}}{R^{T,i}_{min}}\right)^{0.25}= \sqrt{2}$. And then we reduce the terminal segment flow, by multiplying it with the factor $\frac{R^{T,i}{sim}}{R^{T,i}{min}}$.
+
+If the simulated terminal segment resistance is over or equal to $R^{T,i}_{min}$, then we update the geometry, but maintain the same flow. The radii dilation of the terminal segment and all its upstream synthetic segments is performed with the same factor $\left(\frac{R^{T,i}_{base}}{R^{T,i}_{min}} \right) ^{0.25}= \sqrt{2}$. 
+
+Note that each terminal segment can have a different radius dilation factor as the resistance of the terminal segment will depend on the upstream pressure loss. 
+Several iterations are necessary to obtain a stabilized flow in the system, determined when:
+\begin{equation}\label{eq:coron_conv_rest}
+\max \left( \frac{R^{T,i}_{sim,n+1} - R^{T,i}_{sim,n}}{R^{T,i}_{sim,n+1}} \right) < 1 \%
+\end{equation}
+Also, note that for synthetic trees arising from vessel tips, the dilation propagation stops just before reaching the root segment. This ensure we maintain continuity between the segmented and synthetic networks. For synthetic trees arising along a vessel, the dilation propagation reaches the root segment. 
+
+%\clcg{Pseudo code as figure?}
+%The pseudo-code below describes the process.
+%\begin{enumerate}%[label={\arabic*.}]
+%\item From synthetic tree: terminal segment radii $r^{T,i}$ \label{itemRestStart}
+%\item Define initial baseline flows: $q^{T,i}_{baseline}=Q^{tot}_{rest} \frac{(r^{T,i})^{2.7}}{\sum(r^{T,i})^{2.7}}$
+%\item Define initial baseline resistance: $R^{T,i} = \frac{P_{AO}}{q^{T,i}_{baseline}}$
+%\item Define minimum resistance once and fixed for the whole algorithm: $R^{T,i}_{min} = \frac{1}{4} R^{T,i}$
+%\item Initialize $q^{T,i} = q^{T,i}_{baseline}$ for boundary condition
+%\item Run solver with $q^{T,i}$ as boundary condition \label{itemsolv}
+%\item Compute $R^{T,i}_{sim} = \frac{P^{T,i}_{sim}}{q^{T,i}_{sim}}$. Note: because of BC we have $q^{T,i}_{sim} = q^{T,i}$
+%\item Check: Main idea is to impose baseline flow if maximum dilation capacity not reached; if it is reached, then reduce flow. So we can end up with a different total rest flow. 
+%
+%\begin{itemize}
+%\item If $R^{T,i}_{sim} < R^{T,i}_{min}$ :  \\
+%full dilation synthetic tree: define new radii $r^{T,i}$ for all upstream synthetic segments using factor $\left(\frac{R^{T,i}}{R_{min}^{T,i}}\right)^{0.25}$ (in principle$ = \sqrt{2}$) and then decrease flow: compute $q_{n+1}^{T,i}=q_n^{T,i} \frac{R_{sim}^{T,i}}{R_{min}^{T,i}} $ (careful when $R_{sim}$ is <0, currently no safeguard so bug!), and go to \ref{itemsolv}
+%\item If $R^{T,i}_{sim} \geq R^{T,i}_{min}$:\\
+%Define new radii $r^{T,i}$ for all upstream synthetic segments using factor $\left(\frac{R^{T,i}}{R_{sim}^{T,i}}\right)^{0.25}$, but same flow and go to \ref{itemsolv}.
+%\end{itemize}
+%
+%\item Convergence criteria: \label{itemRestEnd} \\
+%$max\left( \frac{R_{sim,n+1}^{T,i}-R_{sim,n}^{T,i}}{R_{sim,n+1}^{T,i}} \right) < 1\%$
+%\end{enumerate}
+
+
+\paragraph{Hyperemic condition}
+The hyperemic state imitates invasive $FFR$ measure conditions. For this exam, the patient is administrated intraveinous adenosine, a vasodilator. Wilson et al. showed that under this condition, the total coronary resistance falls to a fourth of the resting value \cite{wilson1990effects}. Thus, the total ideal hyperemic flow is defined as:
+\begin{equation}
+Q_{stress}^{tot} = 4 Q_{rest}^{tot}
+\end{equation}
+
+and all the synthetic segments are subject to a \SI{40}{\percent} dilation regardless of the rest dilation, their radii are thus called $r^{T,i}_d$.
+Initial terminal segment flows are calculated with:
+\begin{equation}
+q^{T,i}_{stress} = \frac{(r^{T,i}_d)^{2.7}}{\sum\limits_{i=1}^{N_{term}} (r^{T,i}_d)^{2.7}}Q^{tot}_{stress}
+\end{equation}
+
+So that the minimal terminal segment resistances are estimated with the initial terminal segment flows as:
+\begin{equation}
+R^{T, i}_{min, stress} = \frac{P_{AO}}{q^{T,i}_{stress}}
+\end{equation}
+
+Since the whole system is already at maximal radius dilation capacity, all terminal segment resistances are fixed. The system is solved using $q^{T,i}_{stress}$ as terminal segment outlet boundary conditions.
+With the resulting simulated pressures and flow, we compute the simulated resistance:
+\begin{equation}
+R^{T, i}_{sim, stress} = \frac{P^{T,i}_{sim,stress}}{q^{T,i}_{sim,stress}}
+\end{equation}
+Whatever the simulated resistance, the terminal segment flow is always multiplied by the factor $\frac{\frac{P^{T,i}_{sim, stress}}{q^{T,i}_{sim, stress}} - R_{min, stress}}{R_{min} + \frac{P_{AO} - P^{T,i}_{sim, stress}}{q^{T,i}_{sim, stress,}}}$ % $\frac{R^{T, i}_{sim, stress}}{R^{T, i}_{min, stress}}$. 
+That way, if the simulated resistance falls below the minimum resistance, the flow is increased, otherwise it is decreased.
+
+Simulation is then run again with the updated terminal flow values. Over iterations, the computed terminal resistance values converge to the minimum resistance values. The convergence criteria is:
+\begin{equation}\label{eq:coron_conv_stress}
+max \left\lvert \frac{P_{stress}^{T,i} / q_{stress}^{T,i}-R_{min,stress}^{T,i} }{R_{min, stress}^{T,i}} \right\rvert   < 0.01 
+\end{equation}
+
+%Pseudo code as figure?
+%Below the algorithm is described with its pseudo code:
+%\begin{enumerate}[label={\arabic*.}]
+%\item Define initial baseline flows $q^{T,i}_{baseline}$ (read from file \path{baselineFlows.dat}). The file is in principle generated with: $q^{T,i}_{baseline}=Q^{tot}_{rest} \frac{(r^{T,i})^{2.7}}{\sum(r^{T,i})^{2.7}}$ \label{itemStressStart}
+%\item Define hyperemic flow as : $q^{T,i}_{stress} = 4 q^{T,i}_{baseline}$
+%\item Define minimum resistance (read from file \path{hyperemic_resistances.dat}). The file is in principle generated with $R^{T,i}_{min,stress} = \frac{P_{AO}}{q^{T,i}_{stress}}$ (or could also use the rest final resistance and divide it by 4).
+%\item Compute dilation factor $\left( \frac{R_{baseline}^{T,i}}{R_{min,stress}^{T,i}} \right)^{0.25}$, with $ R_{baseline}^{T,i}= \frac{P_{AO}}{q_{baseline}^{T,i}} $. Dilatation of all synthetic segment radii once with this factor. In general, this factor is 40\%, following Wilson et al. observations \cite{wilson1990effects}. So terminal segments radii are dilated ounce for all:  $r_d^{T,i}$.
+%\item Run solver with $q^{T,i}_{stress}$ as boundary condition \label{itemsolvstress}
+%\item Compute $R_{sim,stress}^{T,i}= \frac{P_{sim,stress}^{T,i}}{q_{sim,stress}^{T,i}}$. Note: because of BC we have $q_{sim,stress}^{T,i}=q_{stress}^{T,i}$
+%\item Check: \label{stressstepcheck}\\
+%
+%\begin{itemize}
+%\item If $R_{sim,stress}^{T,i} < R_{min,stress}^{T,i}$, decrease flow: $q_{stress,n+1}^{T,i}=q_{stress,n}^{T,i}  \frac{R_{sim,stress,n}^{T,i}}{R_{min,stress,n}^{T,i}}$, then go to \ref{itemsolvstress}
+%\item If $R_{sim,stress}^{T,i} \geq R_{min,stress}^{T,i}$, increase flow: $q_{stress,n+1}^{T,i}= q_{stress,n}^{T,i} \frac{R_{sim,stress,n}^{T,i}}{R_{min,stress,n}^{T,i}}$, then go to \ref{itemsolvstress}
+%\end{itemize}
+%
+%\item Convergence criteria: \label{itemStressEnd}\\
+%$max \lvert \frac{ R_{sim,stress}^{T,i} -R_{min,stress}^{T,i}} {R_{min,stress}^{T,i}} \rvert < 1\% $
+%
+%\end{enumerate}
+%So in this option, the total flow is no longer controlled in this case, but rather the terminal resistance (by the minimum input resistance value which is based on initial total flow and flow distribution based on initial branch radii, but could also be the rest final resistance and divide it by 4).\\
+%
+%\item Hyperemic condition by incrementation(runBaseline=0) \label{itemStressIncrem}
+%
+%In the check step \ref{stressstepcheck}, the factor to modify flow is replaced with:
+%\begin{equation}
+%q^{T,i}_{stress, n+1} = q^{T,i}_{stress, n} \frac{\frac{P^{T,i}_{sim, stress, n}}{q^{T,i}_{sim, stress, n}} - R_{min, stress}}{R_{min} + \frac{P_{AO} - P^{T,i}_{sim, stress, n}}{q^{T,i}_{sim, stress, n}}}
+%\end{equation}
+
+\subsubsection{Vessel non perfusing left ventricle}
+For the vessels non perfusing the left ventricle (mostly arising from the right coronary), we define terminal segment flow boundary condition based on the equation \ref{eq:qti}. However if the calculate terminal vessel flow is lower than the main vessel flow contribution to the left ventricle, we neglect the vessel non perfusing left ventricle by assigning a zero flow boundary condition.
+For simplicity, here after the left ventricle will be mentioned as myocardium.
+
+\clcg{What about flow fraction between left and right coronary? split in 2?}
+
+\subsection{Porous model}
+A porous medium is a continuous material constituted of 2 phases: a solid phase, or matrix, which contains pores, and a fluid phase, that fills the pores.
+\subsubsection{Model equation}
+Because blood is considered incompressible and newtonian fluid, it is governed by Darcy's law in porous media. 
+Darcy's law, a homogenization of Navier-Stokes, is described by a constitutive equation and combined with the fluid mass conservation equation:
+
+\begin{subequations}
+\begin{equation}\label{eq:constiDarcy}
+\bm{w} + \bm{\kappa} \nabla P = 0
+\end{equation}
+\begin{equation}\label{eq:conservDarcy}
+\nabla \cdot \bm{w} = \beta_{source} \left(P_{source} - P\right) - \beta_{sink} \left(P - P_{sink}\right)
+\end{equation}
+\end{subequations}
+with $\nabla P$ the pressure gradient, $\beta$ a coefficient describing the flow conductance into and out of the tissue, and $P$ the capillary bed pressure. 
+
+In the constitutive equation, \ref{eq:constiDarcy}, since fluids flow from higher pressure to lower pressure, it follows the pressure drop direction. 
+
+In the fluid mass conservation equation, \ref{eq:conservDarcy},  $\beta_{source}$ represents the inlet through which the blood enters the myocardium with a pressure $P_{source}$, while $\beta_{sink}$ represents the outlet through which blood exits the myocardium with a pressure $P_{sink}$. In terms of physiological meaning, sources and sinks  correspond respectively to arteriole outlets and venous drainage. 
+
+The system is solved for the unknowns Darcy velocity and capillary bed pressure, with pre-estimated parameters.
+
+\subsection{Parameterization}
+Among the different parameters describing the porous media, the most important ones are porosity $\Phi$ and permeability $\kappa$.
+Porosity is defined as the volume fraction of fluid:
+\begin{equation}
+\Phi = \frac{\texttt{pore volume}}{\texttt{domain volume}}
+\end{equation}
+It proportionally connects the fluid velocity $v$ and the perfusion velocity (or Darcy velocity) $\bm{\omega}$:
+\begin{equation}
+\bm{w} = \Phi v 
+\end{equation}
+The permeability, $\kappa$, is the ability to let fluid go through, corresponding to a conductance factor.
+
+\clcg{How is estimated $\Phi$ ??}
+
+To initialize the porous model, we need to estimate the parameters $\kappa$, $\beta_{source}$ and $\beta_{sink}$.
+The permeability $\kappa$ is estimated as a constant of value \SI{0.002}{\milli\meter\square\per\pascal\per\second} from the literature \cite{chapelle2010poroelastic}. 
+
+The coefficient $\beta_{source}$ is assumed constant over the myocardium and estimated as:
+\begin{equation}
+\beta_{source} = \frac{Q^{tot}}{(\text{mean}(P_{source}) - \bar{P}) \Omega}
+\end{equation}
+With $\Omega$ the myocardium volume, $\text{mean}(P_{source})$ the average pressure over all sources, and $\bar{P} = 15 mmHg$ the average capillary pressure \cite{chapelle2010poroelastic}.
+
+The sinks are considered homogeneously distributed over the myocardium (not explicitly generated), thus we determine one single value $\beta_{sink}$:
+\begin{equation}
+\beta_{source} \left(P_{AO} - \bar{P}\right) = \beta_{sink} \bar{P} \implies
+\beta_{sink} = \frac{\sum_{i} q^{T,i}}{\bar{P} \Omega}
+\end{equation}
+ 
+\subsection{Coupling algorithm}
+We aim at coupling the $1D$ coronary model with the porous model of the section, in both rest and hyperemic conditions.
+The interaction between the two models happen at the terminal segment outlets located inside or at the surface of the myocardium. Note that each outlet is associated a perfusion territory in the myocardium. These territories $\Omega_i$ are estimated from a discrete Voronoi tessellation \cite{Serra:235415} weighted with terminal segment diameters (equivalent to a Laguerre tessellation). These territories enable local distribution of variables inside the myocardium territory. 
+
+
+The coupling process involves an initialization, followed by iterations coupling the two models. The variable $k$ represents the iteration counter. 
+
+The initialization takes place at $k=0$ and is specific of the condition. It defines the dilation of synthetic segments radii and porous model parameters, that will be all maintained constant along the next iterations. For initialization the coronary model is run until reaching convergence, as defined respectively in equations \ref{eq:coron_conv_rest} and \ref{eq:coron_conv_stress}, for rest or hyperemic conditions. The resulting \joinuss{P}{k=0}{T,i} are used to estimate the \joinus{\beta}{source} and \joinus{\beta}{sink} parameters. These parameters are calculated to ensure total flow conservation between coronary and porous model \clcg{(how?)}. %To finalize the initialization the porous model is solved with the \joinuss{P}{T,i}{k=0}, corresponding to a one way coupling. It calculates flow inside the myocardium.
+
+
+In the coupling iterations, the resulting pressure of the coronary model at terminal segment ends $P^{T,i}_k$ are used as inputs to define pressure inside the tessellation territories $\Omega_i$ for the porous model. The latter is solved providing flow values at terminal segments, that are used as new inputs for the coronary model, $q^{T,i}_{k+1}$. For iterations with $k > 0$, the coronary model corresponds to a single step solving pressure and flow in the system, without adjusting any resistance.
+ 
+The coupling convergence is established considering the terminal segment flow values between iteration $k$ and iteration $k+1$. 
+\begin{equation}
+\frac{\left\lvert q^{T,i}_{k} - q^{T,i}_{k+1} \right\rvert}{q^{T,i}_k} < 1 \% \text{ for all i}
+\end{equation}
+
+Figure to illustrate coupling loop?
+
+
+
+%\subsubsection{Initialization}
+%
+%\subsubsection{Other loops}
+
+\subsubsection{Parameterization adaptation to stenotic patient}
+When working with patient exhibiting an obstructive disease, downstream the lesion, the pressure falls, which induces a dilation of the synthetic network at the initialization phase. To propagate this behaviour inside the myocardium, the porous model is adapted by defining local \joinus{\beta}{source, disease} values corresponding to the concerned perfused territories \joinus{\Omega}{i,disease}.
+\begin{equation}
+\beta_{i, disease} = 
+\end{equation}
+The other territories are parameterized with :
+\begin{equation}
+\beta_{i, healthy} =
+\end{equation}
+
+Also, the input flows ...
+
+\section{Results and discussion}
+
+\subsection{Data}
+We worked with hybrid vasculatures produced with 1000 terminal segments lying on the surface of the left ventricle, but varied \joinus{n}{term}.
+
+\clcg{note on UDT removal}
+
+Due to initialization or geometrical constraints, during vascular growth some synthetic trees did not extend properly so that they did not reach their target flow. Thus they exhibit few and large diameter terminal segments. To limit discrepancy between terminal segments, and improve consistency between the tree depth (scales) for the fluid simulation, we removed the synthetic tree located along segmented vessels which show a development below 20\% of the target flow. These tree represent xx out of yy synthetic trees, and jj outlets out of ii outlets.
+
+\clcg{note on trimming to allow for tessellation?}
+
+To connect the coronary outlet pressure to the myocardium regions, we estimate perfused territories $\Omega_i$ via a Voronoi tessellation. This correspondence is important to maintain flow consistency between coronary model and porous model. To each outlet is assigned at least one tetrahedron. However, some outlets can be very close, and assigned the same tetrahedron, which is not convenient for the algorithm. For sibling outlets, meaning they have the same parent segment, we trim the vasculature at the parent level. Thus we slightly reduce the number of outlets. For outlets belonging to different parent segment, we enforce a single tetrahedron for the smallest outlet, which is contained within the region of the biggest outlet.
+
+% due to discretization, for very close outlets, the tessellation cannot assign a perfused territory to each of them.  
+
+\clcg{Brief description on the myocardium mesh?}
+
+\subsection{Non stenotic patient}
+Convergence process to be briefly described here.
+\subsubsection{Sensitivity to the vascular network}
+on a single healthy patient
+\begin{itemize}
+\item number of terminals: 3000, 6000, 12000
+\item variying randomness of the vasculature
+\end{itemize}
+
+\subsubsection{Robustness on 7 non stenotic patients}\label{subsubsec7healthy}
+Coupling results with regards to 1D coronary model, rest \& hyperemic
+
+on 7 healthy patients, compare with literature
+
+to be organized depending on what is important difference
+\paragraph{Along the vasculature}
+\begin{itemize}
+\item Flow
+\item Pressure
+\item Resistance
+\item Dilation of synthetic network
+\end{itemize}
+pointing at difference between rest and stress,and between patients
+
+expect low difference between coronary model and coupling
+\paragraph{Inside the myocardium}
+\begin{itemize}
+\item Terminal outlet flows
+\item General statistics at tissue scale
+\item Fractal pattern
+\item Comparison with perfusion ground-truth: mean, std, range
+\end{itemize}
+pointing at difference between coronary model and coupling, and rest vs hyperemic
+\subsection{Stenotic patient}
+Convergence process (potentially difference from healthy patient)
+\subsubsection{Sensitivity to the vascular network size}
+\subsubsection{Impact of the coupling with regards to 1D coronary model}
+\begin{itemize}
+\item relevant aspects of \ref{subsubsec7healthy} to be compared
+\item correlation with perfusion ground-truth
+\end{itemize}
+
+
+\section{Conclusion}
+
+
+
+
+
+
+
+%\hfill mds
+ 
+%\hfill August 26, 2015
+
+%\subsection{Subsection Heading Here}
+%Subsection text here.
+
+% needed in second column of first page if using \IEEEpubid
+%\IEEEpubidadjcol
+
+%\subsubsection{Subsubsection Heading Here}
+%Subsubsection text here.
+
+
+% An example of a floating figure using the graphicx package.
+% Note that \label must occur AFTER (or within) \caption.
+% For figures, \caption should occur after the \includegraphics.
+% Note that IEEEtran v1.7 and later has special internal code that
+% is designed to preserve the operation of \label within \caption
+% even when the captionsoff option is in effect. However, because
+% of issues like this, it may be the safest practice to put all your
+% \label just after \caption rather than within \caption{}.
+%
+% Reminder: the "draftcls" or "draftclsnofoot", not "draft", class
+% option should be used if it is desired that the figures are to be
+% displayed while in draft mode.
+%
+%\begin{figure}[!t]
+%\centering
+%\includegraphics[width=2.5in]{myfigure}
+% where an .eps filename suffix will be assumed under latex, 
+% and a .pdf suffix will be assumed for pdflatex; or what has been declared
+% via \DeclareGraphicsExtensions.
+%\caption{Simulation results for the network.}
+%\label{fig_sim}
+%\end{figure}
+
+% Note that the IEEE typically puts floats only at the top, even when this
+% results in a large percentage of a column being occupied by floats.
+
+
+% An example of a double column floating figure using two subfigures.
+% (The subfig.sty package must be loaded for this to work.)
+% The subfigure \label commands are set within each subfloat command,
+% and the \label for the overall figure must come after \caption.
+% \hfil is used as a separator to get equal spacing.
+% Watch out that the combined width of all the subfigures on a 
+% line do not exceed the text width or a line break will occur.
+%
+%\begin{figure*}[!t]
+%\centering
+%\subfloat[Case I]{\includegraphics[width=2.5in]{box}%
+%\label{fig_first_case}}
+%\hfil
+%\subfloat[Case II]{\includegraphics[width=2.5in]{box}%
+%\label{fig_second_case}}
+%\caption{Simulation results for the network.}
+%\label{fig_sim}
+%\end{figure*}
+%
+% Note that often IEEE papers with subfigures do not employ subfigure
+% captions (using the optional argument to \subfloat[]), but instead will
+% reference/describe all of them (a), (b), etc., within the main caption.
+% Be aware that for subfig.sty to generate the (a), (b), etc., subfigure
+% labels, the optional argument to \subfloat must be present. If a
+% subcaption is not desired, just leave its contents blank,
+% e.g., \subfloat[].
+
+
+% An example of a floating table. Note that, for IEEE style tables, the
+% \caption command should come BEFORE the table and, given that table
+% captions serve much like titles, are usually capitalized except for words
+% such as a, an, and, as, at, but, by, for, in, nor, of, on, or, the, to
+% and up, which are usually not capitalized unless they are the first or
+% last word of the caption. Table text will default to \footnotesize as
+% the IEEE normally uses this smaller font for tables.
+% The \label must come after \caption as always.
+%
+%\begin{table}[!t]
+%% increase table row spacing, adjust to taste
+%\renewcommand{\arraystretch}{1.3}
+% if using array.sty, it might be a good idea to tweak the value of
+% \extrarowheight as needed to properly center the text within the cells
+%\caption{An Example of a Table}
+%\label{table_example}
+%\centering
+%% Some packages, such as MDW tools, offer better commands for making tables
+%% than the plain LaTeX2e tabular which is used here.
+%\begin{tabular}{|c||c|}
+%\hline
+%One & Two\\
+%\hline
+%Three & Four\\
+%\hline
+%\end{tabular}
+%\end{table}
+
+
+% Note that the IEEE does not put floats in the very first column
+% - or typically anywhere on the first page for that matter. Also,
+% in-text middle ("here") positioning is typically not used, but it
+% is allowed and encouraged for Computer Society conferences (but
+% not Computer Society journals). Most IEEE journals/conferences use
+% top floats exclusively. 
+% Note that, LaTeX2e, unlike IEEE journals/conferences, places
+% footnotes above bottom floats. This can be corrected via the
+% \fnbelowfloat command of the stfloats package.
+
+
+
+% if have a single appendix:
+%\appendix[Proof of the Zonklar Equations]
+% or
+%\appendix  % for no appendix heading
+% do not use \section anymore after \appendix, only \section*
+% is possibly needed
+
+% use appendices with more than one appendix
+% then use \section to start each appendix
+% you must declare a \section before using any
+% \subsection or using \label (\appendices by itself
+% starts a section numbered zero.)
+%
+
+
+\appendices
+%\section{Proof of the First Zonklar Equation}
+%Appendix one text goes here.
+
+% you can choose not to have a title for an appendix
+% if you want by leaving the argument blank
+%\section{}
+%Appendix two text goes here.
+
+
+% use section* for acknowledgment
+\section*{Acknowledgment}
+
+
+The authors would like to thank...
+
+
+% Can use something like this to put references on a page
+% by themselves when using endfloat and the captionsoff option.
+\ifCLASSOPTIONcaptionsoff
+  \newpage
+\fi
+
+
+
+% trigger a \newpage just before the given reference
+% number - used to balance the columns on the last page
+% adjust value as needed - may need to be readjusted if
+% the document is modified later
+%\IEEEtriggeratref{8}
+% The "triggered" command can be changed if desired:
+%\IEEEtriggercmd{\enlargethispage{-5in}}
+
+% references section
+\printbibliography{}
+
+
+% biography section
+% 
+% If you have an EPS/PDF photo (graphicx package needed) extra braces are
+% needed around the contents of the optional argument to biography to prevent
+% the LaTeX parser from getting confused when it sees the complicated
+% \includegraphics command within an optional argument. (You could create
+% your own custom macro containing the \includegraphics command to make things
+% simpler here.)
+%\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{mshell}}]{Michael Shell}
+% or if you just want to reserve a space for a photo:
+
+
+
+
+
+
+
+
+\end{document}
+
+

@@ -60,7 +60,10 @@
 Reproducing Rudolph Karch paper} % Subtitle
 
 \author{\textsc{Clara Jaquet} % Author
-\\{\textit{Paris-Est University}}} % Institution
+  \\{\textit{Paris-Est University}}
+  \\\textsc{Hugues Talbot} % Author
+  \\{\textit{CentraleSupelec}}
+} % Institution
 
 \date{\today} % Date
 
@@ -149,7 +152,7 @@ R_j = \frac{8\mu}{\pi}\frac{l_j}{r_j^4} \text{ with } \mu \text{ the viscosity }
 \end{equation}
 The total resistance of the tree is calculated recursively by tree decomposition, considering parallel and serial arrangements.
 
-The physiological parameters are set following table \ref{tbl:toto}:\\ % missing table
+The physiological parameters are set following table \ref{tbl:Global model parameters}:\\ % missing table
 \begin{table}
 \begin{center}
 \begin{tabular}{ccc}
@@ -209,10 +212,27 @@ A_k = (k_{term} + 1) \pi r_{supp}^2
 \end{equation}
 
 The segments are stretched correspondingly to this inflation. First their new lengths are calculated, then each segment radius is rescaled in order to adapt the new tree resistance. 
-Note that we do not recalculate segment positions after tree stretching but compute a conversion to the $k_{world}$ via a scaling factor $r_{kf}$:
+Note that, as Schreiner does, we do not recalculate segment positions after tree stretching but compute a conversion to the $k_{world}$ via a scaling factor relating to $r_{supp}$, thus $A_k$. Considering the radius of the final territory $r_f$
 \begin{equation}
-r_{kf} = \sqrt{\pi A_k}
-\end{equation}   
+r_f = \sqrt{\frac{A_{perf}}{\pi}}  
+\end{equation}
+And considering the radius of territory of current step $r_{k}$:
+\begin{equation}
+r_k = \sqrt{\frac{A_k}{\pi}} 
+\end{equation}
+%%\sqrt( (k_{term} + 1) \times r_{supp}^2)
+We define the length factor $lf$ as the ratio :
+\begin{equation}
+lf = \frac{r_k}{r_f}
+\end{equation} 
+This ratio can actually be simplified to:
+\begin{equation}
+lf = \sqrt{\frac{k_{term} + 1}{n_{term}}}
+\end{equation}  
+Respectively in 3 dimension we obtain a length factor:
+\begin{equation}
+lf = \sqrt[3]{\frac{k_{term} + 1}{n_{term}}}
+\end{equation}
 %With this factor applied on segment length, we recalculate all segment resistances via a depth-first algorithm. Segment radii are consequently rescaled to adapt the new resistances.
 The tree is adjusted to the inflated world before starting the loop to add a new segment.
 
@@ -381,8 +401,8 @@ If we compare our 2D CCO radii distribution with Karch results (computed in 3D),
 \begin{figure}[htbp]
 \centering
 \subfigure{\includegraphics[width=0.6\textwidth]{./Images/CCOResults/KarchRadiiResult250Nt.png}}
-\subfigure{\includegraphics[width=0.494\textwidth]{./Images/CCOResults/DiamAlongBif_Nt250_over10trees_M300_PK_seeds35only.png}}
-\subfigure{\includegraphics[width=0.494\textwidth]{./Images/CCOResults/DiamAlongBif_Nt250_over10trees_M300_PK_seeds36only.png}}
+\subfigure{\includegraphics[width=0.494\textwidth]{./Images/CCOResults/DiamAlongBif_Nt250_M300_PK_seeds35only.png}}
+\subfigure{\includegraphics[width=0.494\textwidth]{./Images/CCOResults/DiamAlongBif_Nt250_M300_PK_seeds36only.png}}
 \caption{Radius study along bifurcation levels: mean and standard deviation at each bifurcation level on 1 single simulated 250Nterm tree. Top: result from Karch on 3D CCO \cite{karch1999three}, including simulated model and measured radii on anatomical data, computed with $\gamma = 3.0$. Bottom: our result computed on two trees from 2D CCO, with same $\gamma$ value.}
 \label{fig:Karch radii study}
 \end{figure}

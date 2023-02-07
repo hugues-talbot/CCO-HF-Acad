@@ -1,0 +1,208 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Thin Sectioned Essay
+% LaTeX Template
+% Version 1.0 (3/8/13)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original Author:
+% Nicolas Diaz (nsdiaz@uc.cl) with extensive modifications by:
+% Vel (vel@latextemplates.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[a4paper, 11pt]{article} % Font size (can be 10pt, 11pt or 12pt) and paper size (remove a4paper for US letter paper)
+
+\usepackage[protrusion=true,expansion=true]{microtype} % Better typography
+\usepackage{graphicx} % Required for including pictures
+\usepackage{wrapfig} % Allows in-line images
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{mathpazo} % Use the Palatino font
+\usepackage[T1]{fontenc} % Required for accented characters
+\linespread{1.05} % Change line spacing here, Palatino benefits from a slight increase by default
+
+\makeatletter
+\renewcommand\@biblabel[1]{\textbf{#1.}} % Change the square brackets for each bibliography item from '[1]' to '1.'
+\renewcommand{\@listI}{\itemsep=0pt} % Reduce the space between items in the itemize and enumerate environments and the bibliography
+
+\renewcommand{\maketitle}{ % Customize the title - do not edit title and author name here, see the TITLE block below
+\begin{flushright} % Right align
+{\LARGE\@title} % Increase the font size of the title
+
+\vspace{50pt} % Some vertical space between the title and author name
+
+{\large\@author} % Author name
+\\\@date % Date
+
+\vspace{40pt} % Some vertical space between the author block and abstract
+\end{flushright}
+}
+
+%----------------------------------------------------------------------------------------
+%	TITLE
+%----------------------------------------------------------------------------------------
+
+\title{\textbf{Inner growth }\\ % Title
+Flow convergence method} % Subtitle
+
+\author{\textsc{Clara Jaquet} % Author
+\\{\textit{ESIEE}}} % Institution
+
+\date{\today} % Date
+
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+\maketitle % Print the title section
+
+%----------------------------------------------------------------------------------------
+%	ABSTRACT AND KEYWORDS
+%----------------------------------------------------------------------------------------
+
+%\renewcommand{\abstractname}{Summary} % Uncomment to change the name of the abstract to something else
+
+%\begin{abstract}
+%Morbi tempor congue porta. Proin semper, leo vitae faucibus dictum, metus mauris lacinia lorem, ac congue leo felis eu turpis. Sed nec nunc pellentesque, gravida eros at, porttitor ipsum. Praesent consequat urna a lacus lobortis ultrices eget ac metus. In tempus hendrerit rhoncus. Mauris dignissim turpis id sollicitudin lacinia. Praesent libero tellus, fringilla nec ullamcorper at, ultrices id nulla. Phasellus placerat a tellus a malesuada.
+%\end{abstract}
+%
+%\hspace*{3,6mm}\textit{Keywords:} lorem , ipsum , dolor , sit amet , lectus % Keywords
+
+%\vspace{30pt} % Some vertical space between the abstract and first section
+
+%----------------------------------------------------------------------------------------
+%	ESSAY BODY
+%----------------------------------------------------------------------------------------
+
+\section*{Context}
+Inner growth cannot handle speed growth process due to 3D.
+Nevertheless we want to grow trees that converge to their prescribed flow $q_{presc}^i$, and reach the forest total flow $Q_{presc}$ for a $N$ tree forest. 
+\begin{equation}
+Q_{presc} = \sum\limits_N q_{presc}^i
+\end{equation}
+This is not trivial since geometrical constraints prevent some of the $F_N$ trees to deploy as much as required or even to get any new connection. We build a method that can compensate such issues and distribute $Q_{presc}$ close to the prescribed tree values. 
+
+
+%------------------------------------------------
+
+\section*{Algorithm}
+The only action we can have on a tree during inner growth is to deactivate 
+it. The deactivation excludes the tree from any new connection test. We cannot reactivate the tree after that, otherwise it will lead to chaos in forest growth. Then the question is when shall we deactivate the tree, knowing that not all of them can reach their prescribed flow? To answer this, we observe the forest growth at a tree scale every 500 iterations. 
+
+We call $b$ all trees which did not have new connections within this period, they are considered as "blocked" trees. 
+
+We call $d$ all trees that are deactivated at the current step.
+To be noted, the deactivated trees have not reached exactly their prescribed flow, but a bigger value called final flow $q_{f}^i$. We can deduce $\Delta q^i$ which correspond to non available flow:
+\begin{equation}
+\Delta q^i=q_{f}^i - q_{presc}^i 
+\end{equation}
+
+Observing the blocked and deactivated trees we calculate the amount of flow that is "lost", e.g. won't be assigned if trees stay blocked, and should be redistributed on the rest of the forest:
+\begin{equation}
+Q_{lost} = \sum\limits_{i \in b} (q_{presc}^i - q_k^i) - \sum\limits_{i \in d} \Delta q_f^i
+\end{equation}
+
+We apply a rule after each new connection $k$ inside the forest:
+\begin{algorithm}
+\begin{algorithmic} 
+\IF{tree is active and not blocked $q_k^i$ $\geq$ $q_{presc}^i$ + $p^i$} 
+\STATE deactivate tree i
+\ENDIF
+\end{algorithmic} 
+\end{algorithm}
+
+%\begin{equation}
+%\begin{split}
+%if q_k^i \geq q_{presc}^i + p^i : \\
+%deactivate tree i
+%\end{split}
+%\end{equation}  
+
+%The value of $p^i$ depends on the available flow $Q_{lost}$, but also, on the tree prescribed importance inside the forest. 
+We distribute the available flow $Q_{lost}$ among all active and not blocked trees, proportionally to their relative prescribed flow.
+The value of $p^i$ is calculated such as:
+\begin{equation}
+p^i = \alpha^iQ_{lost}
+\end{equation}
+with 
+\begin{equation}
+\alpha^i = \frac{q_{presc}^i}{Q_{presc} - \sum\limits_{i \in d}q_{presc}^i - \sum\limits_{b}q_{presc}^i}
+\end{equation}
+Because we only apply the rule for activated non blocked trees  we can verify that 
+\begin{equation}
+\sum \alpha^i = 1
+\end{equation}
+Knowing that the number of trees that are activated and not blocked is $F_{an}$:
+\begin{equation}
+F_{an} = F_N - F_d - F_b
+\end{equation}
+And consequently:
+\begin{equation}
+\sum\limits_{i \in an} q_{presc}^i =  \sum\limits_{i \in N}q_{presc}^i - \sum\limits_{i \in d}q_{presc}^i - \sum\limits_{i \in b}q_{presc}^i
+\end{equation}
+
+
+
+For the trees that are activated but blocked, we apply the simple rule: 
+\begin{algorithm}
+\begin{algorithmic} 
+\IF{tree is active and blocked $q_k^i$ $\geq$ $q_{presc}^i$} 
+\STATE deactivate tree i
+\ENDIF
+\end{algorithmic} 
+\end{algorithm}
+
+Final note: getting closer to the last iteration, we might find a negative $Q_{lost}$ value. Since we do not want to take risk to deactivate all trees before reaching the last iteration, we set $Q_{lost}$ to zero in this situation.
+%with 
+%\begin{equation}
+%\sum\limits_{i \in AN} q_{presc}^i =  \sum\limits_{i \in N}q_{presc}^i - \sum\limits_{i \in d}q_{presc}^i
+%\end{equation}
+
+%The factor $\alpha$ enables to distribute the lost flow proportionally to each relative tree flow. This means we want:
+%\begin{equation}
+%\sum \alpha^i = 1
+%\end{equation}
+%and so we define it as:
+%\begin{equation}
+%\alpha^i = \frac{q_{presc}^i}{Q_{presc} - \sum\limits_{i \in d}q_{presc}^i}
+%\end{equation}
+%
+%%that can be written as:
+%%\begin{equation}
+%%\alpha^i = \frac{q_{presc}^i}{Q_{presc}-\sum\limits^{b} (q_{presc}^i - q_k^i) - \sum\limits^{d}q_{presc}^i}
+%%\end{equation}
+%Because we calculate $p^i$ only for activated trees it is verified:
+%\begin{equation}
+%\sum\limits_{i \in A} q_{presc}^i =  \sum\limits_{i \in N}q_{presc}^i - \sum\limits_{i \in d}q_{presc}^i
+%\end{equation}
+ 
+
+
+
+
+%------------------------------------------------
+
+%\section*{Conclusion}
+
+
+%----------------------------------------------------------------------------------------
+%	BIBLIOGRAPHY
+%----------------------------------------------------------------------------------------
+
+%\bibliographystyle{unsrt}
+%
+%\bibliography{sample}
+
+%----------------------------------------------------------------------------------------
+
+\end{document}

@@ -1,0 +1,172 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Thin Sectioned Essay
+% LaTeX Template
+% Version 1.0 (3/8/13)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original Author:
+% Nicolas Diaz (nsdiaz@uc.cl) with extensive modifications by:
+% Vel (vel@latextemplates.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[a4paper, 11pt]{article} % Font size (can be 10pt, 11pt or 12pt) and paper size (remove a4paper for US letter paper)
+
+\usepackage[protrusion=true,expansion=true]{microtype} % Better typography
+\usepackage{graphicx} % Required for including pictures
+\usepackage{wrapfig} % Allows in-line images
+\usepackage{siunitx}
+\usepackage{mathpazo} % Use the Palatino font
+\usepackage[T1]{fontenc} % Required for accented characters
+\linespread{1.05} % Change line spacing here, Palatino benefits from a slight increase by default
+
+\makeatletter
+\renewcommand\@biblabel[1]{\textbf{#1.}} % Change the square brackets for each bibliography item from '[1]' to '1.'
+\renewcommand{\@listI}{\itemsep=0pt} % Reduce the space between items in the itemize and enumerate environments and the bibliography
+
+\renewcommand{\maketitle}{ % Customize the title - do not edit title and author name here, see the TITLE block below
+\begin{flushright} % Right align
+{\LARGE\@title} % Increase the font size of the title
+
+\vspace{50pt} % Some vertical space between the title and author name
+
+{\large\@author} % Author name
+\\\@date % Date
+
+\vspace{40pt} % Some vertical space between the author block and abstract
+\end{flushright}
+}
+
+%----------------------------------------------------------------------------------------
+%	TITLE
+%----------------------------------------------------------------------------------------
+
+\title{\textbf{Coupling bibliography}} % Subtitle
+
+\author{\textsc{Clara Jaquet} % Author
+\\{\textit{Universite Paris-Est, ESIEE}}} % Institution
+
+\date{\today} % Date
+
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+\maketitle % Print the title section
+
+%----------------------------------------------------------------------------------------
+%	ABSTRACT AND KEYWORDS
+%----------------------------------------------------------------------------------------
+
+%\renewcommand{\abstractname}{Summary} % Uncomment to change the name of the abstract to something else
+
+%\begin{abstract}
+%Morbi tempor congue porta. Proin semper, leo vitae faucibus dictum, metus mauris lacinia lorem, ac congue leo felis eu turpis. Sed nec nunc pellentesque, gravida eros at, porttitor ipsum. Praesent consequat urna a lacus lobortis ultrices eget ac metus. In tempus hendrerit rhoncus. Mauris dignissim turpis id sollicitudin lacinia. Praesent libero tellus, fringilla nec ullamcorper at, ultrices id nulla. Phasellus placerat a tellus a malesuada.
+%\end{abstract}
+
+%\hspace*{3,6mm}\textit{Keywords:} lorem , ipsum , dolor , sit amet , lectus % Keywords
+
+\vspace{30pt} % Some vertical space between the abstract and first section
+
+%----------------------------------------------------------------------------------------
+%	ESSAY BODY
+%----------------------------------------------------------------------------------------
+
+\section*{Introduction}
+
+This report aims at detailing state of the art in coupling of coronary and porous models.
+
+
+%------------------------------------------------
+
+\section*{Experimental measures}
+Experimental measure of the coronary micro-circulation is difficult because of heart beat and scale of the vessels. Invasive technics are necessary for precise measurement, thus focusing on animal studies.
+
+
+
+Chilian et al.  measured it in cat arterioles \cite{chilian1989redistribution}, and then in porcine microvasculature \cite{chilian1991microvascular} using servo-controlled pump with a micro-pipette. The first work showed majority of the vasculature resistance occurs in microvasculature (68\% inside vessels below \SI{170}{\micro\meter}). In the second work they identified a pressure gradient from epicardial (80mmHg) to endocardial (60mmHg) arterioles (80-\SI{120}{\micro\meter} ). 
+
+(Good state of the art: Wijngaard 2012)
+Measure heterogeneity pattern on the baboon \cite{king1985stability}. Knowing total flow, and measuring microsphere density distribution inside a cutted subterritory, one can estimate local flow.  
+
+More recently, episcopic fluorescent imaging ,combining use of microsphere (\SI{15}{\micro\meter}) and cryomicrotome \cite{van2010improved}, enables to quantify local perfusion inside the myocardium with high spatial precision. The advantage of this new technic is to avoids tissue scheme cutting of the myocardium for quantification. 
+
+
+
+
+\section*{Porous model built with experimental values}
+
+In this work \cite{michler2013computationally} Michler et al. proposes a 3-compartment porous model (no coupling) inside porcine myocardium geometry. The terminal vessel flows are estimated from microsphere count on this exact porcine data (microsphere diameter \SI{15}{\micro\meter}).
+
+They assume a smooth permeability field ($\kappa$), predominant in transmural direction for the compartment 1 and 2, but isotropic for compartment 3. Each compartment is also assigned a specific porosity value. They define two inter-compartment coefficient $\beta$. They obtain a uniform pressure in the 3rd compartment, which is expected in physiological perfusion (no reference for this statement).
+
+Data: porcine vasculature of 1735 terminal vessels, mean diameter \SI{414}{\micro\meter}\\
+
+
+
+\section*{Coupling}
+
+Methods aiming at a complete modeling of the cardiac physiology couple CFD in vessel and porous models. Such methods are computed with detailed vessel and tissue domains. \\
+
+\subsection*{One way coupling}
+For instance Hyde et al.  \cite{hyde2014multi} worked with porcine and canine heart extracted from cryomicrotome, providing vessel down to
+arteriole level and ventricle segmentations. They couple a Poiseuille model in large arteries with a porous model for smaller vessels. This porous model contains several compartments, each of them describing a subset of embedded vessels based on radius range. For such multi-compartment model parameterisation it can be difficult to obtain physiologically plausible results. This paper provides comparison of several methods.
+
+Principle: single iteration between a 1D coronary model and a multi-compartment porous model.
+The 1D coronary model is solved with experimental pressure boundary condition (obtained from Chilian et al. \cite{chilian1989redistribution}).
+The resulting flux at the 1D coronary model outlets are used to define source field in porous model.
+
+
+The result is compared to a simplified model: Poiseuille model on full vasculature. For this model the pressure field is calculated inside the myocardium as a spatial average.
+
+Also, sensitivity to number of porous compartments and radius threshold of the 1D coronary model are assessed on the model. 
+
+Data: porcine(27000 vessels) and canine (43000 vessels) model from cryomicrotome, selecting only the ones perfusing left ventricle based on shortest path. Coronary 1D model compartment is defined by a minimal radius. The porous model compartments are divided according to vasculature of smaller radii ranges. Porosity is calculated for each compartment.
+
+Parameterization:
+\begin{itemize}
+\item porosity: based on arterial vasculature distribution inside myocardium. Analysis on pig data show arterial porosity is specific for the septal region.
+\item permeability field determined at same time with beta field (see details in \cite{hyde2013parameterisation}). Exception for the capillary compartment where permeability is assumed constant.
+Show the importance of anatomically derived beta field (using local pressure \& flow information): obtain the smallest root mean square error. 
+\item sink term is pressure dependent
+\end{itemize}  
+
+\subsection*{Full coupling}
+
+In \cite{lee2015multiscale}, Lee et al describe a framework to compute in silico Wave Intensity, perfusion and contraction analysis throughout whole heart cycle. 
+
+It couples a poromechanical and 1D coronary model. 
+The poromechanical model is a single compartment.
+Inlet coronary pressure depends on the ventricle outflow. Mechanical stress (passive filling or contraction) influences pore fluid pressure, which in turn contribute to vascular flow.
+Model reproduces layer-dependant perfusion pattern along cycle (including flow reversal).   
+
+Data: same as \cite{michler2013computationally}, porcine left coronary and ventricle, 2000 terminal segment network (mean diameter \SI{200}{\micro\meter})\\
+
+
+TO ADD: references from Manuscript (D'Angelo), Matthew Sinclair state of the art , and online check.
+%------------------------------------------------
+
+\section*{Conclusion}
+
+
+
+%----------------------------------------------------------------------------------------
+%	BIBLIOGRAPHY
+%----------------------------------------------------------------------------------------
+
+\bibliographystyle{unsrt}
+
+\bibliography{sample}
+
+%----------------------------------------------------------------------------------------
+
+\end{document}
